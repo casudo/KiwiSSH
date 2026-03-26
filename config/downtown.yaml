@@ -1,0 +1,49 @@
+# Project Downtown - Main Configuration
+# This file contains global settings for the application
+
+app:
+  debug: true
+  log_level: "INFO"
+
+# Device groups with shared credentials
+# Passwords should be set via environment variables (e.g., DOWNTOWN_GROUP_DEFAULT_PASSWORD)
+groups:
+  default:
+    username: "admin"
+    # password: Set via DOWNTOWN_GROUP_DEFAULT_PASSWORD environment variable
+    ssh_profile: "modern"
+    vendor: "cisco_ios"
+    timeout: 30
+
+  legacy:
+    username: "admin"
+    # password: Set via DOWNTOWN_GROUP_LEGACY_PASSWORD environment variable
+    ssh_profile: "legacy"
+    vendor: "cisco_ios"
+    timeout: 60
+
+# Git backup repository settings
+git:
+  local_path: "./backups"
+  auto_commit: true
+  commit_message_template: "Backup: {device_name} at {timestamp}"
+  # Remote repository configuration (optional)
+  # remote:
+  #   enabled: false
+  #   url: "git@github.com:org/network-backups.git"
+  #   branch: "main"
+  #   push_after_commit: false
+
+# Backup scheduling (future feature)
+schedule:
+  enabled: false
+  cron: "0 2 * * *"  # Daily at 2 AM
+  timezone: "UTC"
+
+# API settings
+api:
+  host: "127.0.0.1"
+  port: 8000
+  cors_origins:
+    - "http://localhost:5173"
+    - "http://127.0.0.1:5173"
