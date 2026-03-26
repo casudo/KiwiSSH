@@ -1,8 +1,9 @@
-# SSH Connection Profiles
-# Define reusable SSH settings for different device generations
+### SSH Connection Profiles
+## Define reusable SSH settings for different device generations
 
 profiles:
-  # Modern devices with current secure algorithms
+  ### Modern devices with current secure algorithms
+  ### DO NOT rename the default "modern" or "legacy" profiles!
   modern:
     connect_timeout: 10
     command_timeout: 30
@@ -26,7 +27,7 @@ profiles:
       - "hmac-sha2-512"
       - "hmac-sha2-256"
 
-  # Legacy devices with older (deprecated) crypto algorithms
+  ### Legacy devices with older (deprecated) crypto algorithms
   legacy:
     connect_timeout: 15
     command_timeout: 60
@@ -46,7 +47,7 @@ profiles:
       - "hmac-sha2-256"
       - "hmac-sha1"
 
-  # Very old devices with minimal crypto support
+  ### Very old devices with minimal crypto support
   legacy_extreme:
     connect_timeout: 20
     command_timeout: 120

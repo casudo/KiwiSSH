@@ -22,6 +22,18 @@ groups:
     vendor: "cisco_ios"
     timeout: 60
 
+### Define device sources (e.g., from a file, database, or API)
+### For now, we will use a static list defined in the code
+### Future implementation may include dynamic loading from external sources
+# sources:
+#   file:
+#     path: /a/b/c
+#   postgres:
+#     host: localhost
+#     port: 5432
+#     database: downtown
+#     user: downtown_user
+
 # Git backup repository settings
 git:
   local_path: "./backups"

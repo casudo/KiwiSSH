@@ -23,8 +23,8 @@ class DeviceBase(BaseModel):
 
     device_name: str = Field(..., min_length=1, max_length=255)
     ip_address: IPvAnyAddress
-    vendor: str = Field(default="cisco_ios")
-    group: str = Field(default="default")
+    vendor: str = Field(...)
+    group: str = Field(...)
     ssh_profile: str = Field(default="modern")
     enabled: bool = True
 

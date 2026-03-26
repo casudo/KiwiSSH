@@ -56,7 +56,6 @@ class Settings(BaseSettings):
                     vendor_id = vendor_config.get("vendor", {}).get("id", vendor_file.stem)
                     self.vendors[vendor_id] = vendor_config
 
-
     def get_ssh_profile(self, profile_name: str) -> dict[str, Any]:
         """Get SSH profile configuration."""
         profiles = self.ssh_profiles.get("profiles", {})
@@ -67,7 +66,7 @@ class Settings(BaseSettings):
         return self.vendors.get(vendor_id, {})
 
 
-@lru_cache # Last Recently Used cache to store settings instance
+@lru_cache  # Last Recently Used cache to store settings instance
 def get_settings() -> Settings:
     """Get settings instance or return cached one."""
     settings = Settings()
