@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import __version__
 from app.api.routes import api_router_v1
 from app.core import get_settings
+from app.services import source_service
 
 
 @asynccontextmanager
@@ -19,6 +20,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     Everything after yield: runs on shutdown
     """
     ### Startup
+    ## Clear caches to ensure fresh load from .env file
+    get_settings.cache_clear()
+    source_service.invalidate_cache()
+
     settings = get_settings()
 
     print(f"Starting Project Downtown v{__version__}")

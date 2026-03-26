@@ -1,5 +1,5 @@
-# Created by https://www.toptal.com/developers/gitignore/api/python,vuejs,vue,node,venv
-# Edit at https://www.toptal.com/developers/gitignore?templates=python,vuejs,vue,node,venv
+### Custom entries
+tests/
 
 ### Node ###
 # Logs

@@ -1,6 +1,7 @@
 """Device source parsing service."""
 
 import csv
+from pathlib import Path
 
 from app.core import get_settings
 from app.models.device import Device, DeviceStatus
@@ -16,12 +17,16 @@ class SourceService:
 
     async def load_devices_from_csv(self) -> list[Device]:
         """Load devices from CSV file."""
-        ### TODO: Fix in prod, currently using example file for testing/demo purposes.
-        sources_dir = self.settings.config_dir / "sources"
-        csv_path = sources_dir / "devices.csv.example"
+        project_root = Path(__file__).parent.parent.parent.parent
+
+        ### Use tests/config/sources for local testing, otherwise use config/sources
+        if self.settings.local_test_mode:
+            csv_path = project_root / "tests" / "config" / "sources" / "devices.csv"
+        else:
+            sources_dir = self.settings.config_dir / "sources"
+            csv_path = sources_dir / "devices.csv"
 
         if not csv_path.exists():
-            ### TODO: Raise error? For now just return empty list if no source file found.
             return []
 
         devices = []
