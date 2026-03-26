@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     backups_dir: Path = Field(default=Path("../backups"))
 
     ### API settings
-    api_host: str = "127.0.0.1"
+    # api_host: str = "127.0.0.1"
     api_port: int = 8000
     debug: bool = True
 
