@@ -1,0 +1,40 @@
+### Fortinet FortiGate Vendor Configuration
+## Instructions for backing up FortiGate firewalls
+
+
+### NOTE: This is NOT functional and serves as a test!
+
+vendor:
+  id: "fortinet_fortigate"
+  name: "Fortinet FortiGate"
+  description: "Fortinet FortiGate firewalls"
+
+connection:
+  default_port: 22
+  enable_mode: false
+
+prompts:
+  normal: "^[\\w\\-]+ [#$] $"
+
+commands:
+  pre_backup:
+    - command: "config system console"
+      expect_prompt: true
+    - command: "set output standard"
+      expect_prompt: true
+    - command: "end"
+      expect_prompt: true
+
+  backup:
+    - command: "show full-configuration"
+      description: "Get full configuration"
+      timeout: 180
+      capture: true
+
+  post_backup: []
+
+processing:
+  strip_patterns:
+    - "^#config-version="
+  config_start: "^config "
+  config_end: "^end$"
