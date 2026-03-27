@@ -44,10 +44,6 @@ class BackupDiff(BaseModel):
 class BackupTriggerRequest(BaseModel):
     """Request to trigger a backup."""
 
-    device_names: Optional[list[str]] = Field(
-        default=None,
-        description="Specific devices to backup. If None, backup all enabled devices.",
-    )
     group: Optional[str] = Field(
         default=None,
         description="Backup all devices in this group.",
