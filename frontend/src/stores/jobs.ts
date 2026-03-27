@@ -62,10 +62,6 @@ export const useJobsStore = defineStore("jobs", () => {
         status: job.status, // "success", "failed", or "no_changes"
         timestamp: new Date(job.timestamp).getTime(),
         message: job.error_message || getJobMessage(job.status, job.device_name),
-        progress: (job.status === "success" || job.status === "no_changes") ? 100 : 0,
-        completed: 1,
-        total: 1,
-        failed: job.status === "failed" ? 1 : 0,
       }))
     } catch (e) {
       error.value = e instanceof Error ? e.message : "Failed to load jobs"

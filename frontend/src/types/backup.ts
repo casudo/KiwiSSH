@@ -37,10 +37,9 @@ export interface BackupTriggerResponse {
 
 export interface BackupJobStatus {
   job_id: string
+  device_name: string
+  group: string
   status: string
+  timestamp: number
   message: string
-  progress: number
-  total: number
-  completed: number
-  failed: number
 }

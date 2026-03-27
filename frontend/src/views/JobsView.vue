@@ -1,15 +1,22 @@
 <script setup lang="ts">
 import { onMounted, computed, ref } from "vue"
 import { useJobsStore } from "@/stores/jobs"
+import { useDevicesStore } from "@/stores/devices"
 import LoadingSpinner from "@/components/LoadingSpinner.vue"
 
 const jobsStore = useJobsStore()
+const devicesStore = useDevicesStore()
 const filterStatus = ref<string>("")
 const filterDevice = ref<string>("")
 
 onMounted(async () => {
   // Load jobs from database
   await jobsStore.loadJobs()
+
+  // Load devices for IP lookup
+  if (devicesStore.devices.length === 0) {
+    await devicesStore.fetchDevices()
+  }
 
   // Cleanup on unmount
   return () => {
@@ -44,6 +51,10 @@ async function handleRefresh() {
 function clearFilters() {
   filterStatus.value = ""
   filterDevice.value = ""
+}
+
+function getDeviceInfo(deviceName: string) {
+  return devicesStore.devices.find(d => d.device_name === deviceName)
 }
 </script>
 
@@ -113,20 +124,20 @@ function clearFilters() {
           <label class="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
-              v-model="jobsStore.autoRefreshEnabled"
+              :checked="jobsStore.autoRefreshEnabled"
               @change="jobsStore.toggleAutoRefresh()"
               class="w-4 h-4 text-downtown-600 rounded border-gray-300"
             >
-            <span class="text-sm text-gray-700">Auto-refresh</span>
+            <span class="text-sm text-gray-700">Auto-refresh (sec)</span>
           </label>
           <input
-            v-if="jobsStore.autoRefreshEnabled"
             v-model.number="jobsStore.autoRefreshInterval"
             type="number"
             min="1000"
             step="1000"
             class="input text-sm"
-            @change="jobsStore.setAutoRefresh(true, jobsStore.autoRefreshInterval)"
+            :disabled="!jobsStore.autoRefreshEnabled"
+            @change="jobsStore.setAutoRefresh(jobsStore.autoRefreshEnabled, jobsStore.autoRefreshInterval)"
           />
         </div>
 
@@ -139,7 +150,7 @@ function clearFilters() {
             {{ jobsStore.loading ? "Refreshing..." : "Refresh" }}
           </button>
           <button
-            @click="jobsStore.clearAllJobs()"
+            @click="clearFilters"
             class="btn btn-secondary"
           >
             Clear
@@ -170,9 +181,12 @@ function clearFilters() {
           <!-- Main info -->
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-3 mb-2">
+              <!-- Job message-->
               <h3 class="font-semibold text-gray-900">
-                {{ job.message || "Backup Job" }}
+                {{ job.message || "<No job message provided!>" }}
               </h3>
+
+              <!-- Status -->
               <span
                 :class="[
                   'px-2 py-1 rounded-full text-xs font-medium',
@@ -187,19 +201,6 @@ function clearFilters() {
               </span>
             </div>
 
-            <!-- Progress bar -->
-            <div v-if="job.status === 'in_progress' && job.total > 0" class="mb-3">
-              <div class="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  class="bg-downtown-600 h-2 rounded-full transition-all"
-                  :style="{ width: `${(job.completed / job.total) * 100}%` }"
-                ></div>
-              </div>
-              <p class="text-xs text-gray-500 mt-1">
-                {{ job.completed }}/{{ job.total }} completed
-              </p>
-            </div>
-
             <!-- Details -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
@@ -207,16 +208,16 @@ function clearFilters() {
                 <p class="font-medium text-gray-900 capitalize">{{ job.status }}</p>
               </div>
               <div>
-                <p class="text-gray-500 text-xs">Progress</p>
-                <p class="font-medium text-gray-900">{{ job.progress }}%</p>
+                <p class="text-gray-500 text-xs">Group</p>
+                <p class="font-medium text-gray-900">{{ job.group }}</p>
               </div>
               <div>
-                <p class="text-gray-500 text-xs">Completed</p>
-                <p class="font-medium text-gray-900">{{ job.completed }}/{{ job.total }}</p>
+                <p class="text-gray-500 text-xs">Device Name</p>
+                <p class="font-medium text-gray-900">{{ job.device_name }}</p>
               </div>
               <div>
-                <p class="text-gray-500 text-xs">Failed</p>
-                <p class="font-medium text-gray-900">{{ job.failed }}</p>
+                <p class="text-gray-500 text-xs">Device IP</p>
+                <p class="font-medium text-gray-900">{{ getDeviceInfo(job.device_name)?.ip_address || "N/A" }}</p>
               </div>
             </div>
 
@@ -226,13 +227,6 @@ function clearFilters() {
             </div>
           </div>
 
-          <!-- Status icon -->
-          <div class="text-3xl">
-            <span v-if="job.status === 'success'">✓</span>
-            <span v-else-if="job.status === 'failed'">✕</span>
-            <span v-else-if="job.status === 'in_progress'" class="animate-spin">⏳</span>
-            <span v-else>⏱</span>
-          </div>
         </div>
       </div>
     </div>
@@ -269,18 +263,18 @@ function clearFilters() {
           </div>
 
           <div>
-            <p class="text-sm text-gray-500 mb-1">Progress</p>
-            <p class="font-medium text-gray-900">{{ jobsStore.selectedJob.progress }}%</p>
+            <p class="text-sm text-gray-500 mb-1">Group</p>
+            <p class="font-medium text-gray-900">{{ jobsStore.selectedJob.group }}</p>
           </div>
 
           <div>
-            <p class="text-sm text-gray-500 mb-1">Completed</p>
-            <p class="font-medium text-gray-900">{{ jobsStore.selectedJob.completed }} / {{ jobsStore.selectedJob.total }}</p>
+            <p class="text-sm text-gray-500 mb-1">Device Name</p>
+            <p class="font-medium text-gray-900">{{ jobsStore.selectedJob.device_name }}</p>
           </div>
 
           <div>
-            <p class="text-sm text-gray-500 mb-1">Failed</p>
-            <p class="font-medium text-gray-900">{{ jobsStore.selectedJob.failed }}</p>
+            <p class="text-sm text-gray-500 mb-1">Device IP</p>
+            <p class="font-medium text-gray-900">{{ getDeviceInfo(jobsStore.selectedJob.device_name)?.ip_address || 'N/A' }}</p>
           </div>
 
           <div v-if="jobsStore.selectedJob.message">
