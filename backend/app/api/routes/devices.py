@@ -1,25 +1,43 @@
 """Device management endpoints."""
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
+from sqlalchemy.orm import Session
 
 from app.models.device import DeviceResponse, DeviceStatus
 from app.services.source_service import source_service
 from app.services.git_service import git_service
+from app.services.backup_job_service import backup_job_service
+from app.db.database import get_db
 
 router = APIRouter()
 
 
-async def _enrich_device_with_backup_info(device: DeviceResponse) -> DeviceResponse:
-    """Add backup stats to device from git history."""
+async def _enrich_device_with_backup_info(device: DeviceResponse, db: Session = None) -> DeviceResponse:
+    """Add backup stats to device from database."""
     try:
-        history = await git_service.get_config_history(device.device_name, group=device.group, limit=1000)
-        if history:
-            device.backup_count = len(history)
-            device.last_backup = history[0]["timestamp"]
-            device.last_backup_success = history[0]["timestamp"]
-            device.status = DeviceStatus.BACKUP_SUCCESS
-    except Exception:
-        ### If git fails, leave device with original values
+        ### Check database for latest backup job status
+        if db:
+            latest_job = backup_job_service.get_latest_job(db, device.device_name)
+            if latest_job:
+                device.last_backup = latest_job.timestamp
+                if latest_job.status == "success":
+                    device.status = DeviceStatus.BACKUP_SUCCESS
+                    device.last_backup_success = latest_job.timestamp
+                elif latest_job.status == "failed":
+                    device.status = DeviceStatus.BACKUP_FAILED
+                    device.last_error = latest_job.error_message
+
+        ### Get backup count from git
+        try:
+            history = await git_service.get_config_history(device.device_name, group=device.group, limit=1000)
+            if history:
+                device.backup_count = len(history)
+        except Exception:
+            ### If git fails, backup_count stays 0
+            ## TODO: Add logging here in real implementation
+            pass
+    except Exception as e:
+        print(f"Warning: Failed to get backup info for {device.device_name}: {e}")
         pass
     return device
 
@@ -28,6 +46,7 @@ async def _enrich_device_with_backup_info(device: DeviceResponse) -> DeviceRespo
 async def list_devices(
     group: str | None = Query(None, description="Filter by group (?group=<group_name>)"),
     enabled_only: bool = Query(False, description="Only return enabled devices"),
+    db: Session = Depends(get_db),
 ) -> list[DeviceResponse]:
     """List all devices."""
     if group:
@@ -41,7 +60,7 @@ async def list_devices(
     ### Enrich with backup info
     enriched = []
     for device in devices:
-        enriched.append(await _enrich_device_with_backup_info(device))
+        enriched.append(await _enrich_device_with_backup_info(device, db))
 
     return enriched
 
@@ -57,25 +76,25 @@ async def list_groups() -> dict:
 
 
 @router.get("/{device_name}", response_model=DeviceResponse)
-async def get_device(device_name: str) -> DeviceResponse:
+async def get_device(device_name: str, db: Session = Depends(get_db)) -> DeviceResponse:
     """Get a specific device by name."""
     device = await source_service.get_device(device_name)
 
     if device is None:
         raise HTTPException(status_code=404, detail=f"Device '{device_name}' not found")
 
-    return await _enrich_device_with_backup_info(device)
+    return await _enrich_device_with_backup_info(device, db)
 
 
 @router.get("/{device_name}/status")
-async def get_device_status(device_name: str) -> dict:
+async def get_device_status(device_name: str, db: Session = Depends(get_db)) -> dict:
     """Get device status including last backup info."""
     device = await source_service.get_device(device_name)
 
     if device is None:
         raise HTTPException(status_code=404, detail=f"Device '{device_name}' not found")
 
-    device = await _enrich_device_with_backup_info(device)
+    device = await _enrich_device_with_backup_info(device, db)
 
     return {
         "device_name": device.device_name,
