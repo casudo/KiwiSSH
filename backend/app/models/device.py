@@ -34,11 +34,21 @@ class Device(DeviceBase):
     status: DeviceStatus = DeviceStatus.UNKNOWN
     last_backup: Optional[datetime] = None
     last_backup_success: Optional[datetime] = None
-    backup_count: int = 0
     last_error: Optional[str] = None
 
 
 class DeviceResponse(Device):
-    """API response model for device."""
+    """API response model for device (includes full details like backup count)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DeviceListResponse(DeviceBase):
+    """Lightweight response model for device lists (excludes backup count for performance)."""
+
+    status: DeviceStatus = DeviceStatus.UNKNOWN
+    last_backup: Optional[datetime] = None
+    last_backup_success: Optional[datetime] = None
+    last_error: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
