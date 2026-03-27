@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     ssh_profiles: dict[str, Any] = Field(default_factory=dict)
     vendors: dict[str, dict[str, Any]] = Field(default_factory=dict)
     nodes_config: dict[str, Any] = Field(default_factory=dict)
+    backup_storage_config: dict[str, Any] = Field(default_factory=dict)
+
+    ### Database URL (computed from backup_storage_config)
+    database_url: str = ""
 
     @field_validator("config_dir", "backups_dir", mode="before")
     @classmethod
@@ -75,6 +79,8 @@ class Settings(BaseSettings):
                 self.app_config = config_data
                 ### Extract nodes_config from downtown.yaml
                 self.nodes_config = config_data.get("nodes", {})
+                ### Extract backup_storage_config from downtown.yaml
+                self.backup_storage_config = config_data.get("backup_storage", {})
 
         ### Load SSH profiles
         ssh_config = self.config_dir / "ssh_profiles.yaml"
@@ -91,14 +97,50 @@ class Settings(BaseSettings):
                     vendor_id = vendor_config.get("vendor", {}).get("id", vendor_file.stem)
                     self.vendors[vendor_id] = vendor_config
 
+        ### Build database URL from backup_storage config
+        self.database_url = self._build_database_url()
+
     def get_ssh_profile(self, profile_name: str) -> dict[str, Any]:
         """Get SSH profile configuration."""
         profiles = self.ssh_profiles.get("profiles", {})
         return profiles.get(profile_name, profiles.get("modern", {}))
-    
+
     def get_vendor_config(self, vendor_id: str) -> dict[str, Any]:
         """Get vendor-specific configuration."""
         return self.vendors.get(vendor_id, {})
+
+    def _build_database_url(self) -> str:
+        """Build database URL from backup_storage configuration.
+
+        Returns:
+            SQLAlchemy database URL string
+        """
+        if not self.backup_storage_config:
+            ### Raise error and don't fallback to any defaults - backup storage config is required
+            raise ValueError("Backup storage configuration is missing in downtown.yaml")
+
+        db_type = self.backup_storage_config.get("type").lower()
+
+        if db_type == "sqlite":
+            path = self.backup_storage_config.get("path", "downtown.db")
+            ### If relative path, make it absolute relative to config_dir
+            if not Path(path).is_absolute():
+                path = self.config_dir / path
+            return f"sqlite:///{Path(path).resolve()}"
+
+        elif db_type == "postgresql":
+            host = self.backup_storage_config.get("host")
+            port = self.backup_storage_config.get("port", 5432)
+            database = self.backup_storage_config.get("database", "downtown")
+            user = self.backup_storage_config.get("user")
+            password = self.backup_storage_config.get("password")
+
+            ### TODO: Switch to more explicit checks?
+            if not all([host, port, database, user, password]):
+                raise ValueError("Missing required PostgreSQL configuration fields")
+
+        else:
+            raise ValueError(f"Unsupported database type: {db_type}")
 
     def get_device_config(self, group: str, device_name: str) -> dict[str, Any]:
         """
