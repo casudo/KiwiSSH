@@ -20,7 +20,9 @@ const selectedStatus = ref<string>("")
 const searchName = ref<string>("")
 const showEnabledOnly = ref<boolean>(false)
 const currentLayout = ref<LayoutType>("detailed")
-const showFilters = ref<boolean>(true)
+const showFilters = ref<boolean>(false)
+const currentPage = ref<number>(1)
+const pageSize = ref<number>(12)
 
 const LAYOUT_STORAGE_KEY = "devices-layout"
 
@@ -55,6 +57,14 @@ const filteredDevices = computed((): Device[] => {
   return devices
 })
 
+const totalPages = computed(() => Math.ceil(filteredDevices.value.length / pageSize.value))
+
+const paginatedDevices = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return filteredDevices.value.slice(start, end)
+})
+
 function goToDevice(deviceName: string) {
   router.push(`/devices/${deviceName}`)
 }
@@ -71,6 +81,11 @@ function clearFilters() {
   selectedStatus.value = ""
   searchName.value = ""
   showEnabledOnly.value = false
+  currentPage.value = 1
+}
+
+function handlePageSizeChange() {
+  currentPage.value = 1
 }
 
 async function handleReload() {
@@ -156,7 +171,7 @@ onMounted(async () => {
           </button>
         </div>
 
-        <!-- Always visible: Search -->
+        <!-- Always visible: Search and entries per page -->
         <div class="flex flex-col md:flex-row gap-4">
           <div class="flex-1">
             <label class="label">Search by name</label>
@@ -167,13 +182,23 @@ onMounted(async () => {
               class="input"
             />
           </div>
+          
+          <div class="flex-1 flex flex-col">
+            <label class="label">Entries per page</label>
+            <select v-model.number="pageSize" @change="handlePageSizeChange" class="input">
+              <option :value="6">6</option>
+              <option :value="12">12</option>
+              <option :value="24">24</option>
+              <option :value="50">50</option>
+            </select>
+          </div>
         </div>
 
         <!-- Collapsible: Additional filters -->
         <div v-show="showFilters" class="space-y-4">
-          <!-- Group filter -->
-          <div class="flex flex-col md:flex-row gap-4">
-            <div class="flex-1">
+          <!-- Filters in one row: Group, Vendor, SSH Profile, Status -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
               <label class="label">Filter by Group</label>
               <select v-model="selectedGroup" class="input">
                 <option value="">All Groups</option>
@@ -182,11 +207,7 @@ onMounted(async () => {
                 </option>
               </select>
             </div>
-          </div>
-
-          <!-- Second row: Vendor and SSH Profile -->
-          <div class="flex flex-col md:flex-row gap-4">
-            <div class="flex-1">
+            <div>
               <label class="label">Filter by Vendor</label>
               <select v-model="selectedVendor" class="input">
                 <option value="">All Vendors</option>
@@ -195,7 +216,7 @@ onMounted(async () => {
                 </option>
               </select>
             </div>
-            <div class="flex-1">
+            <div>
               <label class="label">Filter by SSH Profile</label>
               <select v-model="selectedSshProfile" class="input">
                 <option value="">All Profiles</option>
@@ -204,11 +225,7 @@ onMounted(async () => {
                 </option>
               </select>
             </div>
-          </div>
-
-          <!-- Third row: Status and Enabled toggle -->
-          <div class="flex flex-col md:flex-row gap-4">
-            <div class="flex-1">
+            <div>
               <label class="label">Filter by Status</label>
               <select v-model="selectedStatus" class="input">
                 <option value="">All Status</option>
@@ -218,25 +235,26 @@ onMounted(async () => {
                 <option value="backup_in_progress">Backup In Progress</option>
               </select>
             </div>
-            
-            <div class="flex-1 flex items-end">
-              <label class="flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  v-model="showEnabledOnly"
-                  class="w-4 h-4 text-downtown-600 rounded border-gray-300 focus:ring-downtown-500"
-                >
-                <span class="ml-2 text-sm text-gray-700">Show enabled only</span>
-              </label>
+          </div>
 
-              <button
-                v-if="selectedGroup || selectedVendor || selectedSshProfile || selectedStatus || searchName || showEnabledOnly"
-                @click="clearFilters"
-                class="ml-auto text-sm text-downtown-600 hover:text-downtown-700 font-medium"
+          <!-- Show enabled only and Clear filters button -->
+          <div class="flex items-center justify-between">
+            <label class="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                v-model="showEnabledOnly"
+                class="w-4 h-4 text-downtown-600 rounded border-gray-300 focus:ring-downtown-500"
               >
-                Clear filters
-              </button>
-            </div>
+              <span class="ml-2 text-sm text-gray-700">Show enabled only</span>
+            </label>
+
+            <button
+              v-if="selectedGroup || selectedVendor || selectedSshProfile || selectedStatus || searchName || showEnabledOnly"
+              @click="clearFilters"
+              class="text-sm text-downtown-600 hover:text-downtown-700 font-medium"
+            >
+              Clear filters
+            </button>
           </div>
         </div>
       </div>
@@ -273,7 +291,7 @@ onMounted(async () => {
       class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
     >
       <div
-        v-for="device in filteredDevices"
+        v-for="device in paginatedDevices"
         :key="device.device_name"
         @click="goToDevice(device.device_name)"
         class="cursor-pointer"
@@ -288,7 +306,7 @@ onMounted(async () => {
       class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3"
     >
       <div
-        v-for="device in filteredDevices"
+        v-for="device in paginatedDevices"
         :key="device.device_name"
         @click="goToDevice(device.device_name)"
         class="cursor-pointer"
@@ -301,13 +319,36 @@ onMounted(async () => {
     <div v-else-if="currentLayout === 'list'" class="overflow-x-auto">
       <div class="card">
         <div
-          v-for="device in filteredDevices"
+          v-for="device in paginatedDevices"
           :key="device.device_name"
           @click="goToDevice(device.device_name)"
           class="cursor-pointer hover:bg-gray-50 transition"
         >
           <DeviceListRow :device="device" />
         </div>
+      </div>
+    </div>
+
+    <!-- Pagination controls -->
+    <div v-if="filteredDevices.length > 0" class="mt-4 flex items-center justify-between">
+      <span class="text-sm text-gray-600">
+        Page {{ currentPage }} of {{ totalPages }} ({{ filteredDevices.length }} total)
+      </span>
+      <div class="flex gap-2">
+        <button
+          @click="currentPage = Math.max(1, currentPage - 1)"
+          :disabled="currentPage === 1"
+          class="btn btn-secondary py-1 px-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          ← Previous
+        </button>
+        <button
+          @click="currentPage = Math.min(totalPages, currentPage + 1)"
+          :disabled="currentPage === totalPages"
+          class="btn btn-secondary py-1 px-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Next →
+        </button>
       </div>
     </div>
   </div>
