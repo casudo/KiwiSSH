@@ -13,6 +13,7 @@ class BackupStatus(str, Enum):
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
     SUCCESS = "success"
+    NO_CHANGES = "no_changes"
     FAILED = "failed"
 
 

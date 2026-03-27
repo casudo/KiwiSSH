@@ -1,11 +1,15 @@
 """Backup operation endpoints."""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends, Query
+from sqlalchemy.orm import Session
 
-from app.models.backup import BackupTriggerRequest, BackupTriggerResponse
+from app.models.backup import BackupTriggerRequest, BackupTriggerResponse, BackupStatus
 from app.services.backup_service import backup_service
 from app.services.source_service import source_service
+from app.services.backup_job_service import backup_job_service
 from app.services.git_service import git_service
+from app.db.database import get_db
+from app.models.device import DeviceStatus
 
 router = APIRouter()
 
@@ -18,7 +22,7 @@ async def trigger_backup(request: BackupTriggerRequest) -> BackupTriggerResponse
 
 
 @router.post("/trigger/{device_name}")
-async def trigger_device_backup(device_name: str) -> dict:
+async def trigger_device_backup(device_name: str, db: Session = Depends(get_db)) -> dict:
     """Trigger backup for a specific device."""
     print(f"📢 Backup trigger endpoint called for: {device_name}")
     device = await source_service.get_device(device_name)
@@ -31,11 +35,86 @@ async def trigger_device_backup(device_name: str) -> dict:
     result = await backup_service.backup_device(device)
     print(f"   Backup result: {result.status.value}")
 
+    ### Log backup job to database
+    ## Map backup result status to device status and job status
+    if result.status == BackupStatus.NO_CHANGES:
+        device_status = DeviceStatus.BACKUP_NO_CHANGES
+        job_status = "no_changes"
+    elif result.status == BackupStatus.SUCCESS:
+        device_status = DeviceStatus.BACKUP_SUCCESS
+        job_status = "success"
+    else:
+        device_status = DeviceStatus.BACKUP_FAILED
+        job_status = "failed"
+
+    try:
+        backup_job_service.create_job(
+            db=db,
+            job_id=result.id, # Hash or UUID from backup result
+            device_name=device_name,
+            group=device.group,
+            status=job_status,
+            error_message=result.error_message,
+            config_size_bytes=result.config_size_bytes,
+        )
+        print(f"   ✓ Backup job logged to database: status={job_status}")
+    except Exception as e:
+        print(f"   ⚠️ Failed to log backup job: {e}")
+
+    ### Update device status based on backup result
+    device.status = device_status
+
     return {
         "message": f"Backup triggered for {device_name}",
         "backup_id": result.id,
-        "status": result.status.value,
+        "status": job_status,
     }
+
+
+@router.get("/jobs")
+async def get_backup_jobs(
+    device_name: str | None = Query(None, description="Filter by device name"),
+    status: str | None = Query(None, description="Filter by status (success, failed)"),
+    limit: int = Query(50, description="Maximum number of jobs to return"),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Get backup job records from the database."""
+    from sqlalchemy import desc
+    from app.db.models import BackupJob
+
+    try:
+        if device_name:
+            ### Get jobs for a specific device
+            jobs = backup_job_service.get_device_jobs(db, device_name, limit)
+        else:
+            ### Get recent jobs, optionally filtered by status
+            query = db.query(BackupJob).order_by(desc(BackupJob.timestamp))
+            if status:
+                query = query.filter(BackupJob.status == status)
+            jobs = query.limit(limit).all()
+
+        return {
+            "jobs": [
+                {
+                    "job_id": job.id,
+                    "device_name": job.device_name,
+                    "group": job.group,
+                    "status": job.status,
+                    "timestamp": job.timestamp.isoformat() if job.timestamp else None,
+                    "error_message": job.error_message,
+                    "config_size_bytes": job.config_size_bytes,
+                }
+                for job in jobs
+            ],
+            "count": len(jobs),
+        }
+    except Exception as e:
+        print(f"Error fetching backup jobs: {e}")
+        return {
+            "jobs": [],
+            "count": 0,
+            "error": str(e),
+        }
 
 
 @router.get("/status/{job_id}")

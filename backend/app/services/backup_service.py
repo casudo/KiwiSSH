@@ -34,16 +34,27 @@ class BackupService:
             print(f"   ✓ Got config ({len(config)} bytes)")
 
             ### Save config to git (using device's group)
-            commit_hash = await git_service.save_config(
+            commit_hash, has_changes = await git_service.save_config(
                 device.device_name,
                 config,
                 group=device.group,
                 message=f"Backup: {device.device_name}",
             )
-            print(f"   ✓ Saved to git: {commit_hash}")
 
             config_size = len(config.encode("utf-8"))
 
+            ### If no changes detected, return NO_CHANGES status
+            if not has_changes:
+                print("   ℹ️ No configuration changes detected")
+                return BackupRecord(
+                    id=str(uuid.uuid4()),
+                    device_name=device.device_name,
+                    timestamp=datetime.now(timezone.utc),
+                    status=BackupStatus.NO_CHANGES,
+                    config_size_bytes=config_size,
+                )
+
+            print(f"   ✓ Saved to git: {commit_hash}")
             return BackupRecord(
                 id=commit_hash,
                 device_name=device.device_name,

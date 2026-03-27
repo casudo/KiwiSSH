@@ -11,11 +11,10 @@ class DeviceStatus(str, Enum):
     """Device backup status."""
 
     UNKNOWN = "unknown"
-    ONLINE = "online"
-    OFFLINE = "offline"
     BACKUP_SUCCESS = "backup_success"
     BACKUP_FAILED = "backup_failed"
     BACKUP_IN_PROGRESS = "backup_in_progress"
+    BACKUP_NO_CHANGES = "backup_no_changes"
 
 
 class DeviceBase(BaseModel):

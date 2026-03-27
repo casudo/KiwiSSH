@@ -68,7 +68,7 @@ class GitService:
         config_content: str,
         group: str,
         message: str | None = None,
-    ) -> str:
+    ) -> tuple[str, bool]:
         """
         Save configuration to git repository.
 
@@ -79,7 +79,8 @@ class GitService:
             message: Commit message (optional, will use template if not provided)
 
         Returns:
-            Git commit hash
+            Tuple of (git commit hash, has_changes)
+            - has_changes=False means the config is identical to the last backup
         """
         repo = self._ensure_repo(group)
         repo_path = self._get_repo_path(group)
@@ -87,9 +88,22 @@ class GitService:
         ### Determine file path based on device info
         config_file = repo_path / f"{device_name}.conf"
 
+        ### Check if file exists and has identical content (no changes)
+        has_changes = True
+        if config_file.exists():
+            with open(config_file, "r", encoding="utf-8") as f:
+                existing_content = f.read()
+            if existing_content == config_content:
+                has_changes = False
+
         ### Write config to file
         with open(config_file, "w", encoding="utf-8") as f:
             f.write(config_content)
+
+        ### Only commit if there are changes
+        if not has_changes:
+            ### Return a dummy hash and False to indicate no changes
+            return ("", False) # TODO: Why do we need the hash here?
 
         ### Stage the file
         repo.index.add([str(config_file)])
@@ -103,7 +117,7 @@ class GitService:
         actor = Actor("Downtown Backup System", "backup@downtown.local")
         commit = repo.index.commit(message, author=actor, committer=actor)
 
-        return commit.hexsha
+        return (commit.hexsha, True)
 
     async def get_config_history(
         self,
