@@ -9,6 +9,7 @@ const devicesStore = useDevicesStore()
 const showFilters = ref<boolean>(false)
 const filterStatus = ref<string>("")
 const filterDevice = ref<string>("")
+const filterIP = ref<string>("")
 const filterJobId = ref<string>("")
 const filterDateFrom = ref<string>("")
 const filterDateTo = ref<string>("")
@@ -38,6 +39,14 @@ const filteredJobs = computed(() => {
   if (filterDevice.value) {
     const search = filterDevice.value.toLowerCase()
     result = result.filter(j => j.device_name.toLowerCase().includes(search))
+  }
+
+  if (filterIP.value) {
+    const search = filterIP.value.toLowerCase()
+    result = result.filter(j => {
+      const device = getDeviceInfo(j.device_name)
+      return device && device.ip_address.toLowerCase().includes(search)
+    })
   }
 
   if (filterJobId.value) {
@@ -70,6 +79,7 @@ async function handleRefresh() {
 function clearFilters() {
   filterStatus.value = ""
   filterDevice.value = ""
+  filterIP.value = ""
   filterJobId.value = ""
   filterDateFrom.value = ""
   filterDateTo.value = ""
@@ -149,6 +159,16 @@ function getDeviceInfo(deviceName: string) {
               v-model="filterDevice"
               type="text"
               placeholder="e.g., device1, router..."
+              class="input"
+            />
+          </div>
+
+          <div class="flex-1">
+            <label class="label">Filter by IP</label>
+            <input
+              v-model="filterIP"
+              type="text"
+              placeholder="e.g., 192.168.1..."
               class="input"
             />
           </div>

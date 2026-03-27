@@ -18,6 +18,7 @@ const selectedVendor = ref<string>("")
 const selectedSshProfile = ref<string>("")
 const selectedStatus = ref<string>("")
 const searchName = ref<string>("")
+const searchIP = ref<string>("")
 const showEnabledOnly = ref<boolean>(false)
 const currentLayout = ref<LayoutType>("detailed")
 const showFilters = ref<boolean>(false)
@@ -50,6 +51,11 @@ const filteredDevices = computed((): Device[] => {
     devices = devices.filter(d => d.device_name.toLowerCase().includes(search))
   }
 
+  if (searchIP.value) {
+    const search = searchIP.value.toLowerCase()
+    devices = devices.filter(d => d.ip_address.toLowerCase().includes(search))
+  }
+
   if (showEnabledOnly.value) {
     devices = devices.filter(d => d.enabled)
   }
@@ -80,6 +86,7 @@ function clearFilters() {
   selectedSshProfile.value = ""
   selectedStatus.value = ""
   searchName.value = ""
+  searchIP.value = ""
   showEnabledOnly.value = false
   currentPage.value = 1
 }
@@ -182,7 +189,17 @@ onMounted(async () => {
               class="input"
             />
           </div>
-          
+
+          <div class="flex-1">
+            <label class="label">Search by IP</label>
+            <input
+              v-model="searchIP"
+              type="text"
+              placeholder="e.g., 192.168.1..."
+              class="input"
+            />
+          </div>
+
           <div class="flex-1 flex flex-col">
             <label class="label">Entries per page</label>
             <select v-model.number="pageSize" @change="handlePageSizeChange" class="input">
@@ -249,7 +266,7 @@ onMounted(async () => {
             </label>
 
             <button
-              v-if="selectedGroup || selectedVendor || selectedSshProfile || selectedStatus || searchName || showEnabledOnly"
+              v-if="selectedGroup || selectedVendor || selectedSshProfile || selectedStatus || searchName || searchIP || showEnabledOnly"
               @click="clearFilters"
               class="text-sm text-downtown-600 hover:text-downtown-700 font-medium"
             >
