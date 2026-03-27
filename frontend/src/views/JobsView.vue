@@ -2,11 +2,14 @@
 import { onMounted, computed, ref } from "vue"
 import { useJobsStore } from "@/stores/jobs"
 import { useDevicesStore } from "@/stores/devices"
+import { backupApi } from "@/api/backups"
 import LoadingSpinner from "@/components/LoadingSpinner.vue"
 
 const jobsStore = useJobsStore()
 const devicesStore = useDevicesStore()
 const showFilters = ref<boolean>(false)
+const showFlushDialog = ref<boolean>(false)
+const flushConfirmation = ref<string>("")
 const filterStatus = ref<string>("")
 const filterDevice = ref<string>("")
 const filterIP = ref<string>("")
@@ -88,13 +91,37 @@ function clearFilters() {
 function getDeviceInfo(deviceName: string) {
   return devicesStore.devices.find(d => d.device_name === deviceName)
 }
+async function handleFlushDatabase() {
+  const confirmText = "Yes I am aware of all danger"
+  if (flushConfirmation.value.toLowerCase() === confirmText.toLowerCase()) {
+    try {
+      // Call the API endpoint to flush the database
+      await backupApi.flushDatabase()
+      jobsStore.clearAllJobs()
+      flushConfirmation.value = ""
+      showFlushDialog.value = false
+      console.log("Database flushed successfully")
+    } catch (error) {
+      console.error("Failed to flush database:", error)
+    }
+  }
+}
+
 </script>
 
 <template>
   <div>
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900">Backup Jobs</h1>
-      <p class="text-gray-500 mt-1">Monitor backup operations and job history</p>
+    <div class="mb-8 flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">Backup Jobs</h1>
+        <p class="text-gray-500 mt-1">Monitor backup operations and job history</p>
+      </div>
+      <button
+        @click="showFlushDialog = true"
+        class="btn bg-red-600 text-white hover:bg-red-700"
+      >
+        Flush Database
+      </button>
     </div>
 
     <!-- Stats -->
@@ -386,6 +413,56 @@ function getDeviceInfo(deviceName: string) {
             <p class="text-sm text-gray-500 mb-1">Message</p>
             <p class="text-sm text-gray-900">{{ jobsStore.selectedJob.message }}</p>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Flush Database Confirmation Dialog -->
+    <div
+      v-if="showFlushDialog"
+      @click="showFlushDialog = false"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+    >
+      <div
+        @click.stop
+        class="bg-white rounded-lg shadow-xl max-w-md w-full"
+      >
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-xl font-semibold text-gray-900">Flush Database</h2>
+        </div>
+
+        <div class="px-6 py-4">
+          <p class="text-sm text-gray-700 mb-4">
+            ⚠️ This action will delete ALL backup job records from the database. This cannot be undone.
+          </p>
+          <p class="text-sm text-gray-700 mb-4">
+            To confirm, type the following text:
+          </p>
+          <p class="text-sm font-mono bg-gray-100 px-3 py-2 rounded mb-4">
+            Yes I am aware of all danger
+          </p>
+          <input
+            v-model="flushConfirmation"
+            type="text"
+            placeholder="Type confirmation text..."
+            class="input mb-4 w-full"
+          />
+        </div>
+
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex gap-2 justify-end">
+          <button
+            @click="showFlushDialog = false"
+            class="btn btn-secondary"
+          >
+            Cancel
+          </button>
+          <button
+            @click="handleFlushDatabase"
+            :disabled="flushConfirmation.toLowerCase() !== 'yes i am aware of all danger'"
+            class="btn bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Flush Database
+          </button>
         </div>
       </div>
     </div>

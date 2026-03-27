@@ -53,4 +53,9 @@ export const backupApi = {
     const response = await api.get(`/backups/latest/${deviceName}`, { params })
     return response.data
   },
+
+  async flushDatabase(): Promise<Record<string, unknown>> {
+    const response = await api.delete("/backups/flush")
+    return response.data
+  },
 }

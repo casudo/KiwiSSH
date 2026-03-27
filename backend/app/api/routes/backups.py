@@ -278,3 +278,30 @@ async def get_latest_config(device_name: str, commit: str | None = None) -> dict
             "error": str(e),
         }
 
+
+@router.delete("/flush")
+async def flush_database(db: Session = Depends(get_db)) -> dict:
+    """Delete all backup job records from the database.
+
+    WARNING: This action cannot be undone. All job history will be permanently deleted.
+    """
+    from app.db.models import BackupJob
+
+    try:
+        ### Get count of jobs to be deleted
+        job_count = db.query(BackupJob).count()
+
+        ### Delete all jobs
+        db.query(BackupJob).delete()
+        db.commit()
+
+        print(f"📢 Flushed database: deleted {job_count} backup jobs")
+
+        return {
+            "message": f"Successfully deleted {job_count} backup jobs",
+            "deleted_count": job_count,
+        }
+    except Exception as e:
+        db.rollback()
+        print(f"⚠️ Failed to flush database: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to flush database: {str(e)}")
