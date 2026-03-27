@@ -1,10 +1,29 @@
 <script setup lang="ts">
+import { ref } from "vue"
 import StatusBadge from "./StatusBadge.vue"
+import { backupApi } from "@/api/backups"
 import type { Device } from "@/types/device"
 
-defineProps<{
+const props = defineProps<{
   device: Device
 }>()
+
+const triggering = ref(false)
+
+async function handleTriggerBackup(e: Event) {
+  e.stopPropagation()
+
+  if (triggering.value) return
+  triggering.value = true
+
+  try {
+    await backupApi.triggerDevice(props.device.device_name)
+  } catch (error) {
+    console.error("Failed to trigger backup:", error)
+  } finally {
+    triggering.value = false
+  }
+}
 </script>
 
 <template>
@@ -16,7 +35,17 @@ defineProps<{
         </h3>
         <p class="text-sm text-gray-500 font-mono">{{ device.ip_address }}</p>
       </div>
-      <StatusBadge :status="device.status" />
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <StatusBadge :status="device.status" />
+        <button
+          @click="handleTriggerBackup"
+          :disabled="triggering"
+          class="px-2 py-1 text-xs bg-downtown-100 text-downtown-700 hover:bg-downtown-200 rounded transition"
+          title="Trigger backup"
+        >
+          {{ triggering ? "..." : "▶" }}
+        </button>
+      </div>
     </div>
 
     <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600">
