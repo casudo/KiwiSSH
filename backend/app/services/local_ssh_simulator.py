@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from app.core import get_settings
-from app.models.device import Device
+from app.models.device import DeviceBase
 
 
 class LocalSSHSimulator:
@@ -22,7 +22,7 @@ class LocalSSHSimulator:
         """Get path to device's config file."""
         return self.test_devices_dir / device_name / "config.txt"
 
-    async def get_config(self, device: Device) -> str:
+    async def get_config(self, device: DeviceBase) -> str:
         """
         Get configuration from local test device.
 

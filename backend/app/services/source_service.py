@@ -4,7 +4,7 @@ import csv
 from pathlib import Path
 
 from app.core import get_settings
-from app.models.device import Device, DeviceStatus
+from app.models.device import DeviceBase
 
 
 class SourceService:
@@ -12,10 +12,10 @@ class SourceService:
 
     def __init__(self) -> None:
         self.settings = get_settings()
-        self._devices_cache: dict[str, Device] = {}
+        self._devices_cache: dict[str, DeviceBase] = {}
         self._loaded = False
 
-    async def load_devices_from_csv(self) -> list[Device]:
+    async def load_devices_from_csv(self) -> list[DeviceBase]:
         """Load devices from CSV file.
 
         CSV columns required: group, device_name, ip_address, enabled
@@ -44,14 +44,13 @@ class SourceService:
                 ### Resolve configuration from downtown.yaml
                 device_config = self.settings.get_device_config(group, device_name)
 
-                device = Device(
+                device = DeviceBase(
                     group=group,
                     device_name=device_name,
                     ip_address=row["ip_address"].strip(),
                     vendor=device_config["vendor"],
                     ssh_profile=device_config["ssh_profile"],
                     enabled=row.get("enabled", "true").strip().lower() == "true",
-                    status=DeviceStatus.UNKNOWN,
                 )
                 devices.append(device)
                 self._devices_cache[device.device_name] = device
@@ -64,25 +63,25 @@ class SourceService:
         # TODO: Implement database loading logic
         return []
 
-    async def get_device(self, device_name: str) -> Device | None:
+    async def get_device(self, device_name: str) -> DeviceBase | None:
         """Get a single device by name."""
         if not self._loaded:
             await self.load_devices_from_csv()
         return self._devices_cache.get(device_name)
 
-    async def get_devices_by_group(self, group: str) -> list[Device]:
+    async def get_devices_by_group(self, group: str) -> list[DeviceBase]:
         """Get all devices in a group."""
         if not self._loaded:
             await self.load_devices_from_csv()
         return [d for d in self._devices_cache.values() if d.group == group]
 
-    async def get_all_devices(self) -> list[Device]:
+    async def get_all_devices(self) -> list[DeviceBase]:
         """Get all devices."""
         if not self._loaded:
             await self.load_devices_from_csv()
         return list(self._devices_cache.values())
 
-    async def get_enabled_devices(self) -> list[Device]:
+    async def get_enabled_devices(self) -> list[DeviceBase]:
         """Get all enabled devices."""
         if not self._loaded:
             await self.load_devices_from_csv()

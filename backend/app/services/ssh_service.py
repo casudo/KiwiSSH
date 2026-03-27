@@ -10,7 +10,7 @@ handling of different SSH profiles and vendor-specific quirks.
 from typing import Any
 
 from app.core import get_settings
-from app.models.device import Device
+from app.models.device import DeviceBase
 
 
 class SSHService:
@@ -33,7 +33,7 @@ class SSHService:
 
     async def connect(
         self,
-        device: Device,
+        device: DeviceBase,
         username: str,
         password: str | None = None,
         key_filename: str | None = None,
@@ -79,9 +79,9 @@ class SSHService:
 
     async def get_config(
         self,
-        device: Device,
+        device: DeviceBase,
         username: str,
-        password: str | None = None,
+        password: str,
     ) -> str:
         """
         Get configuration from device using vendor-specific commands.
@@ -104,7 +104,7 @@ class SSHService:
 
         return await local_ssh_simulator.get_config(device)
 
-    async def test_connection(self, device: Device, username: str, password: str) -> bool:
+    async def test_connection(self, device: DeviceBase, username: str, password: str) -> bool:
         """
         Test if device is reachable via SSH.
 

@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
 from sqlalchemy.orm import Session
 
-from app.models.device import DeviceResponse, DeviceListResponse, DeviceStatus, DeviceBase
+from app.models.device import DeviceBase, DeviceFull, DeviceStatus
 from app.services.source_service import source_service
 from app.services.git_service import git_service
 from app.services.backup_job_service import backup_job_service
@@ -12,7 +12,7 @@ from app.db.database import get_db
 router = APIRouter()
 
 
-async def _enrich_device_with_backup_info(device: DeviceResponse, db: Session = None, latest_jobs_cache: dict = None) -> DeviceResponse:
+async def _enrich_device_with_backup_info(device: DeviceFull, db: Session = None, latest_jobs_cache: dict = None) -> DeviceFull:
     """Add backup stats to device from database."""
     try:
         ### Check database for latest backup job status
@@ -46,12 +46,12 @@ async def _enrich_device_with_backup_info(device: DeviceResponse, db: Session = 
     return device
 
 
-@router.get("", response_model=list[DeviceListResponse])
+@router.get("", response_model=list[DeviceFull])
 async def list_devices(
     group: str | None = Query(None, description="Filter by group (?group=<group_name>)"),
     enabled_only: bool = Query(False, description="Only return enabled devices"),
     db: Session = Depends(get_db),
-) -> list[DeviceListResponse]:
+) -> list[DeviceFull]:
     """List all devices."""
     if group:
         devices = await source_service.get_devices_by_group(group)
@@ -61,16 +61,20 @@ async def list_devices(
     if enabled_only:
         devices = [d for d in devices if d.enabled]
 
+    enriched_devices: list[DeviceFull] = []
+    for device in devices:
+        backup_info = DeviceFull(**device.model_dump())
+        enriched_devices.append(backup_info)
+
     ### Batch load latest backup jobs for all devices (much faster than per-device queries)
-    device_names = [d.device_name for d in devices]
+    device_names = [d.device_name for d in enriched_devices]
     latest_jobs = backup_job_service.get_latest_jobs_for_devices(db, device_names)
 
     ### Enrich with backup info using cached jobs
     enriched = []
-    for device in devices:
+    for device in enriched_devices:
         enriched_device = await _enrich_device_with_backup_info(device, db, latest_jobs)
-        ### Convert to lightweight response model (excludes backup_count)
-        enriched.append(DeviceListResponse.model_validate(enriched_device))
+        enriched.append(enriched_device)
 
     return enriched
 
@@ -99,11 +103,13 @@ async def get_device(device_name: str) -> DeviceBase:
 @router.get("/{device_name}/status")
 async def get_device_status(device_name: str, db: Session = Depends(get_db)) -> dict:
     """Get device status including last backup info."""
-    device = await source_service.get_device(device_name)
+    device_base = await source_service.get_device(device_name)
 
-    if device is None:
+    if device_base is None:
         raise HTTPException(status_code=404, detail=f"Device '{device_name}' not found")
 
+    ### Convert to DeviceFull for enrichment to return backup info
+    device = DeviceFull(**device_base.model_dump())
     device = await _enrich_device_with_backup_info(device, db)
 
     ### Get backup count from git history

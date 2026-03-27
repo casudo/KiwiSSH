@@ -8,7 +8,7 @@ import uuid
 from datetime import datetime, timezone
 
 from app.models.backup import BackupRecord, BackupStatus, BackupTriggerResponse
-from app.models.device import Device
+from app.models.device import DeviceBase
 from app.services.source_service import source_service
 from app.services.ssh_service import ssh_service
 from app.services.git_service import git_service
@@ -17,7 +17,7 @@ from app.services.git_service import git_service
 class BackupService:
     """Service for orchestrating device backups."""
 
-    async def backup_device(self, device: Device) -> BackupRecord:
+    async def backup_device(self, device: DeviceBase) -> BackupRecord:
         """
         Perform backup for a single device.
 
@@ -74,7 +74,7 @@ class BackupService:
                 error_message=str(e),
             )
 
-    async def backup_devices(self, devices: list[Device]) -> list[BackupRecord]:
+    async def backup_devices(self, devices: list[DeviceBase]) -> list[BackupRecord]:
         """
         Perform backup for multiple devices.
 
