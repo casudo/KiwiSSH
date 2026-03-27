@@ -16,7 +16,12 @@ class SourceService:
         self._loaded = False
 
     async def load_devices_from_csv(self) -> list[Device]:
-        """Load devices from CSV file."""
+        """Load devices from CSV file.
+
+        CSV columns required: group, device_name, ip_address, enabled
+        Vendor and ssh_profile are resolved from downtown.yaml configuration.
+        Priority: Node-specific override > Group defaults
+        """
         project_root = Path(__file__).parent.parent.parent.parent
 
         ### Use tests/config/sources for local testing, otherwise use config/sources
@@ -33,18 +38,18 @@ class SourceService:
         with open(csv_path, newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
-                ### TODO: Handle empty ssh_profile (use default from "groups:" section)
-                ## Priority: device row > group default > hardcoded "modern"
-                ssh_profile = row.get("ssh_profile", "").strip()
-                if not ssh_profile:
-                    ssh_profile = "modern"
+                group = row.get("group").strip() # TODO: Error if group is missing
+                device_name = row["device_name"].strip()
+
+                ### Resolve configuration from downtown.yaml
+                device_config = self.settings.get_device_config(group, device_name)
 
                 device = Device(
-                    group=row.get("group").strip(),
-                    device_name=row["device_name"].strip(),
+                    group=group,
+                    device_name=device_name,
                     ip_address=row["ip_address"].strip(),
-                    vendor=row.get("vendor").strip(),
-                    ssh_profile=ssh_profile,
+                    vendor=device_config["vendor"],
+                    ssh_profile=device_config["ssh_profile"],
                     enabled=row.get("enabled", "true").strip().lower() == "true",
                     status=DeviceStatus.UNKNOWN,
                 )

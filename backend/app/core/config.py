@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     app_config: dict[str, Any] = Field(default_factory=dict)
     ssh_profiles: dict[str, Any] = Field(default_factory=dict)
     vendors: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    nodes_config: dict[str, Any] = Field(default_factory=dict)
 
     @field_validator("config_dir", "backups_dir", mode="before")
     @classmethod
@@ -70,7 +71,10 @@ class Settings(BaseSettings):
         main_config = self.config_dir / "downtown.yaml"
         if main_config.exists():
             with open(main_config, encoding="utf-8") as f:
-                self.app_config = yaml.safe_load(f) or {}
+                config_data = yaml.safe_load(f) or {}
+                self.app_config = config_data
+                ### Extract nodes_config from downtown.yaml
+                self.nodes_config = config_data.get("nodes", {})
 
         ### Load SSH profiles
         ssh_config = self.config_dir / "ssh_profiles.yaml"
@@ -91,11 +95,44 @@ class Settings(BaseSettings):
         """Get SSH profile configuration."""
         profiles = self.ssh_profiles.get("profiles", {})
         return profiles.get(profile_name, profiles.get("modern", {}))
-
+    
     def get_vendor_config(self, vendor_id: str) -> dict[str, Any]:
-        """Get vendor configuration."""
+        """Get vendor-specific configuration."""
         return self.vendors.get(vendor_id, {})
 
+    def get_device_config(self, group: str, device_name: str) -> dict[str, Any]:
+        """
+        Resolve device configuration with priority: Node-specific > Group defaults
+
+        Returns a dict with resolved ssh_profile, vendor, and other settings.
+        """
+        device_config = {}
+
+        ### Step 1: Apply group-level defaults
+        groups = self.app_config.get("groups", {})
+        if group in groups:
+            group_config = groups[group]
+            device_config.update({
+                "ssh_profile": group_config.get("ssh_profile"),
+                "vendor": group_config.get("vendor"),
+                "timeout": group_config.get("timeout"),
+                "username": group_config.get("username"),
+            }) # TODO: Display password in any way (encrypted) or leave it?
+
+        ### Step 2: Apply node-specific overrides
+        if device_name in self.nodes_config:
+            node_config = self.nodes_config[device_name]
+            if "ssh_profile" in node_config:
+                device_config["ssh_profile"] = node_config["ssh_profile"]
+            if "vendor" in node_config:
+                device_config["vendor"] = node_config["vendor"]
+            if "timeout" in node_config:
+                device_config["timeout"] = node_config["timeout"]
+            if "username" in node_config:
+                device_config["username"] = node_config["username"]
+            # TODO: Add ability to override password in node_config if needed
+
+        return device_config
 
 @lru_cache  # Last Recently Used cache to store settings instance
 def get_settings() -> Settings:

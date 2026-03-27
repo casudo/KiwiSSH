@@ -5,8 +5,9 @@ app:
   debug: true
   log_level: "INFO"
 
-# Device groups with shared credentials
+# Device groups with shared credentials and default settings
 # Passwords should be set via environment variables (e.g., DOWNTOWN_GROUP_DEFAULT_PASSWORD)
+# Priority for device configuration: Node-specific > Group default
 groups:
   default:
     username: "admin"
@@ -21,6 +22,16 @@ groups:
     ssh_profile: "legacy"
     vendor: "cisco_ios"
     timeout: 60
+
+### Per-node overrides
+### Nodes can override any group-level setting (ssh_profile, vendor, timeout, etc.)
+### Priority: Name-specific overrides > Group defaults
+nodes:
+  router-core-01:
+    group: default
+    timeout: 50
+    ssh_profile: "legacy"
+    vendor: "cisco_io_old"
 
 ### Define device sources (e.g., from a file, database, or API)
 ### For now, we will use a static list defined in the code

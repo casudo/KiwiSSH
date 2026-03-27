@@ -1,6 +1,6 @@
-group,device_name,ip_address,vendor,ssh_profile,enabled
-default,router-core-01,192.168.1.1,cisco_ios,modern,true
-default,router-core-02,192.168.1.2,cisco_ios,modern,true
-default,switch-dist-01,192.168.1.10,cisco_ios,modern,true
-legacy,switch-access-01,192.168.2.1,cisco_ios,legacy,true
-default,firewall-01,192.168.1.254,fortinet_fortigate,modern,true
+group,device_name,ip_address,enabled
+default,router-core-01,192.168.1.1,true
+default,router-core-02,192.168.1.2,,true
+default,switch-dist-01,192.168.1.10,true
+legacy,switch-access-01,192.168.2.1,true
+default,firewall-01,192.168.1.254,true
