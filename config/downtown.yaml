@@ -38,7 +38,7 @@ nodes:
 ### Future implementation may include dynamic loading from external sources
 # sources:
 #   file:
-#     path: /a/b/c
+#     path: /config/sources/devices.csv
 #   postgres:
 #     host: localhost
 #     port: 5432
@@ -56,6 +56,21 @@ git:
   #   url: "git@github.com:org/network-backups.git"
   #   branch: "main"
   #   push_after_commit: false
+
+### Backup Job log storage (for tracking backup success/failure status)
+## Choose between SQLite (file-based) or PostgreSQL (WIP, untested)
+## NOTE: This is NOT the local git backup repository for the groups! 
+backup_storage:
+  type: "sqlite"  # Options: sqlite, postgresql
+  path: "downtown.db"  # WIll be placed in the same directory as downtown.yaml if relative, or can be absolute path
+
+  ### For PostgreSQL (UNTESTED):
+  # type: "postgresql"
+  # host: "localhost"
+  # port: 5432
+  # database: "downtown_backups"
+  # user: "downtown"
+  # password: "your-password"  # Can also use DOWNTOWN_BACKUP_STORAGE_PASSWORD env var
 
 # Backup scheduling (future feature)
 schedule:
