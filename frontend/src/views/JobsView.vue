@@ -6,8 +6,12 @@ import LoadingSpinner from "@/components/LoadingSpinner.vue"
 
 const jobsStore = useJobsStore()
 const devicesStore = useDevicesStore()
+const showFilters = ref<boolean>(false)
 const filterStatus = ref<string>("")
 const filterDevice = ref<string>("")
+const filterJobId = ref<string>("")
+const filterDateFrom = ref<string>("")
+const filterDateTo = ref<string>("")
 
 onMounted(async () => {
   // Load jobs from database
@@ -33,8 +37,23 @@ const filteredJobs = computed(() => {
 
   if (filterDevice.value) {
     const search = filterDevice.value.toLowerCase()
-    // Note: BackupJobStatus doesn"t have device_name in the current type definition
-    // You may need to add it based on your API response
+    result = result.filter(j => j.device_name.toLowerCase().includes(search))
+  }
+
+  if (filterJobId.value) {
+    const search = filterJobId.value.toLowerCase()
+    result = result.filter(j => j.job_id.toLowerCase().includes(search))
+  }
+
+  if (filterDateFrom.value) {
+    const fromDate = new Date(filterDateFrom.value).getTime()
+    result = result.filter(j => j.timestamp >= fromDate)
+  }
+
+  if (filterDateTo.value) {
+    const toDate = new Date(filterDateTo.value).getTime()
+    toDate.setHours(23, 59, 59, 999) // Include entire day
+    result = result.filter(j => j.timestamp <= toDate)
   }
 
   return result
@@ -45,12 +64,15 @@ const uniqueStatuses = computed(() => {
 })
 
 async function handleRefresh() {
-  await jobsStore.refreshAllJobs()
+  await jobsStore.loadJobs()
 }
 
 function clearFilters() {
   filterStatus.value = ""
   filterDevice.value = ""
+  filterJobId.value = ""
+  filterDateFrom.value = ""
+  filterDateTo.value = ""
 }
 
 function getDeviceInfo(deviceName: string) {
@@ -107,54 +129,105 @@ function getDeviceInfo(deviceName: string) {
 
     <!-- Controls -->
     <div class="card mb-6">
-      <div class="flex flex-col md:flex-row md:items-end gap-4">
-        <div class="flex-1">
-          <label class="label">Filter by Status</label>
-          <select v-model="filterStatus" class="input">
-            <option value="">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="in_progress">In Progress</option>
-            <option value="success">Success</option>
-            <option value="no_changes">No Changes</option>
-            <option value="failed">Failed</option>
-          </select>
+      <div class="space-y-4">
+        <!-- Header with toggle button -->
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-sm font-semibold text-gray-900">Filters</h3>
+          <button
+            @click="showFilters = !showFilters"
+            class="text-sm text-downtown-600 hover:text-downtown-700 font-medium flex items-center gap-1"
+          >
+            {{ showFilters ? "▼ Hide" : "▶ Show" }} Filters
+          </button>
         </div>
 
-        <div class="space-y-2">
-          <label class="flex items-center gap-2 cursor-pointer">
+        <!-- Always visible: Device Name filter, Auto-refresh, and buttons -->
+        <div class="flex flex-col md:flex-row gap-4 items-end">
+          <div class="flex-1">
+            <label class="label">Filter by Device Name</label>
             <input
-              type="checkbox"
-              :checked="jobsStore.autoRefreshEnabled"
-              @change="jobsStore.toggleAutoRefresh()"
-              class="w-4 h-4 text-downtown-600 rounded border-gray-300"
+              v-model="filterDevice"
+              type="text"
+              placeholder="e.g., device1, router..."
+              class="input"
+            />
+          </div>
+
+          <div class="space-y-2">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                :checked="jobsStore.autoRefreshEnabled"
+                @change="jobsStore.toggleAutoRefresh()"
+                class="w-4 h-4 text-downtown-600 rounded border-gray-300"
+              >
+              <span class="text-sm text-gray-700">Auto-refresh (seconds)</span>
+            </label>
+            <input
+              v-model.number="jobsStore.autoRefreshInterval"
+              type="number"
+              min="1"
+              step="1"
+              class="input text-sm"
+              @change="jobsStore.setAutoRefresh(jobsStore.autoRefreshEnabled, jobsStore.autoRefreshInterval)"
+            />
+          </div>
+
+          <div class="flex gap-2">
+            <button
+              @click="handleRefresh"
+              :disabled="jobsStore.loading"
+              class="btn btn-primary"
             >
-            <span class="text-sm text-gray-700">Auto-refresh (sec)</span>
-          </label>
-          <input
-            v-model.number="jobsStore.autoRefreshInterval"
-            type="number"
-            min="1000"
-            step="1000"
-            class="input text-sm"
-            :disabled="!jobsStore.autoRefreshEnabled"
-            @change="jobsStore.setAutoRefresh(jobsStore.autoRefreshEnabled, jobsStore.autoRefreshInterval)"
-          />
+              {{ jobsStore.loading ? "Refreshing..." : "Refresh" }}
+            </button>
+            <button
+              @click="clearFilters"
+              class="btn btn-secondary"
+            >
+              Clear
+            </button>
+          </div>
         </div>
 
-        <div class="flex gap-2">
-          <button
-            @click="handleRefresh"
-            :disabled="jobsStore.loading"
-            class="btn btn-primary"
-          >
-            {{ jobsStore.loading ? "Refreshing..." : "Refresh" }}
-          </button>
-          <button
-            @click="clearFilters"
-            class="btn btn-secondary"
-          >
-            Clear
-          </button>
+        <!-- Collapsible: Additional filters -->
+        <div v-show="showFilters" class="space-y-4 border-t border-gray-200 pt-4">
+          <!-- Row 1: Status and Job ID -->
+          <div class="flex flex-col md:flex-row gap-4">
+            <div class="flex-1">
+              <label class="label">Filter by Status</label>
+              <select v-model="filterStatus" class="input">
+                <option value="">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="in_progress">In Progress</option>
+                <option value="success">Success</option>
+                <option value="no_changes">No Changes</option>
+                <option value="failed">Failed</option>
+              </select>
+            </div>
+
+            <div class="flex-1">
+              <label class="label">Filter by Job ID</label>
+              <input
+                v-model="filterJobId"
+                type="text"
+                placeholder="Job ID..."
+                class="input"
+              />
+            </div>
+          </div>
+
+          <!-- Row 2: Date Range -->
+          <div class="flex flex-col md:flex-row gap-4">
+            <div class="flex-1">
+              <label class="label">From Date</label>
+              <input v-model="filterDateFrom" type="date" class="input" />
+            </div>
+            <div class="flex-1">
+              <label class="label">To Date</label>
+              <input v-model="filterDateTo" type="date" class="input" />
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -221,6 +294,12 @@ function getDeviceInfo(deviceName: string) {
               </div>
             </div>
 
+            <!-- Timestamp -->
+            <div class="mt-3 text-xs text-gray-500">
+              <p>{{ new Date(job.timestamp).toLocaleString() }}</p>
+              <!-- <p class="text-gray-400 text-xs mt-1">ⓘ Timezone converted for your local region</p> -->
+            </div>
+
             <!-- Error message -->
             <div v-if="job.status === 'failed' && job.message" class="mt-3 p-3 bg-red-50 rounded text-sm text-red-700">
               {{ job.message }}
@@ -275,6 +354,12 @@ function getDeviceInfo(deviceName: string) {
           <div>
             <p class="text-sm text-gray-500 mb-1">Device IP</p>
             <p class="font-medium text-gray-900">{{ getDeviceInfo(jobsStore.selectedJob.device_name)?.ip_address || 'N/A' }}</p>
+          </div>
+
+          <div>
+            <p class="text-sm text-gray-500 mb-1">Timestamp</p>
+            <p class="font-medium text-gray-900">{{ new Date(jobsStore.selectedJob.timestamp).toLocaleString() }}</p>
+            <p class="text-xs text-gray-400 mt-1">ⓘ Timezone converted for your local region</p>
           </div>
 
           <div v-if="jobsStore.selectedJob.message">
