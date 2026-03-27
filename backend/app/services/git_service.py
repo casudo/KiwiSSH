@@ -120,7 +120,7 @@ class GitService:
             limit: Maximum number of history entries to return
 
         Returns:
-            List of history entries with commit info
+            List of history entries with commit info, file sizes, and version numbers
         """
         repo = self._ensure_repo(group)
         commits = []
@@ -154,6 +154,13 @@ class GitService:
             if not modified:
                 continue
 
+            ### Get file size at this commit
+            file_size_bytes = 0
+            for item in commit.tree.traverse():
+                if item.path == config_file:
+                    file_size_bytes = item.size
+                    break
+
             commits.append({
                 "hash": commit.hexsha,
                 "short_hash": commit.hexsha[:7],
@@ -161,10 +168,17 @@ class GitService:
                 "author": commit.author.name,
                 "date": datetime.fromtimestamp(commit.committed_date, tz=timezone.utc),
                 "timestamp": datetime.fromtimestamp(commit.committed_date, tz=timezone.utc).isoformat(),
+                "file_size_bytes": file_size_bytes,
+                "version_number": 0,  # Will be set after we know total count
             })
 
             if len(commits) >= limit:
                 break
+
+        ### Assign version numbers - oldest commit = 1, newest = N
+        ### Commits are newest first, so reverse the numbering
+        for idx, commit in enumerate(commits):
+            commit["version_number"] = len(commits) - idx
 
         return commits
 
