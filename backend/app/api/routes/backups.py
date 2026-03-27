@@ -9,7 +9,6 @@ from app.services.source_service import source_service
 from app.services.backup_job_service import backup_job_service
 from app.services.git_service import git_service
 from app.db.database import get_db
-from app.models.device import DeviceStatus
 
 router = APIRouter()
 
@@ -86,13 +85,10 @@ async def trigger_device_backup(device_name: str, db: Session = Depends(get_db))
     ### Log backup job to database
     ## Map backup result status to device status and job status
     if result.status == BackupStatus.NO_CHANGES:
-        device_status = DeviceStatus.BACKUP_NO_CHANGES
         job_status = "no_changes"
     elif result.status == BackupStatus.SUCCESS:
-        device_status = DeviceStatus.BACKUP_SUCCESS
         job_status = "success"
     else:
-        device_status = DeviceStatus.BACKUP_FAILED
         job_status = "failed"
 
     try:
