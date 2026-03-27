@@ -73,10 +73,10 @@ backup_storage:
   # password: "your-password"  # Can also use DOWNTOWN_BACKUP_STORAGE_PASSWORD env var
 
 # Backup scheduling (future feature)
-schedule:
-  enabled: false
-  cron: "0 2 * * *"  # Daily at 2 AM
-  timezone: "UTC"
+# schedule:
+#   enabled: false
+#   cron: "0 2 * * *"  # Daily at 2 AM
+#   timezone: "UTC"
 
 # API settings
 api:
