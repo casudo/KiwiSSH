@@ -61,9 +61,6 @@ async def trigger_device_backup(device_name: str, db: Session = Depends(get_db))
     except Exception as e:
         print(f"   ⚠️ Failed to log backup job: {e}")
 
-    ### Update device status based on backup result
-    device.status = device_status
-
     return {
         "message": f"Backup triggered for {device_name}",
         "backup_id": result.id,
