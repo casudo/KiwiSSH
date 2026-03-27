@@ -2,6 +2,7 @@
 import { onMounted, computed } from "vue"
 import { useRouter } from "vue-router"
 import { useDevicesStore } from "@/stores/devices"
+import { useJobsStore } from "@/stores/jobs"
 import { useAppStore } from "@/stores/app"
 import DeviceCard from "@/components/DeviceCard.vue"
 import StatCard from "@/components/StatCard.vue"
@@ -9,6 +10,7 @@ import LoadingSpinner from "@/components/LoadingSpinner.vue"
 
 const router = useRouter()
 const devicesStore = useDevicesStore()
+const jobsStore = useJobsStore()
 const appStore = useAppStore()
 
 interface Stats {
@@ -17,6 +19,7 @@ interface Stats {
   groups: number
   vendors: number
   sshProfiles: number
+  backupJobs: number
 }
 
 const stats = computed((): Stats => ({
@@ -25,6 +28,7 @@ const stats = computed((): Stats => ({
   groups: Object.keys(devicesStore.devicesByGroup).length,
   vendors: devicesStore.uniqueVendors.length,
   sshProfiles: devicesStore.uniqueSshProfiles.length,
+  backupJobs: jobsStore.jobs.length,
 }))
 
 const recentDevices = computed(() => {
@@ -39,6 +43,7 @@ onMounted(async () => {
   await Promise.all([
     devicesStore.fetchDevices(),
     devicesStore.fetchGroups(),
+    jobsStore.loadJobs(),
     appStore.checkHealth(),
   ])
 })
@@ -52,12 +57,13 @@ onMounted(async () => {
     </div>
 
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
       <StatCard title="Total Devices" :value="stats.total" color="downtown" />
       <StatCard title="Enabled" :value="stats.enabled" color="green" />
       <StatCard title="Groups" :value="stats.groups" color="gray" />
       <StatCard title="Vendors" :value="stats.vendors" color="blue" />
       <StatCard title="SSH Profiles" :value="stats.sshProfiles" color="purple" />
+      <StatCard title="Backup Jobs" :value="stats.backupJobs" color="orange" />
     </div>
 
     <!-- Health Status -->
