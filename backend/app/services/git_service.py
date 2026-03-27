@@ -12,6 +12,7 @@ from git import Repo, Actor, InvalidGitRepositoryError
 
 from app.core import get_settings
 from app.models.backup import BackupDiff
+from app.utils.timezone import get_utc_now
 
 
 class GitService:
@@ -110,7 +111,7 @@ class GitService:
 
         ### Create commit message if not provided
         if message is None:
-            timestamp = datetime.now(timezone.utc).isoformat()
+            timestamp = get_utc_now().isoformat()
             message = f"Backup: {device_name} at {timestamp}"
 
         ### Commit
