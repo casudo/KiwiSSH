@@ -91,6 +91,24 @@ function clearFilters() {
 function getDeviceInfo(deviceName: string) {
   return devicesStore.devices.find(d => d.device_name === deviceName)
 }
+
+function formatStatus(status: string): string {
+  switch (status) {
+    case "success":
+      return "Success"
+    case "failed":
+      return "Failed"
+    case "no_changes":
+      return "No Changes"
+    case "in_progress":
+      return "In Progress"
+    case "pending":
+      return "Pending"
+    default:
+      return status.charAt(0).toUpperCase() + status.slice(1)
+  }
+}
+
 async function handleFlushDatabase() {
   const confirmText = "Yes I am aware of all danger"
   if (flushConfirmation.value.toLowerCase() === confirmText.toLowerCase()) {
@@ -208,7 +226,7 @@ async function handleFlushDatabase() {
                 @change="jobsStore.toggleAutoRefresh()"
                 class="w-4 h-4 text-downtown-600 rounded border-gray-300"
               >
-              <span class="text-sm text-gray-700">Auto-refresh (seconds)</span>
+              <span class="text-sm text-gray-700">Auto-refresh (sec)</span>
             </label>
             <input
               v-model.number="jobsStore.autoRefreshInterval"
@@ -317,7 +335,7 @@ async function handleFlushDatabase() {
                   'bg-gray-100 text-gray-700'
                 ]"
               >
-                {{ job.status === "no_changes" ? "No Changes" : job.status }}
+                {{ formatStatus(job.status) }}
               </span>
             </div>
 
@@ -325,7 +343,7 @@ async function handleFlushDatabase() {
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
                 <p class="text-gray-500 text-xs">Status</p>
-                <p class="font-medium text-gray-900 capitalize">{{ job.status }}</p>
+                <p class="font-medium text-gray-900">{{ job.status }}</p>
               </div>
               <div>
                 <p class="text-gray-500 text-xs">Group</p>
@@ -385,7 +403,7 @@ async function handleFlushDatabase() {
 
           <div>
             <p class="text-sm text-gray-500 mb-1">Status</p>
-            <p class="font-medium text-gray-900 capitalize">{{ jobsStore.selectedJob.status }}</p>
+            <p class="font-medium text-gray-900">{{ jobsStore.selectedJob.status }}</p>
           </div>
 
           <div>
