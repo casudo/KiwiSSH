@@ -97,8 +97,8 @@ onMounted(async () => {
     </div>
 
     <!-- Detail panel -->
-    <div v-if="selectedProfile" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-screen overflow-y-auto">
+    <div v-if="selectedProfile" @click="selectedProfile = null" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div @click.stop class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-screen overflow-y-auto">
         <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <h2 class="text-xl font-semibold text-gray-900 capitalize">{{ selectedProfile }}</h2>
           <button
