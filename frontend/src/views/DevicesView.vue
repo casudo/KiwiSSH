@@ -335,6 +335,9 @@ onMounted(async () => {
     <!-- List view (table-like) -->
     <div v-else-if="currentLayout === 'list'" class="overflow-x-auto">
       <div class="card">
+        <!-- Header row -->
+        <DeviceListRow :is-header="true" />
+        <!-- Device rows -->
         <div
           v-for="device in paginatedDevices"
           :key="device.device_name"
