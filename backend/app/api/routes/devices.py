@@ -12,8 +12,9 @@ from app.db.database import get_db
 router = APIRouter()
 
 
-async def _enrich_device_with_backup_info(device: DeviceFull, db: Session = None, latest_jobs_cache: dict = None) -> DeviceFull:
-    """Add backup stats to device from database."""
+async def _enrich_device_with_backup_info(device_base: DeviceBase, db: Session = None, latest_jobs_cache: dict = None) -> DeviceFull:
+    """Add backup info to device from database."""
+    device = DeviceFull(**device_base.model_dump())
     try:
         ### Check database for latest backup job status
         if db:
@@ -63,8 +64,7 @@ async def list_devices(
 
     enriched_devices: list[DeviceFull] = []
     for device in devices:
-        backup_info = DeviceFull(**device.model_dump())
-        enriched_devices.append(backup_info)
+        enriched_devices.append(device)
 
     ### Batch load latest backup jobs for all devices (much faster than per-device queries)
     device_names = [d.device_name for d in enriched_devices]
@@ -109,8 +109,7 @@ async def get_device_status(device_name: str, db: Session = Depends(get_db)) -> 
         raise HTTPException(status_code=404, detail=f"Device '{device_name}' not found")
 
     ### Convert to DeviceFull for enrichment to return backup info
-    device = DeviceFull(**device_base.model_dump())
-    device = await _enrich_device_with_backup_info(device, db)
+    device = await _enrich_device_with_backup_info(device_base, db)
 
     ### Get backup count from git history
     backup_count = 0
