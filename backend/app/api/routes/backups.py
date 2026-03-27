@@ -15,10 +15,58 @@ router = APIRouter()
 
 
 @router.post("/trigger", response_model=BackupTriggerResponse)
-async def trigger_backup(request: BackupTriggerRequest) -> BackupTriggerResponse:
-    """Trigger a backup operation for a specific group."""
-    return await backup_service.backup_all(group=request.group)
-    ## TODO: Switch to "/trigger/{group_name}" to match trigger_device_backup endpoint and simplify request?
+async def trigger_backup(request: BackupTriggerRequest, db: Session = Depends(get_db)) -> BackupTriggerResponse:
+    """Trigger a backup operation for a specific group or all devices."""
+    print(f"📢 Backup trigger endpoint called for group: {request.group or 'all'}")
+
+    ### Get devices to backup
+    if request.group:
+        devices = await source_service.get_devices_by_group(request.group)
+    else: # group: ""
+        devices = await source_service.get_all_devices()
+
+    enabled_devices = [d for d in devices if d.enabled]
+    print(f"   Found {len(enabled_devices)} enabled devices")
+
+    ### Perform backups
+    results = await backup_service.backup_devices(enabled_devices)
+
+    ### Log backup jobs to database
+    for result in results:
+        device = next((d for d in enabled_devices if d.device_name == result.device_name), None) 
+        if not device:
+            continue
+
+        ### Map backup result status to job status
+        if result.status == BackupStatus.NO_CHANGES:
+            job_status = "no_changes"
+        elif result.status == BackupStatus.SUCCESS:
+            job_status = "success"
+        else:
+            job_status = "failed"
+
+        try:
+            backup_job_service.create_job(
+                db=db,
+                job_id=result.id,
+                device_name=result.device_name,
+                group=device.group,
+                status=job_status,
+                error_message=result.error_message,
+                config_size_bytes=result.config_size_bytes,
+            )
+            print(f"   ✓ Logged backup job for {result.device_name}: status={job_status}")
+        except Exception as e:
+            print(f"   ⚠️ Failed to log backup job for {result.device_name}: {e}")
+
+    successful = [r for r in results if r.status == BackupStatus.SUCCESS]
+    device_names = [d.device_name for d in enabled_devices]
+
+    return BackupTriggerResponse(
+        message=f"Backup completed for {len(successful)}/{len(device_names)} devices",
+        devices_queued=device_names,
+        job_id=results[0].id if results else None,
+    )
 
 
 @router.post("/trigger/{device_name}")
