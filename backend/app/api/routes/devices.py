@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
 from sqlalchemy.orm import Session
 
-from app.models.device import DeviceResponse, DeviceListResponse, DeviceStatus
+from app.models.device import DeviceResponse, DeviceListResponse, DeviceStatus, DeviceBase
 from app.services.source_service import source_service
 from app.services.git_service import git_service
 from app.services.backup_job_service import backup_job_service
@@ -85,15 +85,15 @@ async def list_groups() -> dict:
     }
 
 
-@router.get("/{device_name}", response_model=DeviceResponse)
-async def get_device(device_name: str, db: Session = Depends(get_db)) -> DeviceResponse:
-    """Get a specific device by name."""
+@router.get("/{device_name}", response_model=DeviceBase)
+async def get_device(device_name: str) -> DeviceBase:
+    """Get a specific device's configuration."""
     device = await source_service.get_device(device_name)
 
     if device is None:
         raise HTTPException(status_code=404, detail=f"Device '{device_name}' not found")
 
-    return await _enrich_device_with_backup_info(device, db)
+    return device
 
 
 @router.get("/{device_name}/status")
@@ -106,12 +106,21 @@ async def get_device_status(device_name: str, db: Session = Depends(get_db)) -> 
 
     device = await _enrich_device_with_backup_info(device, db)
 
+    ### Get backup count from git history
+    backup_count = 0
+    try:
+        history = await git_service.get_config_history(device_name, group=device.group, limit=1000)
+        if history:
+            backup_count = len(history)
+    except Exception:
+        pass
+
     return {
         "device_name": device.device_name,
         "status": device.status.value,
         "last_backup": device.last_backup,
         "last_backup_success": device.last_backup_success,
-        "backup_count": device.backup_count,
+        "backup_count": backup_count,
         "enabled": device.enabled,
     }
 
