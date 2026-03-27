@@ -8,7 +8,7 @@ export const useJobsStore = defineStore("jobs", () => {
   const jobs = ref<BackupJobStatus[]>([])
   const selectedJob = ref<BackupJobStatus | null>(null)
   const autoRefreshEnabled = ref(false)
-  const autoRefreshInterval = ref(3000) // Default 3 seconds
+  const autoRefreshInterval = ref(3) // Default 3 seconds
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -71,30 +71,6 @@ export const useJobsStore = defineStore("jobs", () => {
     }
   }
 
-  async function refreshAllJobs() {
-    if (jobs.value.length === 0) await loadJobs()
-
-    loading.value = true
-    error.value = null
-
-    try {
-      for (const job of jobs.value) {
-        if (job.status === "pending" || job.status === "in_progress") {
-          try {
-            const status = await backupApi.getJobStatus(job.job_id)
-            const index = jobs.value.findIndex(j => j.job_id === job.job_id)
-            if (index !== -1) {
-              jobs.value[index] = { ...jobs.value[index], ...status }
-            }
-          } catch (e) {
-            console.error(`Failed to refresh job ${job.job_id}:`, e)
-          }
-        }
-      }
-    } finally {
-      loading.value = false
-    }
-  }
 
   function addJob(job: BackupJobStatus) {
     // Check if job already exists
@@ -126,9 +102,19 @@ export const useJobsStore = defineStore("jobs", () => {
     }
 
     if (enabled) {
+      // Stop any existing timer
+      if (refreshTimer) {
+        clearInterval(refreshTimer)
+        refreshTimer = null
+      }
+      // Start fresh with the interval
       startAutoRefresh()
     } else {
-      stopAutoRefresh()
+      // Stop the timer and set enabled to false
+      if (refreshTimer) {
+        clearInterval(refreshTimer)
+        refreshTimer = null
+      }
     }
   }
 
@@ -140,13 +126,8 @@ export const useJobsStore = defineStore("jobs", () => {
     if (refreshTimer) return
 
     refreshTimer = setInterval(async () => {
-      await refreshAllJobs()
-
-      // Stop polling if no in-progress jobs
-      if (inProgressJobs.value.length === 0) {
-        stopAutoRefresh()
-      }
-    }, autoRefreshInterval.value)
+      await loadJobs()
+    }, autoRefreshInterval.value * 1000) // Convert seconds to milliseconds
   }
 
   function stopAutoRefresh() {
@@ -154,7 +135,6 @@ export const useJobsStore = defineStore("jobs", () => {
       clearInterval(refreshTimer)
       refreshTimer = null
     }
-    autoRefreshEnabled.value = false
   }
 
   function clearOldJobs(hoursOld: number = 24) {
@@ -193,7 +173,6 @@ export const useJobsStore = defineStore("jobs", () => {
     failureCount,
     // Actions
     loadJobs,
-    refreshAllJobs,
     addJob,
     updateJob,
     setAutoRefresh,
