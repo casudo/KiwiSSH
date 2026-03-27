@@ -60,7 +60,7 @@ git:
 ### Backup Job log storage (for tracking backup success/failure status)
 ## Choose between SQLite (file-based) or PostgreSQL (WIP, untested)
 ## NOTE: This is NOT the local git backup repository for the groups! 
-backup_storage:
+job_log_storage:
   type: "sqlite"  # Options: sqlite, postgresql
   path: "downtown.sqlite"  # WIll be placed in the same directory as downtown.yaml if relative, or can be absolute path
 
@@ -70,7 +70,7 @@ backup_storage:
   # port: 5432
   # database: "downtown_backups"
   # user: "downtown"
-  # password: "your-password"  # Can also use DOWNTOWN_BACKUP_STORAGE_PASSWORD env var
+  # password: "your-password"  # Can also use DOWNTOWN_JOB_LOG_STORAGE_PASSWORD env var
 
 # Backup scheduling (future feature)
 # schedule:

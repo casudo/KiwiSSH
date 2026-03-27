@@ -35,9 +35,9 @@ class Settings(BaseSettings):
     ssh_profiles: dict[str, Any] = Field(default_factory=dict)
     vendors: dict[str, dict[str, Any]] = Field(default_factory=dict)
     nodes_config: dict[str, Any] = Field(default_factory=dict)
-    backup_storage_config: dict[str, Any] = Field(default_factory=dict)
+    job_log_storage_config: dict[str, Any] = Field(default_factory=dict)
 
-    ### Database URL (computed from backup_storage_config)
+    ### Database URL (computed from job_log_storage_config)
     database_url: str = ""
 
     @field_validator("config_dir", "backups_dir", mode="before")
@@ -79,8 +79,8 @@ class Settings(BaseSettings):
                 self.app_config = config_data
                 ### Extract nodes_config from downtown.yaml
                 self.nodes_config = config_data.get("nodes", {})
-                ### Extract backup_storage_config from downtown.yaml
-                self.backup_storage_config = config_data.get("backup_storage", {})
+                ### Extract job_log_storage_config from downtown.yaml
+                self.job_log_storage_config = config_data.get("job_log_storage", {})
 
         ### Load SSH profiles
         ssh_config = self.config_dir / "ssh_profiles.yaml"
@@ -97,7 +97,7 @@ class Settings(BaseSettings):
                     vendor_id = vendor_config.get("vendor", {}).get("id", vendor_file.stem)
                     self.vendors[vendor_id] = vendor_config
 
-        ### Build database URL from backup_storage config
+        ### Build database URL from job_log_storage config
         self.database_url = self._build_database_url()
 
     def get_ssh_profile(self, profile_name: str) -> dict[str, Any]:
@@ -110,30 +110,30 @@ class Settings(BaseSettings):
         return self.vendors.get(vendor_id, {})
 
     def _build_database_url(self) -> str:
-        """Build database URL from backup_storage configuration.
+        """Build database URL from job_log_storage configuration.
 
         Returns:
             SQLAlchemy database URL string
         """
-        if not self.backup_storage_config:
+        if not self.job_log_storage_config:
             ### Raise error and don't fallback to any defaults - backup storage config is required
             raise ValueError("Backup storage configuration is missing in downtown.yaml")
 
-        db_type = self.backup_storage_config.get("type").lower()
+        db_type = self.job_log_storage_config.get("type").lower()
 
         if db_type == "sqlite":
-            path = self.backup_storage_config.get("path", "downtown.sqlite")
+            path = self.job_log_storage_config.get("path", "downtown.sqlite")
             ### If relative path, make it absolute relative to config_dir
             if not Path(path).is_absolute():
                 path = self.config_dir / path
             return f"sqlite:///{Path(path).resolve()}"
 
         elif db_type == "postgresql":
-            host = self.backup_storage_config.get("host")
-            port = self.backup_storage_config.get("port", 5432)
-            database = self.backup_storage_config.get("database", "downtown")
-            user = self.backup_storage_config.get("user")
-            password = self.backup_storage_config.get("password")
+            host = self.job_log_storage_config.get("host")
+            port = self.job_log_storage_config.get("port", 5432)
+            database = self.job_log_storage_config.get("database", "downtown")
+            user = self.job_log_storage_config.get("user")
+            password = self.job_log_storage_config.get("password")
 
             ### TODO: Switch to more explicit checks?
             if not all([host, port, database, user, password]):
