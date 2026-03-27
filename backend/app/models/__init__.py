@@ -1,9 +1,8 @@
 """Pydantic models for Project Downtown."""
 
 from app.models.device import (
-    Device,
     DeviceBase,
-    DeviceResponse,
+    DeviceFull,
     DeviceStatus,
 )
 from app.models.backup import (

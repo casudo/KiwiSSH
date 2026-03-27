@@ -18,7 +18,7 @@ class DeviceStatus(str, Enum):
 
 
 class DeviceBase(BaseModel):
-    """Base device model with common fields."""
+    """Device configuration (static fields from source)."""
 
     device_name: str = Field(..., min_length=1, max_length=255)
     ip_address: IPvAnyAddress
@@ -28,23 +28,8 @@ class DeviceBase(BaseModel):
     enabled: bool = True
 
 
-class Device(DeviceBase):
-    """Full device model with runtime state."""
-
-    status: DeviceStatus = DeviceStatus.UNKNOWN
-    last_backup: Optional[datetime] = None
-    last_backup_success: Optional[datetime] = None
-    last_error: Optional[str] = None
-
-
-class DeviceResponse(Device):
-    """API response model for device (includes full details like backup count)."""
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class DeviceListResponse(DeviceBase):
-    """Lightweight response model for device lists (excludes backup count for performance)."""
+class DeviceFull(DeviceBase):
+    """Device config + backup/status information."""
 
     status: DeviceStatus = DeviceStatus.UNKNOWN
     last_backup: Optional[datetime] = None
