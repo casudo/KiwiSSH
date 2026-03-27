@@ -1,9 +1,10 @@
 """Service for managing backup job records in the database."""
 
-from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from app.db.models import BackupJob
+from app.utils.timezone import get_utc_now
+
 
 
 class BackupJobService:
@@ -38,7 +39,7 @@ class BackupJobService:
             device_name=device_name,
             group=group,
             status=status,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=get_utc_now(),
             error_message=error_message,
             config_size_bytes=config_size_bytes,
         )

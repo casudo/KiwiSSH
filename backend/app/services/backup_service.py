@@ -5,13 +5,13 @@ to backup device configurations.
 """
 
 import uuid
-from datetime import datetime, timezone
 
 from app.models.backup import BackupRecord, BackupStatus, BackupTriggerResponse
 from app.models.device import DeviceBase
 from app.services.source_service import source_service
 from app.services.ssh_service import ssh_service
 from app.services.git_service import git_service
+from app.utils.timezone import get_utc_now
 
 
 class BackupService:
@@ -49,7 +49,7 @@ class BackupService:
                 return BackupRecord(
                     id=str(uuid.uuid4()),
                     device_name=device.device_name,
-                    timestamp=datetime.now(timezone.utc),
+                    timestamp=get_utc_now(),
                     status=BackupStatus.NO_CHANGES,
                     config_size_bytes=config_size,
                 )
@@ -58,7 +58,7 @@ class BackupService:
             return BackupRecord(
                 id=commit_hash,
                 device_name=device.device_name,
-                timestamp=datetime.now(timezone.utc),
+                timestamp=get_utc_now(),
                 status=BackupStatus.SUCCESS,
                 git_commit=commit_hash,
                 config_size_bytes=config_size,
@@ -69,7 +69,7 @@ class BackupService:
             return BackupRecord(
                 id=str(uuid.uuid4()),
                 device_name=device.device_name,
-                timestamp=datetime.now(timezone.utc),
+                timestamp=get_utc_now(),
                 status=BackupStatus.FAILED,
                 error_message=str(e),
             )

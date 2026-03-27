@@ -1,8 +1,8 @@
 """SQLAlchemy database models for backup jobs."""
 
-from datetime import datetime, timezone
 from sqlalchemy import Column, String, DateTime, Text, Integer
 from sqlalchemy.ext.declarative import declarative_base
+from app.utils.timezone import get_utc_now
 
 Base = declarative_base()
 
@@ -16,7 +16,7 @@ class BackupJob(Base):
     device_name = Column(String(255), nullable=False, index=True)
     group = Column(String(255), nullable=False, index=True)
     status = Column(String(32), nullable=False, index=True)  # success, failed
-    timestamp = Column(DateTime(timezone=True), nullable=False, index=True, default=lambda: datetime.now(timezone.utc))
+    timestamp = Column(DateTime(timezone=True), nullable=False, index=True, default=lambda: get_utc_now())
     error_message = Column(Text, nullable=True)
     config_size_bytes = Column(Integer, nullable=True)
 
