@@ -61,10 +61,16 @@ async def list_devices(
     if enabled_only:
         devices = [d for d in devices if d.enabled]
 
-    ### Enrich with backup info
+    ### Batch load latest backup jobs for all devices (much faster than per-device queries)
+    device_names = [d.device_name for d in devices]
+    latest_jobs = backup_job_service.get_latest_jobs_for_devices(db, device_names)
+
+    ### Enrich with backup info using cached jobs
     enriched = []
     for device in devices:
-        enriched.append(await _enrich_device_with_backup_info(device, db))
+        enriched_device = await _enrich_device_with_backup_info(device, db, latest_jobs)
+        ### Convert to lightweight response model (excludes backup_count)
+        enriched.append(DeviceListResponse.model_validate(enriched_device))
 
     return enriched
 

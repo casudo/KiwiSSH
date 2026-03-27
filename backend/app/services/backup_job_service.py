@@ -65,6 +65,36 @@ class BackupJobService:
         ).first()
 
     @staticmethod
+    def get_latest_jobs_for_devices(db: Session, device_names: list[str]) -> dict[str, BackupJob]:
+        """Get the most recent backup job for multiple devices in a single query.
+
+        Args:
+            db: Database session
+            device_names: List of device names
+
+        Returns:
+            Dictionary mapping device_name to latest BackupJob record
+        """
+        if not device_names:
+            return {}
+
+        ### Get all jobs for these devices, ordered by timestamp
+        jobs = db.query(BackupJob).filter(
+            BackupJob.device_name.in_(device_names)
+        ).order_by(
+            BackupJob.device_name,
+            desc(BackupJob.timestamp)
+        ).all()
+
+        ### Build dict with latest job per device
+        latest_jobs = {}
+        for job in jobs:
+            if job.device_name not in latest_jobs:
+                latest_jobs[job.device_name] = job
+
+        return latest_jobs
+
+    @staticmethod
     def get_device_jobs(db: Session, device_name: str, limit: int = 10) -> list[BackupJob]:
         """Get backup job history for a device.
 
