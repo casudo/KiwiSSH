@@ -10,6 +10,7 @@ from app import __version__
 from app.api.routes import api_router_v1
 from app.core import get_settings
 from app.services import source_service
+from app.db.database import init_database
 
 
 @asynccontextmanager
@@ -31,6 +32,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     print(f"Debug mode: {settings.debug}")
     print(f"Loaded {len(settings.vendors)} vendor configurations")
     print(f"Loaded {len(settings.ssh_profiles)} SSH profiles")
+
+    ### Initialize database for backup jobs
+    init_database(settings.database_url)
+    print(f"Database URL: {settings.database_url}")
+
     ### TODO: Device Count
 
     yield
