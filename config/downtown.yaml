@@ -1,5 +1,5 @@
-# Project Downtown - Main Configuration
-# This file contains global settings for the application
+### Project Downtown - Main Configuration
+## This file contains global settings for the application
 
 app:
   debug: true
@@ -29,7 +29,7 @@ groups:
 ### Priority: Node-specific overrides > Group defaults
 nodes:
   router-core-01:
-    timeout: 50
+    timeout: 50 # Timeout override not tested!!
     ssh_profile: "legacy"
     vendor: "cisco_ios_old"
 

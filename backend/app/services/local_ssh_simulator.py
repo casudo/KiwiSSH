@@ -39,7 +39,7 @@ class LocalSSHSimulator:
 
         if not config_path.exists():
             raise FileNotFoundError(
-                f"Test device config not found: {config_path}\nCreate {config_path} with device configuration for testing."
+                f"Test device config not found: {config_path}"
             )
 
         with open(config_path, encoding="utf-8") as f:
