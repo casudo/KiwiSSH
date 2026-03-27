@@ -122,7 +122,7 @@ class Settings(BaseSettings):
         db_type = self.backup_storage_config.get("type").lower()
 
         if db_type == "sqlite":
-            path = self.backup_storage_config.get("path", "downtown.db")
+            path = self.backup_storage_config.get("path", "downtown.sqlite")
             ### If relative path, make it absolute relative to config_dir
             if not Path(path).is_absolute():
                 path = self.config_dir / path

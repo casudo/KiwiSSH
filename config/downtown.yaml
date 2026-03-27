@@ -62,7 +62,7 @@ git:
 ## NOTE: This is NOT the local git backup repository for the groups! 
 backup_storage:
   type: "sqlite"  # Options: sqlite, postgresql
-  path: "downtown.db"  # WIll be placed in the same directory as downtown.yaml if relative, or can be absolute path
+  path: "downtown.sqlite"  # WIll be placed in the same directory as downtown.yaml if relative, or can be absolute path
 
   ### For PostgreSQL (UNTESTED):
   # type: "postgresql"
