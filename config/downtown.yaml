@@ -24,14 +24,14 @@ groups:
     timeout: 60
 
 ### Per-node overrides
-### Nodes can override any group-level setting (ssh_profile, vendor, timeout, etc.)
-### Priority: Name-specific overrides > Group defaults
+### Nodes can override: ssh_profile, vendor, timeout, username
+### Group CANNOT be overridden - change it in the source instead
+### Priority: Node-specific overrides > Group defaults
 nodes:
   router-core-01:
-    group: default
     timeout: 50
     ssh_profile: "legacy"
-    vendor: "cisco_io_old"
+    vendor: "cisco_ios_old"
 
 ### Define device sources (e.g., from a file, database, or API)
 ### For now, we will use a static list defined in the code

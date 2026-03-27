@@ -104,6 +104,7 @@ class Settings(BaseSettings):
         """
         Resolve device configuration with priority: Node-specific > Group defaults
 
+        Group cannot be overridden - it must be changed in the source.
         Returns a dict with resolved ssh_profile, vendor, and other settings.
         """
         device_config = {}
@@ -120,6 +121,7 @@ class Settings(BaseSettings):
             }) # TODO: Display password in any way (encrypted) or leave it?
 
         ### Step 2: Apply node-specific overrides
+        ### NOTE: Group cannot be overridden here - must be changed in source
         if device_name in self.nodes_config:
             node_config = self.nodes_config[device_name]
             if "ssh_profile" in node_config:
