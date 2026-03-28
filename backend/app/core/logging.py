@@ -20,7 +20,7 @@ def configure_logging(debug: bool = False) -> None:
         "disable_existing_loggers": False,
         "formatters": {
             "standard": {
-                "format": "%(asctime)s (%(name)s) %(levelname)s: %(message)s"
+                "format": "%(asctime)s %(levelname)s: %(message)s"
             },
             "detailed": {
                 "format": "%(asctime)s (%(name)s) %(levelname)s [%(filename)s:%(lineno)d] -> %(message)s"
