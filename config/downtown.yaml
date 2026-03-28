@@ -3,42 +3,42 @@
 
 app:
   debug: true
-  log_level: "INFO"
 
-# Device groups with shared credentials and default settings
-# Passwords should be set via environment variables (e.g., DOWNTOWN_GROUP_DEFAULT_PASSWORD)
-# Priority for device configuration: Node-specific > Group default
+### Device groups configuration
+## TODO: Also allow passwords to be set via environment variables (e.g., DOWNTOWN_GROUP_<GROUP_NAME>_PASSWORD)
+## Priority for device configuration (default to more specific): groups: -> nodes:
 groups:
-  default:
+  customer-abc-switches:
     username: "admin"
-    # password: Set via DOWNTOWN_GROUP_DEFAULT_PASSWORD environment variable
+    password: "password"
     ssh_profile: "modern"
     vendor: "cisco_ios"
     timeout: 30
 
-  legacy:
+  customer-abc-firewalls:
     username: "admin"
-    # password: Set via DOWNTOWN_GROUP_LEGACY_PASSWORD environment variable
-    ssh_profile: "legacy"
-    vendor: "cisco_ios"
+    password: "password"
+    ssh_profile: "modern"
+    vendor: "fortinet_fortios"
     timeout: 60
 
 ### Per-node overrides
-### Nodes can override: ssh_profile, vendor, timeout, username
-### Group CANNOT be overridden - change it in the source instead
-### Priority: Node-specific overrides > Group defaults
+## Nodes can override: ssh_profile, vendor, timeout, username, password
+## Group CANNOT be overridden - change it in the source instead
+## Priority for device configuration (default to more specific): groups: -> nodes:
 nodes:
-  router-core-01:
+  dc-cluster-active-01:
     timeout: 50 # Timeout override not tested!!
+  switch-core-old:
     ssh_profile: "legacy"
-    vendor: "cisco_ios_old"
+    password: "legacy_password"
 
 ### Define device sources (e.g., from a file, database, or API)
 ### For now, we will use a static list defined in the code
 ### Future implementation may include dynamic loading from external sources
-# sources:
-#   file:
-#     path: /config/sources/devices.csv
+sources:
+  file:
+    path: /config/sources/devices.csv
 #   postgres:
 #     host: localhost
 #     port: 5432
