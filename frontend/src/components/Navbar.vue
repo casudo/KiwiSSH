@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterLink, useRoute } from "vue-router"
+import { APP_VERSION } from "@/version"
 
 const route = useRoute()
 
@@ -36,6 +37,7 @@ const isActive = (path: string): boolean => {
             </svg>
           </div>
           <span class="text-xl font-bold">Downtown</span>
+          <span class="text-sm text-downtown-300">v{{ APP_VERSION }}</span>
         </RouterLink>
 
         <!-- Navigation -->
