@@ -1,6 +1,16 @@
 <script setup>
+import { onMounted } from "vue"
 import Navbar from "@/components/Navbar.vue"
 import Footer from "@/components/Footer.vue"
+import { useFavoritesStore } from "@/stores/favorites"
+
+const favoritesStore = useFavoritesStore()
+
+onMounted(() => {
+  if (!favoritesStore.isLoaded) {
+    favoritesStore.loadFavorites()
+  }
+})
 </script>
 
 <template>
