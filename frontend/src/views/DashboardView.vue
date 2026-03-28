@@ -4,14 +4,17 @@ import { useRouter } from "vue-router"
 import { useDevicesStore } from "@/stores/devices"
 import { useJobsStore } from "@/stores/jobs"
 import { useAppStore } from "@/stores/app"
+import { useFavoritesStore } from "@/stores/favorites"
 import DeviceCard from "@/components/DeviceCard.vue"
 import StatCard from "@/components/StatCard.vue"
 import LoadingSpinner from "@/components/LoadingSpinner.vue"
+import type { Device } from "@/types/device"
 
 const router = useRouter()
 const devicesStore = useDevicesStore()
 const jobsStore = useJobsStore()
 const appStore = useAppStore()
+const favoritesStore = useFavoritesStore()
 
 interface Stats {
   total: number
@@ -31,15 +34,25 @@ const stats = computed((): Stats => ({
   backupJobs: jobsStore.jobs.length,
 }))
 
-const recentDevices = computed(() => {
-  return devicesStore.devices.slice(0, 6)
+const favoriteDevices = computed(() => {
+  if (!favoritesStore.hasFavorites) {
+    return []
+  }
+
+  // Filter devices that are in favorites list
+  return devicesStore.devices.filter((device: Device) =>
+    favoritesStore.isFavorite(device.device_name)
+  )
 })
+
+const dashboardDevices = computed(() => favoriteDevices.value.slice(0, 6))
 
 function goToDevice(deviceName: string) {
   router.push(`/devices/${deviceName}`)
 }
 
 onMounted(async () => {
+  favoritesStore.loadFavorites()
   await Promise.all([
     devicesStore.fetchDevices(),
     devicesStore.fetchGroups(),
@@ -86,10 +99,10 @@ onMounted(async () => {
       </div>
     </div>
 
-    <!-- Recent Devices -->
+    <!-- Favorite Devices -->
     <section>
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-semibold text-gray-900">Devices</h2>
+        <h2 class="text-xl font-semibold text-gray-900">Favorite Devices</h2>
         <RouterLink to="/devices" class="text-downtown-600 hover:text-downtown-700 text-sm font-medium">
           View all →
         </RouterLink>
@@ -112,9 +125,14 @@ onMounted(async () => {
         <p class="text-gray-400 text-sm mt-2">Add devices to your CSV source file to get started.</p>
       </div>
 
+      <div v-else-if="favoriteDevices.length === 0" class="card text-center py-12">
+        <p class="text-gray-500 text-lg">No favorites selected yet</p>
+        <p class="text-gray-400 text-sm mt-2">Mark devices with the ☆ icon in the Devices view to pin them here.</p>
+      </div>
+
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div
-          v-for="device in recentDevices"
+          v-for="device in dashboardDevices"
           :key="device.device_name"
           @click="goToDevice(device.device_name)"
         >
