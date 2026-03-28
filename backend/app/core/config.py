@@ -5,8 +5,95 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+### Application configuration models
+class AppConfig(BaseModel):
+    """Application-level settings."""
+    debug: bool = False
+
+
+class GroupConfig(BaseModel):
+    """Device group configuration."""
+    username: str | None = None
+    password: str | None = None
+    ssh_profile: str | None = None
+    vendor: str | None = None
+    timeout: int | None = None
+
+
+class NodeConfig(BaseModel):
+    """Per-device configuration overrides."""
+    username: str | None = None
+    password: str | None = None
+    ssh_profile: str | None = None
+    vendor: str | None = None
+    timeout: int | None = None
+
+
+### Device Sources Configuration
+class FileSourceConfig(BaseModel):
+    """File-based device source."""
+    path: str
+
+
+class PostgresSourceConfig(BaseModel):
+    """PostgreSQL device source."""
+    host: str
+    port: int = 5432
+    database: str
+    user: str
+    password: str
+
+
+class SourcesConfig(BaseModel):
+    """Device source definitions."""
+    file: FileSourceConfig | None = None
+    postgres: PostgresSourceConfig | None = None
+
+
+### Git Configuration
+class GitRemoteConfig(BaseModel):
+    """Git remote repository configuration."""
+    enabled: bool = False
+    url: str | None = None
+    branch: str = "main"
+    push_after_commit: bool = False
+
+
+class GitConfig(BaseModel):
+    """Git repository settings."""
+    local_path: str = "./backups"
+    auto_commit: bool = True
+    commit_message_template: str = "Backup: {device_name} at {timestamp}"
+    remote: GitRemoteConfig | None = None
+
+
+class JobLogStorageConfig(BaseModel):
+    """Database configuration for backup job logs."""
+    type: str = "sqlite"
+    path: str | None = None  # For SQLite
+    host: str | None = None  # For PostgreSQL
+    port: int = 5432  # For PostgreSQL
+    database: str = "downtown"  # For PostgreSQL
+    user: str | None = None  # For PostgreSQL
+    password: str | None = None  # For PostgreSQL
+
+
+class ScheduleConfig(BaseModel):
+    """Backup scheduling configuration."""
+    enabled: bool = False
+    cron: str | None = None
+    timezone: str = "UTC"
+
+
+class ApiConfig(BaseModel):
+    """API server configuration."""
+    host: str = "127.0.0.1"
+    port: int = 8000
+    cors_origins: list[str] = Field(default_factory=list)
 
 
 class Settings(BaseSettings):
@@ -22,22 +109,24 @@ class Settings(BaseSettings):
     config_dir: Path = Field(default=Path("../config"))
     backups_dir: Path = Field(default=Path("../backups"))
 
-    ### API settings
-    # api_host: str = "127.0.0.1"
-    api_port: int = 8000
-    debug: bool = True
-
     ### Testing
     local_test_mode: bool = Field(default=False, description="Use tests/config and tests/sources for local testing")
 
-    ### Loaded from YAML files
-    app_config: dict[str, Any] = Field(default_factory=dict)
+    ### Configuration sections (loaded from YAML)
+    app: AppConfig = Field(default_factory=AppConfig)
+    groups: dict[str, GroupConfig] = Field(default_factory=dict)
+    nodes: dict[str, NodeConfig] = Field(default_factory=dict)
+    sources: SourcesConfig | None = None
+    git: GitConfig = Field(default_factory=GitConfig)
+    job_log_storage: JobLogStorageConfig = Field(default_factory=JobLogStorageConfig)
+    schedule: ScheduleConfig | None = None
+    api: ApiConfig = Field(default_factory=ApiConfig)
+
+    ### External configs
     ssh_profiles: dict[str, Any] = Field(default_factory=dict)
     vendors: dict[str, dict[str, Any]] = Field(default_factory=dict)
-    nodes_config: dict[str, Any] = Field(default_factory=dict)
-    job_log_storage_config: dict[str, Any] = Field(default_factory=dict)
 
-    ### Database URL (computed from job_log_storage_config)
+    ### Database URL (computed from job_log_storage config)
     database_url: str = ""
 
     @field_validator("config_dir", "backups_dir", mode="before")
@@ -72,20 +161,47 @@ class Settings(BaseSettings):
     def load_yaml_configs(self) -> None:
         """Load YAML configuration files."""
         ### Load main config
-        main_config = self.config_dir / "downtown.yaml"
-        if main_config.exists():
-            with open(main_config, encoding="utf-8") as f:
-                config_data = yaml.safe_load(f) or {}
-                self.app_config = config_data
-                ### Extract nodes_config from downtown.yaml
-                self.nodes_config = config_data.get("nodes", {})
-                ### Extract job_log_storage_config from downtown.yaml
-                self.job_log_storage_config = config_data.get("job_log_storage", {})
+        config_file = self.config_dir / "downtown.yaml"
+        if config_file.exists():
+            with open(config_file, encoding="utf-8") as f:
+                file_content = yaml.safe_load(f) or {}
+
+                ### TODO: Check for required sections and handle missing sections gracefully with defaults or warnings
+
+                ### app
+                self.app = AppConfig(**file_content.get("app", {}))
+
+                ### groups
+                groups_data = file_content.get("groups", {})
+                self.groups = {name: GroupConfig(**cfg) for name, cfg in groups_data.items()}
+
+                ### nodes
+                nodes_data = file_content.get("nodes", {})
+                self.nodes = {name: NodeConfig(**cfg) for name, cfg in nodes_data.items()}
+
+                ### sources
+                sources_data = file_content.get("sources")
+                if sources_data:
+                    self.sources = SourcesConfig(**sources_data)
+
+                ### git
+                self.git = GitConfig(**file_content.get("git", {}))
+
+                ### job_log_storage
+                self.job_log_storage = JobLogStorageConfig(**file_content.get("job_log_storage", {}))
+                
+                ### schedule
+                schedule_data = file_content.get("schedule", {})
+                if schedule_data:
+                    self.schedule = ScheduleConfig(**schedule_data)
+
+                ### Load API configuration
+                self.api = ApiConfig(**file_content.get("api", {}))
 
         ### Load SSH profiles
-        ssh_config = self.config_dir / "ssh_profiles.yaml"
-        if ssh_config.exists():
-            with open(ssh_config, encoding="utf-8") as f:
+        ssh_profiles_file = self.config_dir / "ssh_profiles.yaml"
+        if ssh_profiles_file.exists():
+            with open(ssh_profiles_file, encoding="utf-8") as f:
                 self.ssh_profiles = yaml.safe_load(f) or {}
 
         ### Load vendor configs
@@ -93,21 +209,20 @@ class Settings(BaseSettings):
         if vendors_dir.exists():
             for vendor_file in vendors_dir.glob("*.yaml"):
                 with open(vendor_file, encoding="utf-8") as f:
-                    vendor_config = yaml.safe_load(f) or {}
-                    vendor_id = vendor_config.get("vendor", {}).get("id", vendor_file.stem)
-                    self.vendors[vendor_id] = vendor_config
+                    vendor_data = yaml.safe_load(f) or {}
+                    vendor_id = vendor_data["vendor"].get("id")
+                    self.vendors[vendor_id] = vendor_data
 
         ### Build database URL from job_log_storage config
         self.database_url = self._build_database_url()
 
-    def get_ssh_profile(self, profile_name: str) -> dict[str, Any]:
-        """Get SSH profile configuration."""
-        profiles = self.ssh_profiles.get("profiles", {})
-        return profiles.get(profile_name, profiles.get("modern", {}))
+    def get_ssh_profile(self, profile_name: str) -> dict[str, Any] | None:
+        """Get SSH profile configuration by name."""
+        return self.ssh_profiles.get(profile_name)
 
-    def get_vendor_config(self, vendor_id: str) -> dict[str, Any]:
-        """Get vendor-specific configuration."""
-        return self.vendors.get(vendor_id, {})
+    def get_vendor_config(self, vendor_id: str) -> dict[str, Any] | None:
+        """Get vendor-specific configuration by ID."""
+        return self.vendors.get(vendor_id)
 
     def _build_database_url(self) -> str:
         """Build database URL from job_log_storage configuration.
@@ -115,32 +230,23 @@ class Settings(BaseSettings):
         Returns:
             SQLAlchemy database URL string
         """
-        if not self.job_log_storage_config:
-            ### Raise error and don't fallback to any defaults - backup storage config is required
-            raise ValueError("Backup storage configuration is missing in downtown.yaml")
-
-        db_type = self.job_log_storage_config.get("type").lower()
-
-        if db_type == "sqlite":
-            path = self.job_log_storage_config.get("path", "downtown.sqlite")
+        if self.job_log_storage.type.lower() == "sqlite":
+            path = self.job_log_storage.path or "downtown.sqlite"
             ### If relative path, make it absolute relative to config_dir
             if not Path(path).is_absolute():
                 path = self.config_dir / path
             return f"sqlite:///{Path(path).resolve()}"
 
-        elif db_type == "postgresql":
-            host = self.job_log_storage_config.get("host")
-            port = self.job_log_storage_config.get("port", 5432)
-            database = self.job_log_storage_config.get("database", "downtown")
-            user = self.job_log_storage_config.get("user")
-            password = self.job_log_storage_config.get("password")
-
-            ### TODO: Switch to more explicit checks?
-            if not all([host, port, database, user, password]):
-                raise ValueError("Missing required PostgreSQL configuration fields")
+        elif self.job_log_storage.type.lower() == "postgresql":
+            if not all([self.job_log_storage.host, self.job_log_storage.user, self.job_log_storage.password]):
+                raise ValueError("Missing required PostgreSQL configuration fields (host, user, password)")
+            return (
+                f"postgresql://{self.job_log_storage.user}:{self.job_log_storage.password}"
+                f"@{self.job_log_storage.host}:{self.job_log_storage.port}/{self.job_log_storage.database}"
+            )
 
         else:
-            raise ValueError(f"Unsupported database type: {db_type}")
+            raise ValueError(f"Unsupported database type: {self.job_log_storage.type}")
 
     def get_device_config(self, group: str, device_name: str) -> dict[str, Any]:
         """
@@ -152,29 +258,30 @@ class Settings(BaseSettings):
         device_config = {}
 
         ### Step 1: Apply group-level defaults
-        groups = self.app_config.get("groups", {})
-        if group in groups:
-            group_config = groups[group]
+        if group in self.groups:
+            group_config = self.groups[group]
             device_config.update({
-                "ssh_profile": group_config.get("ssh_profile"),
-                "vendor": group_config.get("vendor"),
-                "timeout": group_config.get("timeout"),
-                "username": group_config.get("username"),
-            }) # TODO: Display password in any way (encrypted) or leave it?
+                "username": group_config.username,
+                "password": group_config.password,
+                "ssh_profile": group_config.ssh_profile,
+                "vendor": group_config.vendor,
+                "timeout": group_config.timeout,
+            })
 
         ### Step 2: Apply node-specific overrides
         ### NOTE: Group cannot be overridden here - must be changed in source
-        if device_name in self.nodes_config:
-            node_config = self.nodes_config[device_name]
-            if "ssh_profile" in node_config:
-                device_config["ssh_profile"] = node_config["ssh_profile"]
-            if "vendor" in node_config:
-                device_config["vendor"] = node_config["vendor"]
-            if "timeout" in node_config:
-                device_config["timeout"] = node_config["timeout"]
-            if "username" in node_config:
-                device_config["username"] = node_config["username"]
-            # TODO: Add ability to override password in node_config if needed
+        if device_name in self.nodes:
+            node_config = self.nodes[device_name]
+            if node_config.ssh_profile is not None:
+                device_config["ssh_profile"] = node_config.ssh_profile
+            if node_config.vendor is not None:
+                device_config["vendor"] = node_config.vendor
+            if node_config.timeout is not None:
+                device_config["timeout"] = node_config.timeout
+            if node_config.username is not None:
+                device_config["username"] = node_config.username
+            if node_config.password is not None:
+                device_config["password"] = node_config.password
 
         return device_config
 
