@@ -2,6 +2,7 @@
 import { onMounted, computed, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useDevicesStore } from "@/stores/devices"
+import { useFavoritesStore } from "@/stores/favorites"
 import { backupApi } from "@/api/backups"
 import StatusBadge from "@/components/StatusBadge.vue"
 import DiffViewer from "@/components/DiffViewer.vue"
@@ -22,8 +23,10 @@ interface BackupEntry {
 const route = useRoute()
 const router = useRouter()
 const devicesStore = useDevicesStore()
+const favoritesStore = useFavoritesStore()
 
 const deviceName = computed(() => route.params.name as string)
+const isFavorite = computed(() => favoritesStore.isFavorite(deviceName.value))
 
 const backupHistory = ref<BackupEntry[]>([])
 const historyLoading = ref(false)
@@ -156,6 +159,10 @@ function goBack() {
   router.push("/devices")
 }
 
+function toggleFavorite() {
+  favoritesStore.toggleFavorite(deviceName.value)
+}
+
 async function triggerBackup() {
   try {
     // Update device status to in_progress
@@ -273,7 +280,15 @@ function formatFileSize(bytes: number): string {
             <p class="text-gray-500 font-mono mt-1">{{ devicesStore.selectedDevice.ip_address }}</p>
           </div>
 
-          <div class="mt-4 md:mt-0">
+          <!-- Favorite Button-->
+          <div class="mt-4 md:mt-0 flex items-center gap-2">
+            <button
+              @click="toggleFavorite"
+              class="px-3 py-2 rounded-md text-sm font-medium transition border"
+              :class="isFavorite ? 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200' : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200'"
+            >
+              {{ isFavorite ? "★ Favorited" : "☆ Favorite" }}
+            </button>
             <button @click="triggerBackup" class="btn btn-primary">
               Trigger Backup
             </button>

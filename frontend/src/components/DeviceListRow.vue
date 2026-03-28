@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import StatusBadge from "./StatusBadge.vue"
 import { backupApi } from "@/api/backups"
+import { useFavoritesStore } from "@/stores/favorites"
 import type { Device } from "@/types/device"
 
 const props = defineProps<{
@@ -9,7 +10,18 @@ const props = defineProps<{
   isHeader?: boolean
 }>()
 
+const favoritesStore = useFavoritesStore()
 const triggering = ref(false)
+const isFavorite = computed(() => {
+  if (!props.device) return false
+  return favoritesStore.isFavorite(props.device.device_name)
+})
+
+function handleToggleFavorite(e: Event) {
+  e.stopPropagation()
+  if (!props.device) return
+  favoritesStore.toggleFavorite(props.device.device_name)
+}
 
 async function handleTriggerBackup(e: Event) {
   e.stopPropagation()
@@ -61,18 +73,30 @@ async function handleTriggerBackup(e: Event) {
         <StatusBadge v-if="device" :status="device.status" />
       </div>
 
-      <!-- Backup Button / Header -->
+      <!-- Actions -->
       <div class="flex justify-center">
-        {{ isHeader ? "Backup" : '' }}
-        <button
-          v-if="!isHeader"
-          @click="handleTriggerBackup"
-          :disabled="triggering"
-          class="px-2 py-1 text-xs bg-downtown-100 text-downtown-700 hover:bg-downtown-200 rounded transition"
-          title="Trigger backup"
-        >
-          {{ triggering ? "..." : "▶" }}
-        </button>
+        <span v-if="isHeader" class="font-semibold text-gray-700">Actions</span>
+        <div v-else class="flex items-center gap-2">
+          <!-- Favorite Button -->
+          <button
+            @click="handleToggleFavorite"
+            class="px-2 py-1 text-xs rounded transition border"
+            :class="isFavorite ? 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'"
+            :title="isFavorite ? 'Remove from favorites' : 'Add to favorites'"
+            :aria-label="isFavorite ? 'Remove from favorites' : 'Add to favorites'"
+          >
+            {{ isFavorite ? "★" : "☆" }}
+          </button>
+          <!-- Trigger Backup Button -->
+          <button
+            @click="handleTriggerBackup"
+            :disabled="triggering"
+            class="px-2 py-1 text-xs bg-downtown-100 text-downtown-700 hover:bg-downtown-200 rounded transition"
+            title="Trigger backup"
+          >
+            {{ triggering ? "..." : "▶" }}
+          </button>
+        </div>
       </div>
     </div>
   </div>

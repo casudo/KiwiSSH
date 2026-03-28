@@ -1,14 +1,22 @@
 <script setup lang="ts">
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import StatusBadge from "./StatusBadge.vue"
 import { backupApi } from "@/api/backups"
+import { useFavoritesStore } from "@/stores/favorites"
 import type { Device } from "@/types/device"
 
 const props = defineProps<{
   device: Device
 }>()
 
+const favoritesStore = useFavoritesStore()
 const triggering = ref(false)
+const isFavorite = computed(() => favoritesStore.isFavorite(props.device.device_name))
+
+function handleToggleFavorite(e: Event) {
+  e.stopPropagation()
+  favoritesStore.toggleFavorite(props.device.device_name)
+}
 
 async function handleTriggerBackup(e: Event) {
   e.stopPropagation()
@@ -36,6 +44,15 @@ async function handleTriggerBackup(e: Event) {
         <p class="text-sm text-gray-500 font-mono">{{ device.ip_address }}</p>
       </div>
       <div class="flex items-center gap-2 flex-shrink-0">
+        <button
+          @click="handleToggleFavorite"
+          class="px-2 py-1 text-xs rounded transition border"
+          :class="isFavorite ? 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'"
+          :title="isFavorite ? 'Remove from favorites' : 'Add to favorites'"
+          :aria-label="isFavorite ? 'Remove from favorites' : 'Add to favorites'"
+        >
+          {{ isFavorite ? "★" : "☆" }}
+        </button>
         <StatusBadge :status="device.status" />
         <button
           @click="handleTriggerBackup"
