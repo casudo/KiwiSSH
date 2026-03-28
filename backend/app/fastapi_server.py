@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
 
     ### Configure logging
-    configure_logging(debug=settings.debug)
+    configure_logging(debug=settings.app.debug)
 
     ## Clear caches to ensure fresh load from .env file
     get_settings.cache_clear()
@@ -38,7 +38,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     logger.info(f"Starting Project Downtown v{__version__}")
     logger.info(f"Config directory: {settings.config_dir}")
-    logger.info(f"Debug mode: {settings.debug}")
+    logger.info(f"Debug mode: {settings.app.debug}")
     logger.info(f"Loaded {len(settings.vendors)} vendor configurations")
     logger.info(f"Loaded {len(settings.ssh_profiles)} SSH profiles")
 
@@ -69,13 +69,10 @@ def create_app() -> FastAPI:
     )
 
     ### Configure CORS (load from config or use defaults)
-    cors_origins = settings.app_config.get("api", {}).get(
-        "cors_origins",
-        [
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
-        ],
-    )
+    cors_origins = settings.api.cors_origins or [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
 
     app.add_middleware(
         CORSMiddleware,
@@ -100,7 +97,7 @@ if __name__ == "__main__":
     settings = get_settings()
     uvicorn.run(
         app,
-        host="127.0.0.1",
-        port=settings.api_port,
-        log_level=settings.debug,
+        host=settings.api.host,
+        port=settings.api.port,
+        log_level="debug" if settings.app.debug else "info",
     )

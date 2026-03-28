@@ -29,7 +29,7 @@ async def health_check() -> HealthResponse:
     return HealthResponse(
         status="healthy",
         timestamp=get_utc_now(),
-        config_loaded=bool(settings.app_config),
+        config_loaded=bool(settings.app and settings.groups and settings.git),
     )
 
 
