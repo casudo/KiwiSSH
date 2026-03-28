@@ -1,9 +1,12 @@
 """Database connection and initialization."""
 
+import logging
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, Session
 from app.db.models import Base
 from typing import Generator
+
+logger = logging.getLogger(__name__)
 
 ### Global engine and SessionLocal will be set after config is loaded
 engine = None
@@ -34,7 +37,7 @@ def init_database(database_url: str) -> None:
     Base.metadata.create_all(bind=engine)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-    print(f"✓ Database initialized: {database_url}")
+    logger.info(f"Database initialized: {database_url}")
 
 
 def get_db() -> Generator[Session, None, None]:

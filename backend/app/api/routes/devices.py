@@ -1,5 +1,6 @@
 """Device management endpoints."""
 
+import logging
 from fastapi import APIRouter, HTTPException, Query, Depends
 from sqlalchemy.orm import Session
 
@@ -10,6 +11,7 @@ from app.services.backup_job_service import backup_job_service
 from app.db.database import get_db
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 async def _enrich_device_with_backup_info(device_base: DeviceBase, db: Session = None, latest_jobs_cache: dict = None) -> DeviceFull:
@@ -26,7 +28,7 @@ async def _enrich_device_with_backup_info(device_base: DeviceBase, db: Session =
                 latest_job = backup_job_service.get_latest_job(db, device.device_name)
 
             if latest_job:
-                print(f"[Device Enrichment] Found latest job for {device.device_name}: status={latest_job.status}, timestamp={latest_job.timestamp}") # TODO: Make debug log entry?
+                logger.debug(f"Found latest job for {device.device_name}: status={latest_job.status}, timestamp={latest_job.timestamp}")
                 device.last_backup = latest_job.timestamp
                 if latest_job.status == "success":
                     device.status = DeviceStatus.BACKUP_SUCCESS
@@ -39,10 +41,10 @@ async def _enrich_device_with_backup_info(device_base: DeviceBase, db: Session =
                     device.status = DeviceStatus.BACKUP_FAILED
                     device.last_error = latest_job.error_message
             else:
-                print(f"[Device Enrichment] No backup job found for {device.device_name}")
+                logger.debug(f"No backup job found for {device.device_name}")
 
     except Exception as e:
-        print(f"Warning: Failed to get backup info for {device.device_name}: {e}")
+        logger.warning(f"Failed to get backup info for {device.device_name}: {e}")
         pass
     return device
 

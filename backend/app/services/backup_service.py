@@ -4,6 +4,7 @@ This service coordinates the backup process, combining SSH and Git services
 to backup device configurations.
 """
 
+import logging
 import uuid
 
 from app.models.backup import BackupRecord, BackupStatus, BackupTriggerResponse
@@ -12,6 +13,8 @@ from app.services.source_service import source_service
 from app.services.ssh_service import ssh_service
 from app.services.git_service import git_service
 from app.utils.timezone import get_utc_now
+
+logger = logging.getLogger(__name__)
 
 
 class BackupService:
@@ -28,10 +31,10 @@ class BackupService:
             BackupRecord with backup status
         """
         try:
-            print(f"🔄 Backing up device: {device.device_name} (group: {device.group})")
+            logger.info(f"Backing up device: {device.device_name} (group: {device.group})")
             ### Get config from device via SSH (or simulator)
             config = await ssh_service.get_config(device, username="", password="")
-            print(f"   ✓ Got config ({len(config)} bytes)")
+            logger.debug(f"Got config for {device.device_name} ({len(config)} bytes)")
 
             ### Save config to git (using device's group)
             commit_hash, has_changes = await git_service.save_config(
@@ -45,7 +48,7 @@ class BackupService:
 
             ### If no changes detected, return NO_CHANGES status
             if not has_changes:
-                print("   ℹ️ No configuration changes detected")
+                logger.info(f"No configuration changes detected for {device.device_name}")
                 return BackupRecord(
                     id=str(uuid.uuid4()),
                     device_name=device.device_name,
@@ -54,7 +57,7 @@ class BackupService:
                     config_size_bytes=config_size,
                 )
 
-            print(f"   ✓ Saved to git: {commit_hash}")
+            logger.info(f"Saved configuration to git for {device.device_name}: {commit_hash}")
             return BackupRecord(
                 id=commit_hash,
                 device_name=device.device_name,
@@ -65,7 +68,7 @@ class BackupService:
             )
 
         except Exception as e:
-            print(f"❌ Backup failed for {device.device_name}: {e}")
+            logger.error(f"Backup failed for {device.device_name}: {e}")
             return BackupRecord(
                 id=str(uuid.uuid4()),
                 device_name=device.device_name,

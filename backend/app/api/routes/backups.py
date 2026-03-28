@@ -1,5 +1,6 @@
 """Backup operation endpoints."""
 
+import logging
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
 
@@ -11,12 +12,13 @@ from app.services.git_service import git_service
 from app.db.database import get_db
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.post("/trigger", response_model=BackupTriggerResponse)
 async def trigger_backup(request: BackupTriggerRequest, db: Session = Depends(get_db)) -> BackupTriggerResponse:
     """Trigger a backup operation for a specific group or all devices."""
-    print(f"📢 Backup trigger endpoint called for group: {request.group or 'all'}")
+    logger.info(f"Backup trigger endpoint called for group: {request.group or 'all'}")
 
     ### Get devices to backup
     if request.group:
@@ -25,14 +27,14 @@ async def trigger_backup(request: BackupTriggerRequest, db: Session = Depends(ge
         devices = await source_service.get_all_devices()
 
     enabled_devices = [d for d in devices if d.enabled]
-    print(f"   Found {len(enabled_devices)} enabled devices")
+    logger.info(f"Found {len(enabled_devices)} enabled devices")
 
     ### Perform backups
     results = await backup_service.backup_devices(enabled_devices)
 
     ### Log backup jobs to database
     for result in results:
-        device = next((d for d in enabled_devices if d.device_name == result.device_name), None) 
+        device = next((d for d in enabled_devices if d.device_name == result.device_name), None)
         if not device:
             continue
 
@@ -54,9 +56,9 @@ async def trigger_backup(request: BackupTriggerRequest, db: Session = Depends(ge
                 error_message=result.error_message,
                 config_size_bytes=result.config_size_bytes,
             )
-            print(f"   ✓ Logged backup job for {result.device_name}: status={job_status}")
+            logger.info(f"Logged backup job for {result.device_name}: status={job_status}")
         except Exception as e:
-            print(f"   ⚠️ Failed to log backup job for {result.device_name}: {e}")
+            logger.warning(f"Failed to log backup job for {result.device_name}: {e}")
 
     successful = [r for r in results if r.status == BackupStatus.SUCCESS]
     device_names = [d.device_name for d in enabled_devices]
@@ -71,16 +73,16 @@ async def trigger_backup(request: BackupTriggerRequest, db: Session = Depends(ge
 @router.post("/trigger/{device_name}")
 async def trigger_device_backup(device_name: str, db: Session = Depends(get_db)) -> dict:
     """Trigger backup for a specific device."""
-    print(f"📢 Backup trigger endpoint called for: {device_name}")
+    logger.info(f"Backup trigger endpoint called for: {device_name}")
     device = await source_service.get_device(device_name)
-    print(f"   Device found: {device is not None}")
+    logger.debug(f"Device found: {device is not None}")
 
     if device is None:
         raise HTTPException(status_code=404, detail=f"Device '{device_name}' not found")
 
-    print(f"   Starting backup for: {device.device_name} (group: {device.group})")
+    logger.info(f"Starting backup for: {device.device_name} (group: {device.group})")
     result = await backup_service.backup_device(device)
-    print(f"   Backup result: {result.status.value}")
+    logger.info(f"Backup result: {result.status.value}")
 
     ### Log backup job to database
     ## Map backup result status to device status and job status
@@ -101,9 +103,9 @@ async def trigger_device_backup(device_name: str, db: Session = Depends(get_db))
             error_message=result.error_message,
             config_size_bytes=result.config_size_bytes,
         )
-        print(f"   ✓ Backup job logged to database: status={job_status}")
+        logger.info(f"Backup job logged to database: status={job_status}")
     except Exception as e:
-        print(f"   ⚠️ Failed to log backup job: {e}")
+        logger.warning(f"Failed to log backup job: {e}")
 
     return {
         "message": f"Backup triggered for {device_name}",
@@ -150,7 +152,7 @@ async def get_backup_jobs(
             "count": len(jobs),
         }
     except Exception as e:
-        print(f"Error fetching backup jobs: {e}")
+        logger.error(f"Error fetching backup jobs: {e}")
         return {
             "jobs": [],
             "count": 0,
@@ -295,7 +297,7 @@ async def flush_database(db: Session = Depends(get_db)) -> dict:
         db.query(BackupJob).delete()
         db.commit()
 
-        print(f"📢 Flushed database: deleted {job_count} backup jobs")
+        logger.info(f"Flushed database: deleted {job_count} backup jobs")
 
         return {
             "message": f"Successfully deleted {job_count} backup jobs",
@@ -303,5 +305,5 @@ async def flush_database(db: Session = Depends(get_db)) -> dict:
         }
     except Exception as e:
         db.rollback()
-        print(f"⚠️ Failed to flush database: {e}")
+        logger.error(f"Failed to flush database: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to flush database: {str(e)}")
