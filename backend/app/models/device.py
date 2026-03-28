@@ -22,9 +22,9 @@ class DeviceBase(BaseModel):
 
     device_name: str = Field(..., min_length=1, max_length=255)
     ip_address: IPvAnyAddress
-    vendor: str = Field(...)
-    group: str = Field(...)
-    ssh_profile: str = Field(default="modern")
+    vendor: str = Field(..., min_length=1, max_length=255)
+    group: str = Field(..., min_length=1, max_length=255)
+    ssh_profile: str = Field(..., min_length=1, max_length=255)
     enabled: bool = True
 
 
