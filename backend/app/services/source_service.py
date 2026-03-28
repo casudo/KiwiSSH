@@ -37,9 +37,20 @@ class SourceService:
         devices = []
         with open(csv_path, newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
-            for row in reader:
-                group = row.get("group").strip() # TODO: Error if group is missing
+            for row_num, row in enumerate(reader, start=2):  # Start at 2 to account for header
+                group = row.get("group").strip()
                 device_name = row["device_name"].strip()
+
+                ### Validate group exists
+                ## NOTE: We only check for group existence here since the other fields will get catched by Pydantic validation
+                ## .. and it cannot be unassigned for get_device_config(). 
+                if not group:
+                    raise ValueError(f"Row {row_num}: 'group' column is required")
+                if group not in self.settings.groups:
+                    raise ValueError(
+                        f"Row {row_num} (device '{device_name}'): Group '{group}' not found in downtown.yaml. "
+                        f"Available groups: {', '.join(self.settings.groups.keys())}"
+                    )
 
                 ### Resolve configuration from downtown.yaml
                 device_config = self.settings.get_device_config(group, device_name)
