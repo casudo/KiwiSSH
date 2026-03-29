@@ -65,11 +65,8 @@ Add check to entrypoint if SSH profile and vendor is existing and not just set w
 - Override SSH port (Probably better placed in groups/nodes than SSH profiles?)
 - SSH: Timeout/Retry setting
 - sources.file.path has no use since its currently hardcoded based on local_test_mode, which shouldnt
-- SSH Profile View: Dont capitalize the SSH profile name
 - Dark mode needs update: Not everything is using it + make it a little bit lighter
-- Device Item and DeviceDetailView: Display the vendor.name and not the vendor.id
-- Vendor Detail View: Header shows vendor.id, switch to vendor.name
-- Vendor Detail View & SSH Profiles Detail View: Make rows as wide as the widest one (based on IP or hostname text length)
+- Backup Job Length Status is capped at 50
 
 **Mid-term:**
 
@@ -79,10 +76,8 @@ Add check to entrypoint if SSH profile and vendor is existing and not just set w
 - Login Screen, User management and RBAC
 - Jumphost support
 - Threaded/Async backup execution for better performance. Max threads configurable in downtown.yaml
-- For real SSH backups: Include time -> We can then display the avg. time as statistic somewhere and seconds needed for backup to the backup list view
-- Refactor API: add endpoints for /vendors /ssh-profiles and /groups?
-- Standarize API response: /devices/ ,/groups, /vendors and /ssh_profiles should have the same response format with "count" and "groups"/"vendors"/"devices"/"ssh_profiles". If the response should also contain the config for these, the paramter "include_config=true" can be added to the request, which will then include the config for each item in the response. This way we can keep the API consistent and also have a way to get the config for each item if needed.
-  - The endpoints /devices/<device>, /groups/<group>, /vendors/<vendor> and /ssh_profiles/<profile> can then be used to get the config for a specific item if needed, which will also keep the API consistent and clean.
+- For real SSH backups: Include time -> We can then display the avg. time as statistic somewhere and seconds needed for backup to the backup list viewW
+- Mark favorite decices consistently in database instead of localStorage
 
 **Long Term:**
 
@@ -97,6 +92,8 @@ Add check to entrypoint if SSH profile and vendor is existing and not just set w
 - New Update available notification in the UI
 - GitHub Wiki for usage?
 - Demo version with pre-filled config and mock device sources for users to try out without setting up their own environment (should reset after a certain time or when the user clicks a reset button)
+- Remove /redocs from FastAPI and only use OpenAPI 
+- /backups/trigger & /backups/trigger/{device} endpoints: They shouldnt wait for response, just return "Backup job triggered for device/group XY". Status and co can be seen in the frontend.
 
 ---
 
