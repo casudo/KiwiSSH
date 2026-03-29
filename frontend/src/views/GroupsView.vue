@@ -3,8 +3,14 @@ import { onMounted, computed, ref } from "vue"
 import { useDevicesStore } from "@/stores/devices"
 import LoadingSpinner from "@/components/LoadingSpinner.vue"
 
+type LayoutType = "card" | "list" | "table"
+
 const devicesStore = useDevicesStore()
 const selectedGroup = ref<string | null>(null)
+const searchQuery = ref("")
+const currentLayout = ref<LayoutType>("card")
+
+const LAYOUT_STORAGE_KEY = "groups-layout"
 
 interface GroupInfo {
   name: string
@@ -13,12 +19,29 @@ interface GroupInfo {
 }
 
 const groupList = computed((): GroupInfo[] => {
-  return devicesStore.groups.map(group => ({
+  let groups = devicesStore.groups.map(group => ({
     name: group,
     count: (devicesStore.devicesByGroup[group] || []).length,
     devices: (devicesStore.devicesByGroup[group] || []).map(d => d.device_name),
   }))
+
+  // Filter by search query
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    groups = groups.filter(g => 
+      g.name.toLowerCase().includes(query) ||
+      g.devices.some(d => d.toLowerCase().includes(query))
+    )
+  }
+
+  // Sort by device count (descending)
+  return groups.sort((a, b) => b.count - a.count)
 })
+
+function setLayout(layout: LayoutType) {
+  currentLayout.value = layout
+  localStorage.setItem(LAYOUT_STORAGE_KEY, layout)
+}
 
 onMounted(async () => {
   if (devicesStore.devices.length === 0) {
@@ -27,108 +50,222 @@ onMounted(async () => {
       devicesStore.fetchGroups(),
     ])
   }
+
+  // Load layout preference from localStorage
+  const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY) as LayoutType | null
+  if (savedLayout && ["card", "list", "table"].includes(savedLayout)) {
+    currentLayout.value = savedLayout
+  }
 })
 </script>
 
 <template>
   <div>
     <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900">Groups</h1>
-      <p class="text-gray-500 mt-1">Device groups and associated repositories</p>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Groups</h1>
+      <p class="text-gray-500 dark:text-gray-400 mt-1">Device groups and associated repositories</p>
     </div>
 
     <LoadingSpinner v-if="devicesStore.loading" size="lg" class="py-12" />
 
-    <div v-else-if="groupList.length === 0" class="card text-center py-12">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-      </svg>
-      <p class="text-gray-500 text-lg">No groups configured</p>
-      <p class="text-gray-400 text-sm mt-2">Add devices to create groups</p>
+    <div v-else-if="groupList.length === 0 && !searchQuery">
+      <div class="card text-center py-12">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+        </svg>
+        <p class="text-gray-500 dark:text-gray-400 text-lg">No groups configured</p>
+        <p class="text-gray-400 dark:text-gray-500 text-sm mt-2">Add devices to create groups</p>
+      </div>
     </div>
 
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div
-        v-for="group in groupList"
-        :key="group.name"
-        @click="selectedGroup = group.name"
-        class="card-hover cursor-pointer"
-      >
-        <div class="flex items-start justify-between mb-4">
+    <div v-else>
+      <!-- Layout Toggle -->
+      <div class="flex gap-2 mb-6">
+        <button
+          @click="setLayout('card')"
+          :class="[
+            'px-4 py-2 rounded font-medium text-sm transition',
+            currentLayout === 'card'
+              ? 'bg-downtown-600 text-white'
+              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+          ]"
+        >
+          Detailed
+        </button>
+        <button
+          @click="setLayout('list')"
+          :class="[
+            'px-4 py-2 rounded font-medium text-sm transition',
+            currentLayout === 'list'
+              ? 'bg-downtown-600 text-white'
+              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+          ]"
+        >
+          Compact
+        </button>
+        <button
+          @click="setLayout('table')"
+          :class="[
+            'px-4 py-2 rounded font-medium text-sm transition',
+            currentLayout === 'table'
+              ? 'bg-downtown-600 text-white'
+              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+          ]"
+        >
+          List
+        </button>
+      </div>
+
+      <!-- Filters -->
+      <div class="card mb-6">
+        <div class="space-y-4">
           <div>
-            <h3 class="text-lg font-semibold text-gray-900">{{ group.name }}</h3>
-            <p class="text-sm text-gray-500 mt-1">{{ group.count }} {{ group.count === 1 ? "device" : "devices" }}</p>
+            <label class="label">Search groups or devices</label>
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="e.g., network, infrastructure..."
+              class="input"
+            />
           </div>
-          <span class="inline-flex items-center justify-center h-12 w-12 rounded-lg bg-green-100">
-            <span class="text-lg font-semibold text-green-600">{{ group.count }}</span>
+        </div>
+      </div>
+
+      <!-- Card View -->
+      <div v-if="currentLayout === 'card'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div
+          v-for="group in groupList"
+          :key="group.name"
+          @click="selectedGroup = group.name"
+          class="card-hover cursor-pointer"
+        >
+          <div class="flex items-start justify-between mb-4">
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ group.name }}</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ group.count }} {{ group.count === 1 ? "device" : "devices" }}</p>
+            </div>
+            <span class="inline-flex items-center justify-center h-12 w-12 rounded-lg bg-green-100 dark:bg-green-900">
+              <span class="text-lg font-semibold text-green-600 dark:text-green-400">{{ group.count }}</span>
+            </span>
+          </div>
+
+          <div class="mt-4">
+            <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mb-2">Git Repository:</p>
+            <p class="text-sm font-mono text-gray-600 dark:text-gray-400">backups/{{ group.name }}/</p>
+          </div>
+
+          <div class="mt-4">
+            <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mb-2">Devices:</p>
+            <div class="flex flex-wrap gap-2">
+              <span
+                v-for="device in group.devices.slice(0, 5)"
+                :key="device"
+                class="inline-block px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded"
+              >
+                {{ device }}
+              </span>
+              <span
+                v-if="group.devices.length > 5"
+                class="inline-block px-2 py-1 text-gray-600 dark:text-gray-400 text-xs"
+              >
+                +{{ group.devices.length - 5 }} more
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compact View -->
+      <div v-else-if="currentLayout === 'list'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div
+          v-for="group in groupList"
+          :key="group.name"
+          @click="selectedGroup = group.name"
+          class="card-hover cursor-pointer py-3 px-4"
+        >
+          <h3 class="font-semibold text-gray-900 dark:text-white text-sm mb-1">{{ group.name }}</h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ group.count }} {{ group.count === 1 ? "device" : "devices" }}</p>
+          <span class="inline-block px-2 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded text-xs font-medium">
+            {{ group.count }}
           </span>
         </div>
+      </div>
 
-        <div class="mt-4">
-          <p class="text-xs text-gray-500 font-medium mb-2">Git Repository:</p>
-          <p class="text-sm font-mono text-gray-600">backups/{{ group.name }}/</p>
-        </div>
-
-        <div class="mt-4">
-          <p class="text-xs text-gray-500 font-medium mb-2">Devices:</p>
-          <div class="flex flex-wrap gap-2">
-            <span
-              v-for="device in group.devices.slice(0, 3)"
-              :key="device"
-              class="inline-block px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded"
-            >
-              {{ device }}
-            </span>
-            <span
-              v-if="group.devices.length > 3"
-              class="inline-block px-2 py-1 text-gray-600 text-xs"
-            >
-              +{{ group.devices.length - 3 }} more
-            </span>
+      <!-- Table View -->
+      <div v-else-if="currentLayout === 'table'" class="card">
+        <!-- Header row -->
+        <div class="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+          <div class="w-full grid grid-cols-[2fr_1fr_2fr] gap-4 px-6 py-3 text-sm">
+            <div class="font-semibold text-gray-700 dark:text-gray-300">Group</div>
+            <div class="font-semibold text-gray-700 dark:text-gray-300 text-center">Device Count</div>
+            <div class="font-semibold text-gray-700 dark:text-gray-300">Repository</div>
           </div>
         </div>
+        <!-- Group rows -->
+        <div
+          v-for="group in groupList"
+          :key="group.name"
+          @click="selectedGroup = group.name"
+          class="border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition last:border-b-0"
+        >
+          <div class="w-full grid grid-cols-[2fr_1fr_2fr] gap-4 px-6 py-3 text-sm">
+            <div class="font-medium text-gray-900 dark:text-white truncate">{{ group.name }}</div>
+            <div class="text-center text-gray-600 dark:text-gray-400">{{ group.count }}</div>
+            <div class="text-gray-600 dark:text-gray-400 text-xs font-mono">backups/{{ group.name }}/</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- No Results -->
+      <div v-if="groupList.length === 0 && searchQuery" class="card text-center py-12">
+        <p class="text-gray-500 dark:text-gray-400">No groups match your search</p>
       </div>
     </div>
 
     <!-- Detail panel -->
     <div v-if="selectedGroup" @click="selectedGroup = null" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div @click.stop class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-screen overflow-y-auto">
-        <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <h2 class="text-xl font-semibold text-gray-900">{{ selectedGroup }}</h2>
+      <div @click.stop class="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-900 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-white">{{ selectedGroup }}</h2>
           <button
             @click="selectedGroup = null"
-            class="text-gray-400 hover:text-gray-600"
+            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-400"
           >
             ✕
           </button>
         </div>
 
         <div class="px-6 py-4">
+          <!-- Info Section -->
           <div class="mb-6">
-            <h3 class="text-sm font-medium text-gray-900 mb-2">Group Details</h3>
+            <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Group Info</h3>
             <div class="space-y-2 text-sm">
-              <div class="flex justify-between">
-                <span class="text-gray-600">Git Repository:</span>
-                <span class="font-mono text-gray-900">backups/{{ selectedGroup }}/</span>
+              <div>
+                <span class="text-gray-600 dark:text-gray-400">Repository:</span>
+                <p class="font-mono text-gray-900 dark:text-gray-100 text-xs mt-1">backups/{{ selectedGroup }}/</p>
               </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600">Total Devices:</span>
-                <span class="font-medium text-gray-900">{{ (devicesStore.devicesByGroup[selectedGroup] || []).length }}</span>
+              <div>
+                <span class="text-gray-600 dark:text-gray-400">Total Devices:</span>
+                <p class="font-medium text-gray-900 dark:text-gray-100">{{ (devicesStore.devicesByGroup[selectedGroup] || []).length }}</p>
               </div>
             </div>
           </div>
 
+          <!-- Devices Grid (2 columns) -->
           <div>
-            <h3 class="text-sm font-medium text-gray-900 mb-2">Devices in this Group</h3>
-            <div class="space-y-2">
+            <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Devices in this Group</h3>
+            <div class="grid grid-cols-2 gap-3 max-h-96 overflow-y-auto">
               <div
-                v-for="device in devicesStore.devicesByGroup[selectedGroup] || []"
+                v-for="device in (devicesStore.devicesByGroup[selectedGroup] || []).slice(0, 20)"
                 :key="device.device_name"
-                class="p-3 bg-gray-50 rounded text-sm"
+                class="p-2 bg-gray-50 dark:bg-gray-700 rounded text-sm"
               >
-                <p class="font-medium text-gray-900">{{ device.device_name }}</p>
-                <p class="text-gray-500 text-xs">{{ device.ip_address }} ({{ device.vendor }})</p>
+                <p class="font-medium text-gray-900 dark:text-white">{{ device.device_name }}</p>
+                <p class="text-gray-500 dark:text-gray-400 text-xs">{{ device.ip_address }} ({{ device.vendor }})</p>
               </div>
+            </div>
+            <div v-if="(devicesStore.devicesByGroup[selectedGroup] || []).length > 20" class="text-xs text-gray-500 dark:text-gray-400 px-2 py-2 mt-2">
+              +{{ (devicesStore.devicesByGroup[selectedGroup] || []).length - 20 }} more devices
             </div>
           </div>
         </div>
