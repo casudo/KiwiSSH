@@ -9,6 +9,8 @@ const devicesStore = useDevicesStore()
 const selectedVendor = ref<string | null>(null)
 const searchQuery = ref("")
 const currentLayout = ref<LayoutType>("card")
+const pageSize = ref<number>(12)
+const currentPage = ref<number>(1)
 
 const LAYOUT_STORAGE_KEY = "vendors-layout"
 
@@ -18,12 +20,17 @@ interface VendorInfo {
   devices: string[]
 }
 
-const vendorList = computed((): VendorInfo[] => {
-  let vendors = devicesStore.uniqueVendors.map(vendor => ({
+const allVendors = computed((): VendorInfo[] => {
+  const vendors = devicesStore.uniqueVendors.map(vendor => ({
     name: vendor,
     count: (devicesStore.devicesByVendor[vendor] || []).length,
     devices: (devicesStore.devicesByVendor[vendor] || []).map(d => d.device_name),
   }))
+  return vendors.sort((a, b) => b.count - a.count)
+})
+
+const filteredVendors = computed((): VendorInfo[] => {
+  let vendors = [...allVendors.value]
 
   // Filter by search query
   if (searchQuery.value) {
@@ -34,13 +41,24 @@ const vendorList = computed((): VendorInfo[] => {
     )
   }
 
-  // Sort by device count (descending)
-  return vendors.sort((a, b) => b.count - a.count)
+  return vendors
+})
+
+const totalPages = computed(() => Math.ceil(filteredVendors.value.length / pageSize.value))
+
+const vendorList = computed((): VendorInfo[] => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return filteredVendors.value.slice(start, end)
 })
 
 function setLayout(layout: LayoutType) {
   currentLayout.value = layout
   localStorage.setItem(LAYOUT_STORAGE_KEY, layout)
+}
+
+function handlePageSizeChange() {
+  currentPage.value = 1
 }
 
 onMounted(async () => {
@@ -119,14 +137,31 @@ onMounted(async () => {
       <!-- Filters -->
       <div class="card mb-6">
         <div class="space-y-4">
-          <div>
-            <label class="label">Search vendors or devices</label>
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="e.g., Cisco, Fortinet..."
-              class="input"
-            />
+          <!-- Header-->
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Filters</h3>
+          </div>
+
+          <!-- Filter -->
+          <div class="flex flex-col md:flex-row gap-4">
+            <div class="flex-1">
+              <label class="label">Search vendors or devices</label>
+              <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="e.g., Cisco, Fortinet..."
+                class="input"
+              />
+            </div>
+            <div class="flex-1 flex flex-col">
+              <label class="label">Entries per page</label>
+              <select v-model.number="pageSize" @change="handlePageSizeChange" class="input">
+                <option :value="6">6</option>
+                <option :value="12">12</option>
+                <option :value="24">24</option>
+                <option :value="50">50</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -217,8 +252,31 @@ onMounted(async () => {
       </div>
 
       <!-- No Results -->
-      <div v-if="vendorList.length === 0 && searchQuery" class="card text-center py-12">
+      <div v-if="filteredVendors.length === 0 && searchQuery" class="card text-center py-12">
         <p class="text-gray-500 dark:text-gray-400">No vendors match your search</p>
+      </div>
+
+      <!-- Pagination controls -->
+      <div v-if="filteredVendors.length > 0" class="mt-4 flex items-center justify-between">
+        <span class="text-sm text-gray-600 dark:text-gray-400">
+          Page {{ currentPage }} of {{ totalPages }} ({{ filteredVendors.length }} total)
+        </span>
+        <div class="flex gap-2">
+          <button
+            @click="currentPage = Math.max(1, currentPage - 1)"
+            :disabled="currentPage === 1"
+            class="btn btn-secondary py-1 px-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            ← Previous
+          </button>
+          <button
+            @click="currentPage = Math.min(totalPages, currentPage + 1)"
+            :disabled="currentPage === totalPages"
+            class="btn btn-secondary py-1 px-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next →
+          </button>
+        </div>
       </div>
 
       <!-- Detail panel -->

@@ -9,6 +9,8 @@ const devicesStore = useDevicesStore()
 const selectedProfile = ref<string | null>(null)
 const searchQuery = ref("")
 const currentLayout = ref<LayoutType>("card")
+const pageSize = ref<number>(12)
+const currentPage = ref<number>(1)
 
 const LAYOUT_STORAGE_KEY = "ssh-profiles-layout"
 
@@ -18,7 +20,7 @@ interface SSHProfileInfo {
   devices: string[]
 }
 
-const sshProfileList = computed((): SSHProfileInfo[] => {
+const allProfiles = computed((): SSHProfileInfo[] => {
   const profiles: Record<string, string[]> = {}
 
   devicesStore.devices.forEach(device => {
@@ -28,13 +30,17 @@ const sshProfileList = computed((): SSHProfileInfo[] => {
     profiles[device.ssh_profile].push(device.device_name)
   })
 
-  let list = Object.entries(profiles)
+  return Object.entries(profiles)
     .map(([name, devices]) => ({
       name,
       count: devices.length,
       devices,
     }))
     .sort((a, b) => b.count - a.count)
+})
+
+const filteredProfiles = computed((): SSHProfileInfo[] => {
+  let list = [...allProfiles.value]
 
   // Filter by search query
   if (searchQuery.value) {
@@ -48,9 +54,21 @@ const sshProfileList = computed((): SSHProfileInfo[] => {
   return list
 })
 
+const totalPages = computed(() => Math.ceil(filteredProfiles.value.length / pageSize.value))
+
+const sshProfileList = computed((): SSHProfileInfo[] => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return filteredProfiles.value.slice(start, end)
+})
+
 function setLayout(layout: LayoutType) {
   currentLayout.value = layout
   localStorage.setItem(LAYOUT_STORAGE_KEY, layout)
+}
+
+function handlePageSizeChange() {
+  currentPage.value = 1
 }
 
 onMounted(async () => {
@@ -129,14 +147,31 @@ onMounted(async () => {
       <!-- Filters -->
       <div class="card mb-6">
         <div class="space-y-4">
-          <div>
-            <label class="label">Search profiles or devices</label>
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="e.g., default, remote..."
-              class="input"
-            />
+            <!-- Header-->
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Filters</h3>
+          </div>
+
+          <!-- Filters row -->
+          <div class="flex flex-col md:flex-row gap-4">
+            <div class="flex-1">
+              <label class="label">Search profiles or devices</label>
+              <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="e.g., default, remote..."
+                class="input"
+              />
+            </div>
+            <div class="flex-1 flex flex-col">
+              <label class="label">Entries per page</label>
+              <select v-model.number="pageSize" @change="handlePageSizeChange" class="input">
+                <option :value="6">6</option>
+                <option :value="12">12</option>
+                <option :value="24">24</option>
+                <option :value="50">50</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -227,8 +262,31 @@ onMounted(async () => {
       </div>
 
       <!-- No Results -->
-      <div v-if="sshProfileList.length === 0 && searchQuery" class="card text-center py-12">
-        <p class="text-gray-500 dark:text-gray-400">No SSH profiles match your search</p>
+      <div v-if="filteredProfiles.length === 0 && searchQuery" class="card text-center py-12">
+        <p class="text-gray-500 dark:text-gray-400">No profiles match your search</p>
+      </div>
+
+      <!-- Pagination controls -->
+      <div v-if="filteredProfiles.length > 0" class="mt-4 flex items-center justify-between">
+        <span class="text-sm text-gray-600 dark:text-gray-400">
+          Page {{ currentPage }} of {{ totalPages }} ({{ filteredProfiles.length }} total)
+        </span>
+        <div class="flex gap-2">
+          <button
+            @click="currentPage = Math.max(1, currentPage - 1)"
+            :disabled="currentPage === 1"
+            class="btn btn-secondary py-1 px-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            ← Previous
+          </button>
+          <button
+            @click="currentPage = Math.min(totalPages, currentPage + 1)"
+            :disabled="currentPage === totalPages"
+            class="btn btn-secondary py-1 px-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next →
+          </button>
+        </div>
       </div>
 
       <!-- Detail panel -->
