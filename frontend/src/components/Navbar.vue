@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { RouterLink, useRoute } from "vue-router"
+import { useThemeStore } from "@/stores/theme"
+import { computed } from "vue"
 import { APP_VERSION } from "@/version"
 
 const route = useRoute()
+const themeStore = useThemeStore()
 
 interface NavItem {
   name: string
@@ -23,10 +26,12 @@ const isActive = (path: string): boolean => {
   if (path === "/") return route.path === "/"
   return route.path.startsWith(path)
 }
+
+const isDarkMode = computed(() => themeStore.isDarkMode())
 </script>
 
 <template>
-  <nav class="bg-downtown-800 text-white shadow-lg">
+  <nav class="bg-downtown-800 dark:bg-gray-800 text-white shadow-lg transition-colors">
     <div class="container mx-auto px-4">
       <div class="flex items-center justify-between h-16">
         <!-- Logo -->
@@ -37,22 +42,32 @@ const isActive = (path: string): boolean => {
             </svg>
           </div>
           <span class="text-xl font-bold">Downtown</span>
-          <span class="text-sm text-downtown-300">v{{ APP_VERSION }}</span>
+          <span class="text-sm text-downtown-300 dark:text-gray-400">v{{ APP_VERSION }}</span>
         </RouterLink>
 
-        <!-- Navigation -->
-        <div class="flex space-x-1">
+        <!-- Navigation and Theme Toggle -->
+        <div class="flex items-center space-x-1">
           <RouterLink
             v-for="item in navItems"
             :key="item.path"
             :to="item.path"
             class="px-4 py-2 rounded-md text-sm font-medium transition-colors"
             :class="isActive(item.path)
-              ? 'bg-downtown-900 text-white'
-              : 'text-downtown-100 hover:bg-downtown-700 hover:text-white'"
+              ? 'bg-downtown-900 dark:bg-gray-900 text-white'
+              : 'text-downtown-100 dark:text-gray-300 hover:bg-downtown-700 dark:hover:bg-gray-700 hover:text-white'"
           >
             {{ item.name }}
           </RouterLink>
+
+          <!-- Theme Toggle Button -->
+          <button
+            @click="themeStore.toggleDarkMode()"
+            class="px-3 py-2 ml-2 rounded-md text-sm font-medium transition-colors text-downtown-100 dark:text-gray-300 hover:bg-downtown-700 dark:hover:bg-gray-700 hover:text-white"
+            :title="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
+          >
+            <span v-if="isDarkMode" class="text-lg">☀️</span>
+            <span v-else class="text-lg">🌙</span>
+          </button>
         </div>
       </div>
     </div>
