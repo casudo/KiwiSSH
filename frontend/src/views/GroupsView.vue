@@ -11,6 +11,7 @@ const searchQuery = ref("")
 const currentLayout = ref<LayoutType>("card")
 const pageSize = ref<number>(12)
 const currentPage = ref<number>(1)
+const groupsLoading = ref(false)
 
 const LAYOUT_STORAGE_KEY = "groups-layout"
 
@@ -20,7 +21,21 @@ interface GroupInfo {
   devices: string[]
 }
 
+const configuredGroups = ref<string[]>([])
+
 const allGroups = computed((): GroupInfo[] => {
+  // If we have configured groups from API, use only those
+  if (configuredGroups.value.length > 0) {
+    return configuredGroups.value
+      .map(group => ({
+        name: group,
+        count: (devicesStore.devicesByGroup[group] || []).length,
+        devices: (devicesStore.devicesByGroup[group] || []).map(d => d.device_name),
+      }))
+      .sort((a, b) => b.count - a.count)
+  }
+  
+  // Fallback: use device-derived groups if no configured groups
   const groups = devicesStore.groups.map(group => ({
     name: group,
     count: (devicesStore.devicesByGroup[group] || []).length,
@@ -62,17 +77,29 @@ function handlePageSizeChange() {
 }
 
 onMounted(async () => {
-  if (devicesStore.devices.length === 0) {
-    await Promise.all([
-      devicesStore.fetchDevices(),
-      devicesStore.fetchGroups(),
-    ])
-  }
+  groupsLoading.value = true
+  try {
+    if (devicesStore.devices.length === 0) {
+      await Promise.all([
+        devicesStore.fetchDevices(),
+        devicesStore.fetchGroups(),
+      ])
+    }
 
-  // Load layout preference from localStorage
-  const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY) as LayoutType | null
-  if (savedLayout && ["card", "list", "table"].includes(savedLayout)) {
-    currentLayout.value = savedLayout
+    // Fetch configured groups from API
+    const response = await fetch("/api/v1/devices/groups")
+    if (response.ok) {
+      const data = await response.json()
+      configuredGroups.value = data.groups || []
+    }
+
+    // Load layout preference from localStorage
+    const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY) as LayoutType | null
+    if (savedLayout && ["card", "list", "table"].includes(savedLayout)) {
+      currentLayout.value = savedLayout
+    }
+  } finally {
+    groupsLoading.value = false
   }
 })
 </script>
@@ -84,7 +111,7 @@ onMounted(async () => {
       <p class="text-gray-500 dark:text-gray-400 mt-1">Device groups and associated repositories</p>
     </div>
 
-    <LoadingSpinner v-if="devicesStore.loading" size="lg" class="py-12" />
+    <LoadingSpinner v-if="devicesStore.loading || groupsLoading" size="lg" class="py-12" />
 
     <div v-else-if="groupList.length === 0 && !searchQuery">
       <div class="card text-center py-12">
