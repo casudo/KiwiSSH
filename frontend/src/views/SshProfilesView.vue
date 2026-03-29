@@ -11,6 +11,7 @@ const searchQuery = ref("")
 const currentLayout = ref<LayoutType>("card")
 const pageSize = ref<number>(12)
 const currentPage = ref<number>(1)
+const profilesLoading = ref(false)
 
 const LAYOUT_STORAGE_KEY = "ssh-profiles-layout"
 
@@ -20,7 +21,34 @@ interface SSHProfileInfo {
   devices: string[]
 }
 
+const configuredProfiles = ref<string[]>([])
+
 const allProfiles = computed((): SSHProfileInfo[] => {
+  // If we have configured profiles from API, use only those
+  if (configuredProfiles.value.length > 0) {
+    const profilesWithDevices: Record<string, string[]> = {}
+    
+    // Build device associations for configured profiles
+    devicesStore.devices.forEach(device => {
+      if (configuredProfiles.value.includes(device.ssh_profile)) {
+        if (!profilesWithDevices[device.ssh_profile]) {
+          profilesWithDevices[device.ssh_profile] = []
+        }
+        profilesWithDevices[device.ssh_profile].push(device.device_name)
+      }
+    })
+    
+    // Return only configured profiles, sorted by device count
+    return configuredProfiles.value
+      .map(name => ({
+        name,
+        count: profilesWithDevices[name]?.length || 0,
+        devices: profilesWithDevices[name] || [],
+      }))
+      .sort((a, b) => b.count - a.count)
+  }
+  
+  // Fallback: derive from devices if no configured profiles
   const profiles: Record<string, string[]> = {}
 
   devicesStore.devices.forEach(device => {
@@ -72,17 +100,29 @@ function handlePageSizeChange() {
 }
 
 onMounted(async () => {
-  if (devicesStore.devices.length === 0) {
-    await Promise.all([
-      devicesStore.fetchDevices(),
-      devicesStore.fetchGroups(),
-    ])
-  }
+  profilesLoading.value = true
+  try {
+    if (devicesStore.devices.length === 0) {
+      await Promise.all([
+        devicesStore.fetchDevices(),
+        devicesStore.fetchGroups(),
+      ])
+    }
 
-  // Load layout preference from localStorage
-  const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY) as LayoutType | null
-  if (savedLayout && ["card", "list", "table"].includes(savedLayout)) {
-    currentLayout.value = savedLayout
+    // Fetch configured SSH profiles from API
+    const response = await fetch("/api/v1/ssh-profiles")
+    if (response.ok) {
+      const data = await response.json()
+      configuredProfiles.value = data.profiles || []
+    }
+
+    // Load layout preference from localStorage
+    const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY) as LayoutType | null
+    if (savedLayout && ["card", "list", "table"].includes(savedLayout)) {
+      currentLayout.value = savedLayout
+    }
+  } finally {
+    profilesLoading.value = false
   }
 })
 </script>
@@ -94,7 +134,7 @@ onMounted(async () => {
       <p class="text-gray-500 dark:text-gray-400 mt-1">SSH connection profiles and assigned devices</p>
     </div>
 
-    <LoadingSpinner v-if="devicesStore.loading" size="lg" class="py-12" />
+    <LoadingSpinner v-if="devicesStore.loading || profilesLoading" size="lg" class="py-12" />
 
     <div v-else-if="sshProfileList.length === 0 && !searchQuery">
       <div class="card text-center py-12">
@@ -186,7 +226,7 @@ onMounted(async () => {
         >
           <div class="flex items-start justify-between mb-4">
             <div>
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white capitalize">{{ profile.name }}</h3>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ profile.name }}</h3>
               <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ profile.count }} {{ profile.count === 1 ? "device" : "devices" }}</p>
             </div>
             <span class="inline-flex items-center justify-center h-12 w-12 rounded-lg bg-purple-100 dark:bg-purple-900">
@@ -223,7 +263,7 @@ onMounted(async () => {
           @click="selectedProfile = profile.name"
           class="card-hover cursor-pointer py-3 px-4"
         >
-          <h3 class="font-semibold text-gray-900 dark:text-white text-sm mb-1 capitalize">{{ profile.name }}</h3>
+          <h3 class="font-semibold text-gray-900 dark:text-white text-sm mb-1">{{ profile.name }}</h3>
           <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ profile.count }} {{ profile.count === 1 ? "device" : "devices" }}</p>
           <span class="inline-block px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded text-xs font-medium">
             {{ profile.count }}
@@ -249,7 +289,7 @@ onMounted(async () => {
           class="border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition last:border-b-0"
         >
           <div class="w-full grid grid-cols-[2fr_1fr_2fr] gap-4 px-6 py-3 text-sm">
-            <div class="font-medium text-gray-900 dark:text-white capitalize truncate">{{ profile.name }}</div>
+            <div class="font-medium text-gray-900 dark:text-white truncate">{{ profile.name }}</div>
             <div class="text-center text-gray-600 dark:text-gray-400">{{ profile.count }}</div>
             <div class="text-gray-600 dark:text-gray-400 text-xs line-clamp-2">
               {{ profile.devices.slice(0, 3).join(", ") }}
@@ -293,7 +333,7 @@ onMounted(async () => {
       <div v-if="selectedProfile" @click="selectedProfile = null" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div @click.stop class="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-900 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
           <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
-            <h2 class="text-xl font-semibold text-gray-900 dark:text-white capitalize">{{ selectedProfile }}</h2>
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">{{ selectedProfile }}</h2>
             <button
               @click="selectedProfile = null"
               class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-400"
@@ -307,10 +347,6 @@ onMounted(async () => {
             <div class="mb-6">
               <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Profile Info</h3>
               <div class="space-y-2 text-sm">
-                <div>
-                  <span class="text-gray-600 dark:text-gray-400">Profile Name:</span>
-                  <p class="font-medium text-gray-900 dark:text-gray-100 capitalize mt-1">{{ selectedProfile }}</p>
-                </div>
                 <div>
                   <span class="text-gray-600 dark:text-gray-400">Total Devices:</span>
                   <p class="font-medium text-gray-900 dark:text-gray-100">
@@ -331,10 +367,10 @@ onMounted(async () => {
                 <div
                   v-for="device in devicesStore.devices.filter(d => d.ssh_profile === selectedProfile).slice(0, 20)"
                   :key="device.device_name"
-                  class="p-2 bg-gray-50 dark:bg-gray-700 rounded text-sm"
+                  class="p-2 bg-gray-50 dark:bg-gray-700 rounded text-sm min-w-0"
                 >
-                  <p class="font-medium text-gray-900 dark:text-white">{{ device.device_name }}</p>
-                  <p class="text-gray-500 dark:text-gray-400 text-xs">{{ device.ip_address }} ({{ device.vendor }})</p>
+                  <p class="font-medium text-gray-900 dark:text-white truncate">{{ device.device_name }}</p>
+                  <p class="text-gray-500 dark:text-gray-400 text-xs truncate">{{ device.ip_address }} ({{ devicesStore.getVendorName(device.vendor) }})</p>
                 </div>
               </div>
               <div v-if="devicesStore.devices.filter(d => d.ssh_profile === selectedProfile).length > 20" class="text-xs text-gray-500 dark:text-gray-400 px-2 py-2 mt-2">
