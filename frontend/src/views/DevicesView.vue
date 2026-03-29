@@ -277,11 +277,6 @@ onMounted(async () => {
       </div>
     </div>
 
-    <!-- Device count -->
-    <div class="mb-4 text-sm text-gray-500">
-      Showing {{ filteredDevices.length }} of {{ devicesStore.deviceCount }} devices
-    </div>
-
     <!-- Device list -->
     <LoadingSpinner v-if="devicesStore.loading" size="lg" class="py-12" />
 
