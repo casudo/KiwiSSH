@@ -23,6 +23,8 @@ PLACEHOLDER
   - [Docker](#docker)
 - [Future Goals](#future-goals)
 - [Technical Documentation](#technical-documentation)
+  - [PostgreSQL](#postgresql)
+- [Development](#development)
 - [Legal Disclaimer](#legal-disclaimer)
 - [License](#license)
 - [Support](#support)
@@ -49,13 +51,65 @@ PLACEHolder
 
 # Future Goals
 
+How are Vendors, SSH Profiles filling their data in? Why dont they use /vendors and /ssh_profiles API endpoints?
+Add check to entrypoint if SSH profile and vendor is existing and not just set with random str
 
+**Short Term:**
+
+- More logging
+- PostgreSQL support for source AND backup job log
+- Support for external git storage location (Gitea, GitHub, GitLab, etc.)
+- Rename "Project Downtown" to "Kiwi SSH"
+- Checks for device source: No duplicate hostnames, valid IPs, ... (What if multiple groups hold the same IP address range?)
+- SSH Key pair support instead of just passwords
+- Override SSH port (Probably better placed in groups/nodes than SSH profiles?)
+- SSH: Timeout/Retry setting
+- sources.file.path has no use since its currently hardcoded based on local_test_mode, which shouldnt
+- Display "X devices loaded from source Y" in the logs on startup
+- SSH Profile View: Dont capitalize the SSH profile name
+- Dark mode needs update: Not everything is using it + make it a little bit lighter
+
+**Mid-term:**
+
+- Make Footer more distinct
+- Customizable theme
+- Docker Image + GitHub Action to build and push image
+- Login Screen, User management and RBAC
+- Jumphost support
+- Threaded/Async backup execution for better performance. Max threads configurable in downtown.yaml
+- Update Detail View for Vendors/SSH Profiles/Groups:
+  - Add margin to cards (currently full height of the screen)
+  - Two rows instead of one for better readability
+  - Search by name filter? or unnecessary since we user can check that on the DeviceDetailView?
+- Vendors/SSH Profiles/Groups: Add filters, add different layout types (e.g. list view, card view, table view like in DevicesView)
+- For real SSH backups: Include time -> We can then display the avg. time as statistic somewhere and seconds needed for backup to the backup list view
+
+**Long Term:**
+
+- Switch from package-level imports to absolute imports for better readability and maintainability.
+  - **Keep them:** cleaner imports, stable public package API. **Remove them:** more explicit imports, less indirection, but more verbose and tighter coupling to file layout.
+- Add CHANGELOG.md to keep track of changes and make it required for external PRs?
+- Notification System (Email, Slack, Webhook)
+- i18n localization support
+- Dark Mode
+- Add yaak API collection
+- "Live Log" when pressing "Trigger Backup": Even if not "live live", show the log output as it comes in with nice visual animations and auto-scrolling
+- New Update available notification in the UI
+- GitHub Wiki for usage?
+- Demo version with pre-filled config and mock device sources for users to try out without setting up their own environment (should reset after a certain time or when the user clicks a reset button)
 
 ---
 
 # Technical Documentation
 
 Placeholder
+
+## PostgreSQL
+
+placeholder
+
+backup with Databasus
+
 # Development
 
 Backend: cd backend, python entrypoint.py
