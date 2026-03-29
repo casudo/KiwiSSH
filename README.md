@@ -67,6 +67,9 @@ Add check to entrypoint if SSH profile and vendor is existing and not just set w
 - sources.file.path has no use since its currently hardcoded based on local_test_mode, which shouldnt
 - SSH Profile View: Dont capitalize the SSH profile name
 - Dark mode needs update: Not everything is using it + make it a little bit lighter
+- Device Item and DeviceDetailView: Display the vendor.name and not the vendor.id
+- Vendor Detail View: Header shows vendor.id, switch to vendor.name
+- Vendor Detail View & SSH Profiles Detail View: Make rows as wide as the widest one (based on IP or hostname text length)
 
 **Mid-term:**
 
@@ -77,6 +80,9 @@ Add check to entrypoint if SSH profile and vendor is existing and not just set w
 - Jumphost support
 - Threaded/Async backup execution for better performance. Max threads configurable in downtown.yaml
 - For real SSH backups: Include time -> We can then display the avg. time as statistic somewhere and seconds needed for backup to the backup list view
+- Refactor API: add endpoints for /vendors /ssh-profiles and /groups?
+- Standarize API response: /devices/ ,/groups, /vendors and /ssh_profiles should have the same response format with "count" and "groups"/"vendors"/"devices"/"ssh_profiles". If the response should also contain the config for these, the paramter "include_config=true" can be added to the request, which will then include the config for each item in the response. This way we can keep the API consistent and also have a way to get the config for each item if needed.
+  - The endpoints /devices/<device>, /groups/<group>, /vendors/<vendor> and /ssh_profiles/<profile> can then be used to get the config for a specific item if needed, which will also keep the API consistent and clean.
 
 **Long Term:**
 
@@ -85,7 +91,7 @@ Add check to entrypoint if SSH profile and vendor is existing and not just set w
 - Add CHANGELOG.md to keep track of changes and make it required for external PRs?
 - Notification System (Email, Slack, Webhook)
 - i18n localization support
-- Dark Mode
+- Dark Mode (global themes files so all colors are in one place?)
 - Add yaak API collection
 - "Live Log" when pressing "Trigger Backup": Even if not "live live", show the log output as it comes in with nice visual animations and auto-scrolling
 - New Update available notification in the UI
