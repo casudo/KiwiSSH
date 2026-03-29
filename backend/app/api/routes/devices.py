@@ -9,7 +9,6 @@ from app.services.source_service import source_service
 from app.services.git_service import git_service
 from app.services.backup_job_service import backup_job_service
 from app.db.database import get_db
-from app.core import get_settings
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -94,15 +93,15 @@ async def list_devices(
     }
 
 
-@router.get("/{device_name}/status")
-async def get_device_status(device_name: str, db: Session = Depends(get_db)) -> dict:
-    """Get device status including last backup info."""
+@router.get("/{device_name}", response_model=dict)
+async def get_device(device_name: str, db: Session = Depends(get_db)) -> dict:
+    """Get a specific device's complete information including backup status."""
     device_base = await source_service.get_device(device_name)
 
     if device_base is None:
         raise HTTPException(status_code=404, detail=f"Device '{device_name}' not found")
 
-    ### Convert to DeviceFull for enrichment to return backup info
+    ### Enrich with backup information
     device = await _enrich_device_with_backup_info(device_base, db)
 
     ### Get backup count from git history
@@ -114,14 +113,11 @@ async def get_device_status(device_name: str, db: Session = Depends(get_db)) -> 
     except Exception:
         pass
 
-    return {
-        "device_name": device.device_name,
-        "status": device.status.value,
-        "last_backup": device.last_backup,
-        "last_backup_success": device.last_backup_success,
-        "backup_count": backup_count,
-        "enabled": device.enabled,
-    }
+    ### Return full device config with backup information
+    result = device.model_dump()
+    result["status"] = device.status.value
+    result["backup_count"] = backup_count
+    return result
 
 
 @router.post("/reload")
