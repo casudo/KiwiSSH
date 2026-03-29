@@ -50,13 +50,14 @@ async def _enrich_device_with_backup_info(device_base: DeviceBase, db: Session =
     return device
 
 
-@router.get("", response_model=list[DeviceFull])
+@router.get("", response_model=dict)
 async def list_devices(
     group: str | None = Query(None, description="Filter by group (?group=<group_name>)"),
     enabled_only: bool = Query(False, description="Only return enabled devices"),
+    include_config: bool = Query(False, description="Include full device configuration"),
     db: Session = Depends(get_db),
-) -> list[DeviceFull]:
-    """List all devices."""
+) -> dict: # TOD: group and enabled_only filters needed?
+    """List all devices with standardized response format."""
     if group:
         devices = await source_service.get_devices_by_group(group)
     else:
@@ -79,29 +80,18 @@ async def list_devices(
         enriched_device = await _enrich_device_with_backup_info(device, db, latest_jobs)
         enriched.append(enriched_device)
 
-    return enriched
-
-
-@router.get("/groups")
-async def list_groups() -> dict:
-    """List all configured groups from downtown.yaml."""
-    settings = get_settings()
-    groups = list(settings.groups.keys())
+    ### Return standardized response format
+    if include_config:
+        ### Return full device config (using model_dump)
+        response_devices = [d.model_dump() for d in enriched]
+    else:
+        ### Return only device names for minimal list view
+        response_devices = [d.device_name for d in enriched]
+    
     return {
-        "count": len(groups),
-        "groups": groups,
+        "count": len(response_devices),
+        "devices": response_devices,
     }
-
-
-@router.get("/{device_name}", response_model=DeviceBase)
-async def get_device(device_name: str) -> DeviceBase:
-    """Get a specific device's configuration."""
-    device = await source_service.get_device(device_name)
-
-    if device is None:
-        raise HTTPException(status_code=404, detail=f"Device '{device_name}' not found")
-
-    return device
 
 
 @router.get("/{device_name}/status")
