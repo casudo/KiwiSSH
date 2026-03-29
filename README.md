@@ -65,7 +65,6 @@ Add check to entrypoint if SSH profile and vendor is existing and not just set w
 - Override SSH port (Probably better placed in groups/nodes than SSH profiles?)
 - SSH: Timeout/Retry setting
 - sources.file.path has no use since its currently hardcoded based on local_test_mode, which shouldnt
-- Display "X devices loaded from source Y" in the logs on startup
 - SSH Profile View: Dont capitalize the SSH profile name
 - Dark mode needs update: Not everything is using it + make it a little bit lighter
 
@@ -77,11 +76,6 @@ Add check to entrypoint if SSH profile and vendor is existing and not just set w
 - Login Screen, User management and RBAC
 - Jumphost support
 - Threaded/Async backup execution for better performance. Max threads configurable in downtown.yaml
-- Update Detail View for Vendors/SSH Profiles/Groups:
-  - Add margin to cards (currently full height of the screen)
-  - Two rows instead of one for better readability
-  - Search by name filter? or unnecessary since we user can check that on the DeviceDetailView?
-- Vendors/SSH Profiles/Groups: Add filters, add different layout types (e.g. list view, card view, table view like in DevicesView)
 - For real SSH backups: Include time -> We can then display the avg. time as statistic somewhere and seconds needed for backup to the backup list view
 
 **Long Term:**
