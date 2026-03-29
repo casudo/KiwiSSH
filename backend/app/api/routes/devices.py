@@ -9,6 +9,7 @@ from app.services.source_service import source_service
 from app.services.git_service import git_service
 from app.services.backup_job_service import backup_job_service
 from app.db.database import get_db
+from app.core import get_settings
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -83,11 +84,12 @@ async def list_devices(
 
 @router.get("/groups")
 async def list_groups() -> dict:
-    """List all device groups."""
-    groups = await source_service.get_groups()
+    """List all configured groups from downtown.yaml."""
+    settings = get_settings()
+    groups = list(settings.groups.keys())
     return {
-        "groups": groups,
         "count": len(groups),
+        "groups": groups,
     }
 
 
