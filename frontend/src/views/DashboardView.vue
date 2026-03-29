@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, computed } from "vue"
+import { onMounted, computed, ref } from "vue"
 import { useRouter } from "vue-router"
 import { useDevicesStore } from "@/stores/devices"
 import { useJobsStore } from "@/stores/jobs"
@@ -15,6 +15,8 @@ const devicesStore = useDevicesStore()
 const jobsStore = useJobsStore()
 const appStore = useAppStore()
 const favoritesStore = useFavoritesStore()
+const configuredVendorCount = ref(0)
+const configuredProfileCount = ref(0)
 
 interface Stats {
   total: number
@@ -29,8 +31,8 @@ const stats = computed((): Stats => ({
   total: devicesStore.deviceCount,
   enabled: devicesStore.enabledDevices.length,
   groups: Object.keys(devicesStore.devicesByGroup).length,
-  vendors: devicesStore.uniqueVendors.length,
-  sshProfiles: devicesStore.uniqueSshProfiles.length,
+  vendors: configuredVendorCount.value || devicesStore.uniqueVendors.length,
+  sshProfiles: configuredProfileCount.value || devicesStore.uniqueSshProfiles.length,
   backupJobs: jobsStore.jobs.length,
 }))
 
@@ -53,9 +55,31 @@ function goToDevice(deviceName: string) {
 
 onMounted(async () => {
   favoritesStore.loadFavorites()
+  
+  // Fetch configured vendor and SSH profile counts from API
+  try {
+    const [vendorsRes, profilesRes] = await Promise.all([
+      fetch("/api/v1/vendors"),
+      fetch("/api/v1/ssh-profiles"),
+    ])
+    
+    if (vendorsRes.ok) {
+      const vendorsData = await vendorsRes.json()
+      configuredVendorCount.value = vendorsData.count || 0
+    }
+    
+    if (profilesRes.ok) {
+      const profilesData = await profilesRes.json()
+      configuredProfileCount.value = profilesData.count || 0
+    }
+  } catch (e) {
+    console.warn("Failed to fetch configured counts from API", e)
+  }
+  
   await Promise.all([
     devicesStore.fetchDevices(),
     devicesStore.fetchGroups(),
+    devicesStore.fetchVendors(),
     jobsStore.loadJobs(),
     appStore.checkHealth(),
   ])

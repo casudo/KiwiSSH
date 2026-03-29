@@ -27,6 +27,9 @@ const favoritesStore = useFavoritesStore()
 
 const deviceName = computed(() => route.params.name as string)
 const isFavorite = computed(() => favoritesStore.isFavorite(deviceName.value))
+const vendorName = computed(() => 
+  devicesStore.selectedDevice ? devicesStore.getVendorName(devicesStore.selectedDevice.vendor) : ""
+)
 
 const backupHistory = ref<BackupEntry[]>([])
 const historyLoading = ref(false)
@@ -50,7 +53,10 @@ const diffLoading = ref(false)
 const diffError = ref<string | null>(null)
 
 onMounted(async () => {
-  await devicesStore.fetchDevice(deviceName.value)
+  await Promise.all([
+    devicesStore.fetchDevice(deviceName.value),
+    devicesStore.fetchVendors(),
+  ])
   await loadBackupHistory()
 })
 
@@ -303,7 +309,7 @@ function formatFileSize(bytes: number): string {
           </div>
           <div>
             <dt class="text-sm text-gray-500">Vendor</dt>
-            <dd class="font-medium">{{ devicesStore.selectedDevice.vendor }}</dd>
+            <dd class="font-medium">{{ vendorName }}</dd>
           </div>
           <div>
             <dt class="text-sm text-gray-500">SSH Profile</dt>

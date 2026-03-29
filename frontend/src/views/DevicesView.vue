@@ -103,6 +103,7 @@ onMounted(async () => {
   await Promise.all([
     devicesStore.fetchDevices(),
     devicesStore.fetchGroups(),
+    devicesStore.fetchVendors(),
   ])
 
   // Load layout preference from localStorage
