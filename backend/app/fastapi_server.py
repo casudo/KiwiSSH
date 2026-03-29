@@ -39,7 +39,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info(f"Config directory: {settings.config_dir}")
     logger.info(f"Debug mode: {settings.app.debug}")
     logger.info(f"Loaded {len(settings.vendors)} vendor configurations")
-    logger.info(f"Loaded {len(settings.ssh_profiles)} SSH profiles")
+    logger.info(f"Loaded {len(settings.ssh_profiles.get('profiles', {}))} SSH profiles")
 
     ### Load and log device count
     devices = await source_service.get_all_devices()

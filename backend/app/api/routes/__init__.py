@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from app.api.routes import backups, devices, health, vendors
+from app.api.routes import backups, devices, health, ssh_profiles, vendors
 
 api_router_v1 = APIRouter()
 
@@ -28,4 +28,10 @@ api_router_v1.include_router(
     vendors.router,
     prefix="/vendors",
     tags=["vendors"],
+)
+
+api_router_v1.include_router(
+    ssh_profiles.router,
+    prefix="/ssh-profiles",
+    tags=["ssh_profiles"],
 )

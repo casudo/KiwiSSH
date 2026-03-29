@@ -31,7 +31,7 @@ def validate_configuration() -> None:
     logger.info("✓ YAML configuration valid")
     logger.info(f"✓ Groups configured: {len(settings.groups)}")
     logger.info(f"✓ Vendors available: {len(settings.vendors)}")
-    logger.info(f"✓ SSH profiles available: {len(settings.ssh_profiles)}")
+    logger.info(f"✓ SSH profiles available: {len(settings.ssh_profiles.get('profiles', {}))}")
     
     # Validate each group has required fields
     errors = []
