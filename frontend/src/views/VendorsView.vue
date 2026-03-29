@@ -6,22 +6,41 @@ import LoadingSpinner from "@/components/LoadingSpinner.vue"
 type LayoutType = "card" | "list" | "table"
 
 const devicesStore = useDevicesStore()
-const selectedVendor = ref<string | null>(null)
+const selectedVendor = ref<string | null>(null)  // Stores vendor ID (e.g., 'cisco_ios')
 const searchQuery = ref("")
 const currentLayout = ref<LayoutType>("card")
 const pageSize = ref<number>(12)
 const currentPage = ref<number>(1)
+const vendorsLoading = ref(false)
 
 const LAYOUT_STORAGE_KEY = "vendors-layout"
 
 interface VendorInfo {
+  id: string
   name: string
+  description?: string
   count: number
   devices: string[]
 }
 
+const configuredVendors = ref<Array<{id: string; name: string; description: string}>>([])
+
 const allVendors = computed((): VendorInfo[] => {
+  if (configuredVendors.value.length > 0) {
+    return configuredVendors.value
+      .map(vendor => ({
+        id: vendor.id,
+        name: vendor.name,
+        description: vendor.description,
+        count: (devicesStore.devicesByVendor[vendor.id] || []).length,
+        devices: (devicesStore.devicesByVendor[vendor.id] || []).map(d => d.device_name),
+      }))
+      .sort((a, b) => b.count - a.count)
+  }
+  
+  // Fallback: use device-derived vendors if no configured vendors
   const vendors = devicesStore.uniqueVendors.map(vendor => ({
+    id: vendor,
     name: vendor,
     count: (devicesStore.devicesByVendor[vendor] || []).length,
     devices: (devicesStore.devicesByVendor[vendor] || []).map(d => d.device_name),
@@ -52,6 +71,10 @@ const vendorList = computed((): VendorInfo[] => {
   return filteredVendors.value.slice(start, end)
 })
 
+const selectedVendorInfo = computed(() => 
+  allVendors.value.find(v => v.id === selectedVendor.value) || null
+)
+
 function setLayout(layout: LayoutType) {
   currentLayout.value = layout
   localStorage.setItem(LAYOUT_STORAGE_KEY, layout)
@@ -62,17 +85,29 @@ function handlePageSizeChange() {
 }
 
 onMounted(async () => {
-  if (devicesStore.devices.length === 0) {
-    await Promise.all([
-      devicesStore.fetchDevices(),
-      devicesStore.fetchGroups(),
-    ])
-  }
+  vendorsLoading.value = true
+  try {
+    if (devicesStore.devices.length === 0) {
+      await Promise.all([
+        devicesStore.fetchDevices(),
+        devicesStore.fetchGroups(),
+      ])
+    }
 
-  // Load layout preference from localStorage
-  const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY) as LayoutType | null
-  if (savedLayout && ["card", "list", "table"].includes(savedLayout)) {
-    currentLayout.value = savedLayout
+    // Fetch configured vendors from API
+    const response = await fetch("/api/v1/vendors")
+    if (response.ok) {
+      const data = await response.json()
+      configuredVendors.value = (data.vendors || []).filter((v: any) => v && v.id) || []
+    }
+
+    // Load layout preference from localStorage
+    const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY) as LayoutType | null
+    if (savedLayout && ["card", "list", "table"].includes(savedLayout)) {
+      currentLayout.value = savedLayout
+    }
+  } finally {
+    vendorsLoading.value = false
   }
 })
 </script>
@@ -84,7 +119,7 @@ onMounted(async () => {
       <p class="text-gray-500 dark:text-gray-400 mt-1">Vendor configurations and assigned devices</p>
     </div>
 
-    <LoadingSpinner v-if="devicesStore.loading" size="lg" class="py-12" />
+    <LoadingSpinner v-if="devicesStore.loading || vendorsLoading" size="lg" class="py-12" />
 
     <div v-else-if="vendorList.length === 0 && !searchQuery">
       <div class="card text-center py-12">
