@@ -1,0 +1,131 @@
+config system global
+    set hostname "cluster-010"
+    set timezone "UTC"
+    set admintimeout 480
+    set language "english"
+    set show-device-copyright-notice enable
+    set admin-sport 22
+end
+
+config system admin
+    edit "admin"
+        set vdom "root"
+        set password ENC AK0wEwJiIjEyMzQNjc4OTAx.............
+        set trusthost1 "10.0.0.0 255.255.255.0"
+    next
+end
+
+config system ntp
+    set ntpsync enable
+    set type fortiguard
+    config ntpserver
+        edit 1
+            set server "10.0.0.1"
+            set ntpv3 enable
+        next
+    end
+end
+
+config system syslog
+    edit 1
+        set server "10.0.0.2"
+        set port 514
+        set facility local7
+        set severity information
+    next
+end
+
+config system snmp community
+    edit 1
+        set name "public"
+        set status enable
+        config hosts
+            edit 1
+                set ipv4-address "10.0.0.4"
+            next
+        end
+    next
+    edit 2
+        set name "private"
+        set status enable
+        set query-v1-status enable
+    next
+end
+
+config firewall address
+    edit "INTERNAL_NETWORK"
+        set subnet "10.0.0.0 255.0.0.0"
+        set color 19
+    next
+    edit "DMZ_NETWORK"
+        set subnet "172.16.0.0 255.255.0.0"
+        set color 5
+    next
+end
+
+config firewall service custom
+    edit "HTTP_HTTPS"
+        set tcp-portrange 80 443
+    next
+    edit "SSH_TELNET"
+        set tcp-portrange 22 23
+    next
+end
+
+config firewall policy
+    edit 1
+        set name "Allow-Internal-DMZ"
+        set srcintf "port1"
+        set dstintf "port2"
+        set srcaddr "INTERNAL_NETWORK"
+        set dstaddr "DMZ_NETWORK"
+        set service "HTTP_HTTPS"
+        set action accept
+        set nat enable
+        set ippool enable
+        set poolname "SNAT_POOL"
+        set logtraffic all
+        set schedule "always"
+    next
+    edit 2
+        set name "Deny-All"
+        set srcintf "port1"
+        set dstintf "port2"
+        set srcaddr "all"
+        set dstaddr "all"
+        set service "all"
+        set action deny
+        set logtraffic disable
+    next
+end
+
+config system interface
+    edit "port1"
+        set vdom "root"
+        set type physical
+        set ip 10.1.1.1 255.255.255.0
+        set mtu-override enable
+        set mtu 1500
+        set speed auto
+        set duplex auto
+        set description "WAN Interface"
+    next
+    edit "port2"
+        set vdom "root"
+        set type physical
+        set ip 192.168.1.1 255.255.255.0
+        set description "LAN Interface"
+    next
+end
+
+config system ha
+    set mode a-p
+    set ha-mgmt-status enable
+    set password ENC AK0wEwJiIjEyMzQNjc4OTAx.............
+end
+
+config log syslogd setting
+    set status enable
+    set server "10.0.0.2"
+    set facility local7
+end

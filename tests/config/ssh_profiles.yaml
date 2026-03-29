@@ -1,0 +1,63 @@
+### SSH Connection Profiles
+## Define reusable SSH settings for different device generations
+
+profiles:
+  ### Modern devices with current secure algorithms
+  ### DO NOT rename the default "modern" or "legacy" profiles!
+  modern:
+    connect_timeout: 10
+    command_timeout: 30
+    known_hosts_policy: "ignore"  # Options: ignore, strict, auto_add
+    kex_algorithms:
+      - "curve25519-sha256"
+      - "curve25519-sha256@libssh.org"
+      - "ecdh-sha2-nistp256"
+      - "ecdh-sha2-nistp384"
+      - "diffie-hellman-group16-sha512"
+      - "diffie-hellman-group14-sha256"
+    encryption_algorithms:
+      - "aes256-gcm@openssh.com"
+      - "aes128-gcm@openssh.com"
+      - "aes256-ctr"
+      - "aes192-ctr"
+      - "aes128-ctr"
+    mac_algorithms:
+      - "hmac-sha2-512-etm@openssh.com"
+      - "hmac-sha2-256-etm@openssh.com"
+      - "hmac-sha2-512"
+      - "hmac-sha2-256"
+
+  ### Legacy devices with older (deprecated) crypto algorithms
+  legacy:
+    connect_timeout: 15
+    command_timeout: 60
+    known_hosts_policy: "ignore"
+    kex_algorithms:
+      - "diffie-hellman-group14-sha256"
+      - "diffie-hellman-group14-sha1"
+      - "diffie-hellman-group-exchange-sha256"
+      - "diffie-hellman-group-exchange-sha1"
+    encryption_algorithms:
+      - "aes256-ctr"
+      - "aes128-ctr"
+      - "aes256-cbc"
+      - "aes128-cbc"
+      - "3des-cbc"
+    mac_algorithms:
+      - "hmac-sha2-256"
+      - "hmac-sha1"
+
+  ### Very old devices with minimal crypto support
+  legacy_extreme:
+    connect_timeout: 20
+    command_timeout: 120
+    known_hosts_policy: "ignore"
+    kex_algorithms:
+      - "diffie-hellman-group14-sha1"
+      - "diffie-hellman-group1-sha1"
+    encryption_algorithms:
+      - "aes128-cbc"
+      - "3des-cbc"
+    mac_algorithms:
+      - "hmac-sha1"
+      - "hmac-md5"

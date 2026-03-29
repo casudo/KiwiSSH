@@ -1,0 +1,107 @@
+sources:
+  file:
+    path: /config
+
+groups:
+  customer-acme-1:
+    vendor: cisco_ios
+    ssh_profile: modern
+  customer-globex-1:
+    vendor: cisco_ios
+    ssh_profile: modern
+  customer-initech-1:
+    vendor: cisco_ios
+    ssh_profile: modern
+  customer-stark-1:
+    vendor: cisco_ios
+    ssh_profile: modern
+  customer-wayne-1:
+    vendor: fortinet_fortigate
+    ssh_profile: modern
+  customer-tyrrant-1:
+    vendor: fortinet_fortigate
+    ssh_profile: modern
+  customer-aaa:
+    vendor: cisco_ios
+    ssh_profile: legacy
+  customer-bbb:
+    vendor: cisco_ios
+    ssh_profile: modern
+  customer-ccc:
+    vendor: fortinet_fortigate
+    ssh_profile: modern
+  customer-ddd:
+    vendor: cisco_ios
+    ssh_profile: legacy
+  customer-eee:
+    vendor: cisco_ios
+    ssh_profile: modern
+  customer-fff:
+    vendor: fortinet_fortigate
+    ssh_profile: legacy
+  customer-ggg:
+    vendor: cisco_ios
+    ssh_profile: modern
+  customer-hhh:
+    vendor: cisco_ios
+    ssh_profile: legacy
+  customer-iii:
+    vendor: fortinet_fortigate
+    ssh_profile: modern
+  customer-jjj:
+    vendor: cisco_ios
+    ssh_profile: modern
+  customer-kkk:
+    vendor: cisco_ios
+    ssh_profile: legacy
+  customer-lll:
+    vendor: fortinet_fortigate
+    ssh_profile: modern
+  customer-mmm:
+    vendor: cisco_ios
+    ssh_profile: legacy
+  customer-nnn:
+    vendor: cisco_ios
+    ssh_profile: modern
+  customer-ooo:
+    vendor: fortinet_fortigate
+    ssh_profile: legacy
+  customer-ppp:
+    vendor: cisco_ios
+    ssh_profile: modern
+  customer-qqq:
+    vendor: cisco_ios
+    ssh_profile: legacy
+  customer-rrr:
+    vendor: fortinet_fortigate
+    ssh_profile: modern
+  customer-sss:
+    vendor: cisco_ios
+    ssh_profile: legacy
+  customer-ttt:
+    vendor: cisco_ios
+    ssh_profile: modern
+  customer-uuu:
+    vendor: fortinet_fortigate
+    ssh_profile: legacy
+  customer-vvv:
+    vendor: cisco_ios
+    ssh_profile: modern
+  customer-www:
+    vendor: cisco_ios
+    ssh_profile: legacy
+  customer-xxx:
+    vendor: fortinet_fortigate
+    ssh_profile: modern
+  customer-yyy:
+    vendor: cisco_ios
+    ssh_profile: legacy
+  customer-zzz:
+    vendor: cisco_ios
+    ssh_profile: modern
+
+nodes:
+  gateway-010:
+    vendor: manual_override_vendor
+  access-002:
+    ssh_profile: manual_ssh_profile
