@@ -205,8 +205,8 @@ onMounted(async () => {
       <div v-if="currentLayout === 'card'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div
           v-for="vendor in vendorList"
-          :key="vendor.name"
-          @click="selectedVendor = vendor.name"
+          :key="vendor.id"
+          @click="selectedVendor = vendor.id"
           class="card-hover cursor-pointer"
         >
           <div class="flex items-start justify-between mb-4">
@@ -244,8 +244,8 @@ onMounted(async () => {
       <div v-else-if="currentLayout === 'list'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
         <div
           v-for="vendor in vendorList"
-          :key="vendor.name"
-          @click="selectedVendor = vendor.name"
+          :key="vendor.id"
+          @click="selectedVendor = vendor.id"
           class="card-hover cursor-pointer py-3 px-4"
         >
           <h3 class="font-semibold text-gray-900 dark:text-white text-sm mb-1">{{ vendor.name }}</h3>
@@ -269,8 +269,8 @@ onMounted(async () => {
         <!-- Vendor rows -->
         <div
           v-for="vendor in vendorList"
-          :key="vendor.name"
-          @click="selectedVendor = vendor.name"
+          :key="vendor.id"
+          @click="selectedVendor = vendor.id"
           class="border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition last:border-b-0"
         >
           <div class="w-full grid grid-cols-[2fr_1fr_2fr] gap-4 px-6 py-3 text-sm">
@@ -318,7 +318,7 @@ onMounted(async () => {
       <div v-if="selectedVendor" @click="selectedVendor = null" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div @click.stop class="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-900 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
           <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
-            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">{{ selectedVendor }}</h2>
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">{{ selectedVendorInfo?.name }}</h2>
             <button
               @click="selectedVendor = null"
               class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-400"
@@ -333,6 +333,10 @@ onMounted(async () => {
               <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Vendor Info</h3>
               <div class="space-y-2 text-sm">
                 <div class="flex justify-between">
+                  <span class="text-gray-600 dark:text-gray-400">Vendor ID:</span>
+                  <span class="font-medium text-gray-900 dark:text-gray-100 font-mono">{{ selectedVendor }}</span>
+                </div>
+                <div class="flex justify-between">
                   <span class="text-gray-600 dark:text-gray-400">Total Devices:</span>
                   <span class="font-medium text-gray-900 dark:text-gray-100">{{ (devicesStore.devicesByVendor[selectedVendor] || []).length }}</span>
                 </div>
@@ -346,10 +350,10 @@ onMounted(async () => {
                 <div
                   v-for="device in (devicesStore.devicesByVendor[selectedVendor] || []).slice(0, 20)"
                   :key="device.device_name"
-                  class="p-2 bg-gray-50 dark:bg-gray-700 rounded text-sm"
+                  class="p-2 bg-gray-50 dark:bg-gray-700 rounded text-sm min-w-0"
                 >
-                  <p class="font-medium text-gray-900 dark:text-white">{{ device.device_name }}</p>
-                  <p class="text-gray-500 dark:text-gray-400 text-xs">{{ device.ip_address }}</p>
+                  <p class="font-medium text-gray-900 dark:text-white truncate">{{ device.device_name }}</p>
+                  <p class="text-gray-500 dark:text-gray-400 text-xs truncate">{{ device.ip_address }}</p>
                 </div>
               </div>
               <div v-if="(devicesStore.devicesByVendor[selectedVendor] || []).length > 20" class="text-xs text-gray-500 dark:text-gray-400 px-2 py-2 mt-2">
