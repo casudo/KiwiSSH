@@ -7,6 +7,7 @@ export const useDevicesStore = defineStore("devices", () => {
   // State
   const devices = ref<Device[]>([])
   const groups = ref<string[]>([])
+  const vendors = ref<Array<{id: string; name: string; description: string}>>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
   const selectedDevice = ref<Device | null>(null)
@@ -64,6 +65,11 @@ export const useDevicesStore = defineStore("devices", () => {
     return byVendor
   })
 
+  const getVendorName = (vendorId: string): string => {
+    const vendor = vendors.value.find(v => v.id === vendorId)
+    return vendor?.name || vendorId
+  }
+
   // Actions
   async function fetchDevices(params: Record<string, string> = {}, forceRefresh = false) {
     // Return cached devices if already loaded and not forcing refresh
@@ -96,6 +102,18 @@ export const useDevicesStore = defineStore("devices", () => {
       groups.value = response.groups || []
     } catch (e) {
       console.error("Failed to fetch groups:", e)
+    }
+  }
+
+  async function fetchVendors() {
+    try {
+      const response = await fetch("/api/v1/vendors")
+      if (response.ok) {
+        const data = await response.json()
+        vendors.value = (data.vendors || []).filter((v: any) => v && v.id) || []
+      }
+    } catch (e) {
+      console.error("Failed to fetch vendors:", e)
     }
   }
 
@@ -150,6 +168,7 @@ export const useDevicesStore = defineStore("devices", () => {
     // State
     devices,
     groups,
+    vendors,
     loading,
     error,
     selectedDevice,
@@ -163,9 +182,11 @@ export const useDevicesStore = defineStore("devices", () => {
     uniqueVendors,
     uniqueSshProfiles,
     devicesByVendor,
+    getVendorName,
     // Actions
     fetchDevices,
     fetchGroups,
+    fetchVendors,
     fetchDevice,
     reloadDevices,
     clearError,

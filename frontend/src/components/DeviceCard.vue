@@ -3,6 +3,7 @@ import { computed, ref } from "vue"
 import StatusBadge from "./StatusBadge.vue"
 import { backupApi } from "@/api/backups"
 import { useFavoritesStore } from "@/stores/favorites"
+import { useDevicesStore } from "@/stores/devices"
 import type { Device } from "@/types/device"
 
 const props = defineProps<{
@@ -10,8 +11,10 @@ const props = defineProps<{
 }>()
 
 const favoritesStore = useFavoritesStore()
+const devicesStore = useDevicesStore()
 const triggering = ref(false)
 const isFavorite = computed(() => favoritesStore.isFavorite(props.device.device_name))
+const vendorName = computed(() => devicesStore.getVendorName(props.device.vendor))
 
 function handleToggleFavorite(e: Event) {
   e.stopPropagation()
@@ -72,7 +75,7 @@ async function handleTriggerBackup(e: Event) {
       </span>
       <span class="flex items-center">
         <span class="text-gray-400 mr-1">Vendor:</span>
-        <span class="font-medium">{{ device.vendor }}</span>
+        <span class="font-medium">{{ vendorName }}</span>
       </span>
     </div>
 
