@@ -1,6 +1,8 @@
 import { defineStore } from "pinia"
 import { ref, computed } from "vue"
 import { deviceApi } from "@/api/devices"
+import { groupApi } from "@/api/groups"
+import { vendorApi } from "@/api/vendors"
 import type { Device } from "@/types/device"
 
 export const useDevicesStore = defineStore("devices", () => {
@@ -98,8 +100,7 @@ export const useDevicesStore = defineStore("devices", () => {
 
   async function fetchGroups() {
     try {
-      const response = await deviceApi.getGroups()
-      groups.value = response.groups || []
+      groups.value = await groupApi.getAll()
     } catch (e) {
       console.error("Failed to fetch groups:", e)
     }
@@ -107,11 +108,7 @@ export const useDevicesStore = defineStore("devices", () => {
 
   async function fetchVendors() {
     try {
-      const response = await fetch("/api/v1/vendors")
-      if (response.ok) {
-        const data = await response.json()
-        vendors.value = (data.vendors || []).filter((v: any) => v && v.id) || []
-      }
+      vendors.value = await vendorApi.getAll()
     } catch (e) {
       console.error("Failed to fetch vendors:", e)
     }
@@ -123,8 +120,7 @@ export const useDevicesStore = defineStore("devices", () => {
 
     try {
       const device = await deviceApi.getByName(deviceName)
-      const status = await deviceApi.getStatus(deviceName)
-      selectedDevice.value = { ...device, status: status.status }
+      selectedDevice.value = device
 
       // Also update in the devices array to keep them in sync
       const deviceIndex = devices.value.findIndex(d => d.device_name === deviceName)

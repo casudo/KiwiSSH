@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, computed, ref } from "vue"
 import { useDevicesStore } from "@/stores/devices"
+import { groupApi } from "@/api/groups"
 import LoadingSpinner from "@/components/LoadingSpinner.vue"
 
 type LayoutType = "card" | "list" | "table"
@@ -87,11 +88,7 @@ onMounted(async () => {
     }
 
     // Fetch configured groups from API
-    const response = await fetch("/api/v1/devices/groups")
-    if (response.ok) {
-      const data = await response.json()
-      configuredGroups.value = data.groups || []
-    }
+    configuredGroups.value = await groupApi.getAll()
 
     // Load layout preference from localStorage
     const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY) as LayoutType | null

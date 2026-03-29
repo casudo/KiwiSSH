@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, computed, ref } from "vue"
 import { useDevicesStore } from "@/stores/devices"
+import { sshProfileApi } from "@/api/ssh-profiles"
 import LoadingSpinner from "@/components/LoadingSpinner.vue"
 
 type LayoutType = "card" | "list" | "table"
@@ -110,11 +111,7 @@ onMounted(async () => {
     }
 
     // Fetch configured SSH profiles from API
-    const response = await fetch("/api/v1/ssh-profiles")
-    if (response.ok) {
-      const data = await response.json()
-      configuredProfiles.value = data.profiles || []
-    }
+    configuredProfiles.value = await sshProfileApi.getAll()
 
     // Load layout preference from localStorage
     const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY) as LayoutType | null

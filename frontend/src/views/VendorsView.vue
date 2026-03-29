@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, computed, ref } from "vue"
 import { useDevicesStore } from "@/stores/devices"
+import { vendorApi } from "@/api/vendors"
 import LoadingSpinner from "@/components/LoadingSpinner.vue"
 
 type LayoutType = "card" | "list" | "table"
@@ -95,11 +96,7 @@ onMounted(async () => {
     }
 
     // Fetch configured vendors from API
-    const response = await fetch("/api/v1/vendors")
-    if (response.ok) {
-      const data = await response.json()
-      configuredVendors.value = (data.vendors || []).filter((v: any) => v && v.id) || []
-    }
+    configuredVendors.value = await vendorApi.getAll()
 
     // Load layout preference from localStorage
     const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY) as LayoutType | null
