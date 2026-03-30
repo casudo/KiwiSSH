@@ -1,8 +1,14 @@
 ### Project Downtown - Main Configuration
-## This file contains global settings for the application
 
+## Application settings
 app:
   debug: true
+  api:
+    host: "127.0.0.1"
+    port: 8000
+    cors_origins:
+      - "http://localhost:5173"
+      - "http://127.0.0.1:5173"
 
 ### Device groups configuration
 ## TODO: Also allow passwords to be set via environment variables (e.g., DOWNTOWN_GROUP_<GROUP_NAME>_PASSWORD)
@@ -33,10 +39,9 @@ nodes:
     ssh_profile: "legacy"
     password: "legacy_password"
 
-### Define device sources
+### Device sources
 ## Load from file or PostgreSQL. At least one source is required.
 ## Required columns: group, device_name, ip_address, enabled
-
 sources:
   file: "/config/sources/devices.csv"
 # postgres:
@@ -62,7 +67,7 @@ git:
 ### Downtown application database (PostgreSQL only)
 ## This database stores Downtown-owned data (backup job logs, favorites, etc.)
 ## The database itself and the user must already exist.
-## The app will create required Downtown tables automatically.
+## The app will create the required tables automatically.
 application_database:
   host: "localhost"
   port: 5432
@@ -76,10 +81,3 @@ application_database:
 #   cron: "0 2 * * *"  # Daily at 2 AM
 #   timezone: "UTC"
 
-### API settings
-api:
-  host: "127.0.0.1"
-  port: 8000
-  cors_origins:
-    - "http://localhost:5173"
-    - "http://127.0.0.1:5173"
