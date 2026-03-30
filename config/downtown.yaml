@@ -33,17 +33,19 @@ nodes:
     ssh_profile: "legacy"
     password: "legacy_password"
 
-### Define device sources (e.g., from a file, database, or API)
-### For now, we will use a static list defined in the code
-### Future implementation may include dynamic loading from external sources
+### Define device sources
+## Load from file or PostgreSQL. At least one source is required.
+## Required columns: group, device_name, ip_address, enabled
+
 sources:
-  file:
-    path: /config/sources/devices.csv
-#   postgres:
-#     host: localhost
+  file: "/config/sources/devices.csv"
+# postgres:
+#     host: "localhost"
 #     port: 5432
-#     database: downtown
-#     user: downtown_user
+#     database: "existing_inventory_db"
+#     table: "devices"
+#     username: "inventory_reader"
+#     password: "inventory-reader-password"
 
 # Git backup repository settings
 git:
@@ -74,7 +76,7 @@ application_database:
 #   cron: "0 2 * * *"  # Daily at 2 AM
 #   timezone: "UTC"
 
-# API settings
+### API settings
 api:
   host: "127.0.0.1"
   port: 8000

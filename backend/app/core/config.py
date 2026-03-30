@@ -34,12 +34,6 @@ class NodeConfig(BaseModel):
     timeout: int | None = None
 
 
-### Device Sources Configuration
-class FileSourceConfig(BaseModel):
-    """File-based device source."""
-    path: str
-
-
 class PostgresSourceConfig(BaseModel):
     """PostgreSQL device source."""
     host: str
@@ -51,7 +45,7 @@ class PostgresSourceConfig(BaseModel):
 
 class SourcesConfig(BaseModel):
     """Device source definitions."""
-    file: FileSourceConfig | None = None
+    file: str | None = None
     postgres: PostgresSourceConfig | None = None
 
 
@@ -180,9 +174,7 @@ class Settings(BaseSettings):
                 self.nodes = {name: NodeConfig(**cfg) for name, cfg in nodes_data.items()}
 
                 ### sources
-                sources_data = file_content.get("sources")
-                if sources_data:
-                    self.sources = SourcesConfig(**sources_data)
+                self.sources = SourcesConfig(**file_content.get("sources", {}))
 
                 ### git
                 self.git = GitConfig(**file_content.get("git", {}))
