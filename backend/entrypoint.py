@@ -12,7 +12,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# TODO: Placeholder and not actively used
+### TODO: Placeholder and not actively used
 class ConfigurationError(Exception):
     """Custom exception for configuration validation errors."""
     pass
@@ -27,22 +27,43 @@ def validate_configuration() -> None:
     from app.core.config import get_settings
     
     settings = get_settings()
-    
-    logger.info("✓ YAML configuration valid")
-    logger.info(f"✓ Groups configured: {len(settings.groups)}")
-    logger.info(f"✓ Vendors available: {len(settings.vendors)}")
-    logger.info(f"✓ SSH profiles available: {len(settings.ssh_profiles.get('profiles', {}))}")
-    
-    # Validate each group has required fields
+
+    ### Validate each group has required fields
     errors = []
     for group_name, group_config in settings.groups.items():
         if not group_config.vendor:
             errors.append(f"Group '{group_name}' missing required 'vendor'")
         if not group_config.ssh_profile:
             errors.append(f"Group '{group_name}' missing required 'ssh_profile'")
+        if not group_config.username:
+            errors.append(f"Group '{group_name}' missing required 'username'")
+        if not group_config.password:
+            errors.append(f"Group '{group_name}' missing required 'password'")
+
+    ### Validate application database configuration
+    app_db = settings.application_database
+    if app_db is None:
+        errors.append("Missing required 'application_database' section")
+    else:
+        if not str(app_db.host).strip():
+            errors.append("application_database.host is required")
+        if not (1 <= app_db.port <= 65535):
+            errors.append("application_database.port must be between 1 and 65535")
+        if not str(app_db.database).strip():
+            errors.append("application_database.database is required")
+        if not str(app_db.user).strip():
+            errors.append("application_database.user is required")
+        if not str(app_db.password).strip():
+            errors.append("application_database.password is required")
     
     if errors:
-        raise ValueError("Invalid group configurations:\n  " + "\n  ".join(errors))
+        raise ValueError("Invalid configuration:\n  " + "\n  ".join(errors))
+
+    logger.info("✓ YAML configuration valid")
+    logger.info(f"✓ Groups configured: {len(settings.groups)}")
+    logger.info(f"✓ Vendors available: {len(settings.vendors)}")
+    logger.info(f"✓ SSH profiles available: {len(settings.ssh_profiles.get('profiles', {}))}")
+    logger.info("✓ Application database configured")
 
 def main() -> int:
     """Validate application configuration and start the application.
