@@ -49,8 +49,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("Initializing application database connection...")
     init_database(settings)
 
-    logger.info("Starting backend services...")
-
     yield
 
     ### Shutdown
