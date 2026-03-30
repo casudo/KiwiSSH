@@ -64,7 +64,7 @@ def create_app() -> FastAPI:
         version=__version__,
         lifespan=lifespan,
         docs_url="/docs",
-        redoc_url="/redoc",
+        redoc_url=None,
     )
 
     ### Configure CORS (load from config or use defaults)
