@@ -22,3 +22,15 @@ class BackupJob(Base):
 
     def __repr__(self):
         return f"<BackupJob {self.device_name} {self.status} {self.timestamp}>"
+
+
+class FavoriteDevice(Base):
+    """Favorite device marker persisted per device name."""
+
+    __tablename__ = "favorite_devices"
+
+    device_name = Column(String(255), primary_key=True, index=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: get_utc_now())
+
+    def __repr__(self):
+        return f"<FavoriteDevice {self.device_name}>"
