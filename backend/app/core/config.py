@@ -21,6 +21,8 @@ class ApiConfig(BaseModel):
 class AppConfig(BaseModel):
     """Application-level settings."""
     debug: bool = False
+    timeout: int = Field(default=30, ge=1)
+    retry: int = Field(default=3, ge=0)
     api: ApiConfig = Field(default_factory=ApiConfig)
 
 
@@ -30,7 +32,8 @@ class GroupConfig(BaseModel):
     password: str | None = None
     ssh_profile: str | None = None
     vendor: str | None = None
-    timeout: int | None = None
+    timeout: int | None = Field(default=None, ge=1)
+    retry: int | None = Field(default=None, ge=0)
 
 
 class NodeConfig(BaseModel):
@@ -39,7 +42,8 @@ class NodeConfig(BaseModel):
     password: str | None = None
     ssh_profile: str | None = None
     vendor: str | None = None
-    timeout: int | None = None
+    timeout: int | None = Field(default=None, ge=1)
+    retry: int | None = Field(default=None, ge=0)
 
 
 class PostgresSourceConfig(BaseModel):
@@ -252,14 +256,18 @@ class Settings(BaseSettings):
 
     def get_device_config(self, group: str, device_name: str) -> dict[str, Any]:
         """
-        Resolve device configuration with priority: Node-specific > Group defaults
+        Resolve device configuration with priority: App defaults < Group defaults < Node-specific
 
         Group cannot be overridden - it must be changed in the source.
         Returns a dict with resolved ssh_profile, vendor, and other settings.
         """
-        device_config = {}
+        ### Step 0: Start with application-level defaults
+        device_config = {
+            "timeout": self.app.timeout,
+            "retry": self.app.retry,
+        }
 
-        ### Step 1: Apply group-level defaults
+        ### Step 1: Apply group-level defaults / overrides
         if group in self.groups:
             group_config = self.groups[group]
             device_config.update({
@@ -267,8 +275,11 @@ class Settings(BaseSettings):
                 "password": group_config.password,
                 "ssh_profile": group_config.ssh_profile,
                 "vendor": group_config.vendor,
-                "timeout": group_config.timeout,
             })
+            if group_config.timeout is not None:
+                device_config["timeout"] = group_config.timeout
+            if group_config.retry is not None:
+                device_config["retry"] = group_config.retry
 
         ### Step 2: Apply node-specific overrides
         ### NOTE: Group cannot be overridden here - must be changed in source
@@ -280,6 +291,8 @@ class Settings(BaseSettings):
                 device_config["vendor"] = node_config.vendor
             if node_config.timeout is not None:
                 device_config["timeout"] = node_config.timeout
+            if node_config.retry is not None:
+                device_config["retry"] = node_config.retry
             if node_config.username is not None:
                 device_config["username"] = node_config.username
             if node_config.password is not None:

@@ -84,7 +84,7 @@ class SourceService:
 
         CSV columns required: group, device_name, ip_address, enabled
         Vendor and ssh_profile are resolved from downtown.yaml configuration.
-        Priority: Node-specific override > Group defaults
+        Priority: App defaults < Group defaults < Node-specific overrides
         """
         csv_path = self._get_csv_source_path()
 

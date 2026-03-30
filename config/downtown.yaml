@@ -3,6 +3,8 @@
 ## Application settings
 app:
   debug: true
+  timeout: 30 # Global SSH timeout in seconds (can be overridden in groups/nodes)
+  retry: 3 # Global SSH retry count (additional attempts after the first)
   api:
     host: "127.0.0.1"
     port: 8000
@@ -12,7 +14,7 @@ app:
 
 ### Device groups configuration
 ## TODO: Also allow passwords to be set via environment variables (e.g., DOWNTOWN_GROUP_<GROUP_NAME>_PASSWORD)
-## Priority for device configuration (default to more specific): groups: -> nodes:
+## Priority for device configuration (default to more specific): app: -> groups: -> nodes:
 groups:
   customer-abc-switches:
     username: "admin"
@@ -20,6 +22,7 @@ groups:
     ssh_profile: "modern"
     vendor: "cisco_ios"
     timeout: 30
+    retry: 2
 
   customer-abc-firewalls:
     username: "admin"
@@ -27,14 +30,16 @@ groups:
     ssh_profile: "modern"
     vendor: "fortinet_fortios"
     timeout: 60
+    retry: 1
 
 ### Per-node overrides
-## Nodes can override: ssh_profile, vendor, timeout, username, password
+## Nodes can override: ssh_profile, vendor, timeout, retry, username, password
 ## Group CANNOT be overridden - change it in the source instead
-## Priority for device configuration (default to more specific): groups: -> nodes:
+## Priority for device configuration (default to more specific): app: -> groups: -> nodes:
 nodes:
   dc-cluster-active-01:
     timeout: 50 # Timeout override not tested!!
+    retry: 5
   switch-core-old:
     ssh_profile: "legacy"
     password: "legacy_password"
