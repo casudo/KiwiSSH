@@ -25,6 +25,16 @@ const emit = defineEmits<{
   dayCleared: []
 }>()
 
+const HISTORY_DAYS = 365
+const DAYS_PER_WEEK = 7
+
+function formatLocalDate(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
 // Group backups by date (YYYY-MM-DD in local timezone)
 const backupsByDate = computed((): Map<string, number> => {
   const map = new Map<string, number>()
@@ -34,8 +44,8 @@ const backupsByDate = computed((): Map<string, number> => {
     const date = new Date(backup.timestamp)
     // Get local date string (not UTC)
     const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
+    const month = String(date.getMonth() + 1).padStart(2, "0")
+    const day = String(date.getDate()).padStart(2, "0")
     const dateStr = `${year}-${month}-${day}`
 
     map.set(dateStr, (map.get(dateStr) || 0) + 1)
@@ -44,44 +54,39 @@ const backupsByDate = computed((): Map<string, number> => {
   return map
 })
 
-// Generate calendar grid showing last 12 months
+// Generate calendar grid for a fixed recent window (last 365 days)
 const calendarWeeks = computed((): DayCell[][] => {
   const weeks: DayCell[][] = []
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  // Go back 12 months (approximately)
-  const startDate = new Date(today)
-  startDate.setMonth(startDate.getMonth() - 11)
-  startDate.setDate(1) // Start from first day of month
+  const earliestVisibleDate = new Date(today)
+  earliestVisibleDate.setDate(earliestVisibleDate.getDate() - (HISTORY_DAYS - 1))
 
-  // Adjust to the Sunday of the week containing the 1st
-  const dayOfWeek = startDate.getDay()
-  startDate.setDate(startDate.getDate() - dayOfWeek)
+  // Pad to full weeks for a stable heatmap layout
+  const gridStartDate = new Date(earliestVisibleDate)
+  gridStartDate.setDate(gridStartDate.getDate() - gridStartDate.getDay())
+
+  const gridEndDate = new Date(today)
+  gridEndDate.setDate(gridEndDate.getDate() + (DAYS_PER_WEEK - 1 - gridEndDate.getDay()))
 
   // Build weeks
-  let currentDate = new Date(startDate)
-  while (currentDate <= today) {
+  let currentDate = new Date(gridStartDate)
+  while (currentDate <= gridEndDate) {
     const week: DayCell[] = []
 
     // Build a week (Sunday to Saturday)
-    for (let i = 0; i < 7; i++) {
-      if (currentDate > today) {
-        week.push({ date: null, count: 0 })
-      } else if (currentDate < startDate) {
+    for (let i = 0; i < DAYS_PER_WEEK; i++) {
+      if (currentDate < earliestVisibleDate || currentDate > today) {
         week.push({ date: null, count: 0 })
       } else {
-        // Format date as YYYY-MM-DD
-        const year = currentDate.getFullYear()
-        const month = String(currentDate.getMonth() + 1).padStart(2, '0')
-        const day = String(currentDate.getDate()).padStart(2, '0')
-        const dateStr = `${year}-${month}-${day}`
+        const dateStr = formatLocalDate(currentDate)
 
         const count = backupsByDate.value.get(dateStr) || 0
-        const displayDate = currentDate.toLocaleDateString('en-US', {
-          weekday: 'short',
-          month: 'short',
-          day: 'numeric',
+        const displayDate = currentDate.toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
         })
 
         week.push({
@@ -101,51 +106,54 @@ const calendarWeeks = computed((): DayCell[][] => {
   return weeks
 })
 
-// Get month labels with proper positioning
+// Get month labels from rendered week columns
 const monthLabels = computed((): Array<{ month: string; startWeekIndex: number; endWeekIndex: number }> => {
   const labels: Array<{ month: string; startWeekIndex: number; endWeekIndex: number }> = []
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  let activeLabel: { key: string; month: string; startWeekIndex: number; endWeekIndex: number } | null = null
 
-  const startDate = new Date(today)
-  startDate.setMonth(startDate.getMonth() - 11)
-  startDate.setDate(1)
-
-  const dayOfWeek = startDate.getDay()
-  startDate.setDate(startDate.getDate() - dayOfWeek)
-
-  let currentDate = new Date(startDate)
-  let weekIndex = 0
-  let lastMonth = -1
-  let monthStartWeekIndex = 0
-
-  while (currentDate <= today) {
-    const month = currentDate.getMonth()
-    const year = currentDate.getFullYear()
-
-    if (month !== lastMonth && lastMonth !== -1) {
-      // Month changed, record the previous month
-      labels.push({
-        month: new Date(year, lastMonth).toLocaleDateString('en-US', { month: 'short' }),
-        startWeekIndex: monthStartWeekIndex,
-        endWeekIndex: weekIndex - 1,
-      })
-      monthStartWeekIndex = weekIndex
-    } else if (lastMonth === -1) {
-      monthStartWeekIndex = 0
+  calendarWeeks.value.forEach((week, weekIdx) => {
+    const firstVisibleCell = week.find((cell) => cell.date !== null)
+    if (!firstVisibleCell || !firstVisibleCell.date) {
+      return
     }
 
-    lastMonth = month
-    weekIndex++
-    currentDate.setDate(currentDate.getDate() + 7)
-  }
+    const weekDate = new Date(`${firstVisibleCell.date}T00:00:00`)
+    const monthKey = `${weekDate.getFullYear()}-${weekDate.getMonth()}`
+    const monthText = weekDate.toLocaleDateString("en-US", { month: "short" })
 
-  // Add the last month
-  if (lastMonth !== -1) {
+    if (!activeLabel) {
+      activeLabel = {
+        key: monthKey,
+        month: monthText,
+        startWeekIndex: weekIdx,
+        endWeekIndex: weekIdx,
+      }
+      return
+    }
+
+    if (activeLabel.key === monthKey) {
+      activeLabel.endWeekIndex = weekIdx
+      return
+    }
+
     labels.push({
-      month: new Date(currentDate.getFullYear(), lastMonth).toLocaleDateString('en-US', { month: 'short' }),
-      startWeekIndex: monthStartWeekIndex,
-      endWeekIndex: weekIndex - 1,
+      month: activeLabel.month,
+      startWeekIndex: activeLabel.startWeekIndex,
+      endWeekIndex: activeLabel.endWeekIndex,
+    })
+    activeLabel = {
+      key: monthKey,
+      month: monthText,
+      startWeekIndex: weekIdx,
+      endWeekIndex: weekIdx,
+    }
+  })
+
+  if (activeLabel) {
+    labels.push({
+      month: activeLabel.month,
+      startWeekIndex: activeLabel.startWeekIndex,
+      endWeekIndex: activeLabel.endWeekIndex,
     })
   }
 

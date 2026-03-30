@@ -133,6 +133,14 @@ function clearFilters() {
   currentPage.value = 1 // Reset to first page when filters change
 }
 
+function setSelectedGraphDate(date: string) {
+  selectedDateInGraph.value = date
+}
+
+function clearSelectedGraphDate() {
+  selectedDateInGraph.value = null
+}
+
 function handlePageSizeChange() {
   currentPage.value = 1 // Reset to first page when page size changes
 }
@@ -329,8 +337,8 @@ function formatFileSize(bytes: number): string {
       <BackupContributionGraph
         :backups="backupHistory"
         :selected-date="selectedDateInGraph"
-        @day-selected="(date) => (selectedDateInGraph = date)"
-        @day-cleared="() => (selectedDateInGraph = null)"
+        @day-selected="setSelectedGraphDate"
+        @day-cleared="clearSelectedGraphDate"
         class="mb-6"
       />
 
