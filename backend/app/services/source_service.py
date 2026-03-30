@@ -2,6 +2,10 @@
 
 import csv
 from pathlib import Path
+import re
+
+from sqlalchemy import create_engine, text
+from sqlalchemy.exc import OperationalError, ProgrammingError, SQLAlchemyError
 
 from app.core import get_settings
 from app.models.device import DeviceBase
@@ -63,6 +67,18 @@ class SourceService:
             enabled=enabled,
         )
         self._devices_cache[device.device_name] = device
+
+    @staticmethod
+    def _validate_table_name(table_name: str) -> str:
+        """Validate and return PostgreSQL table name from configuration."""
+
+        normalized = table_name.strip()
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", normalized):
+            raise ValueError(
+                "Invalid sources.postgres.table value. Use only letters, numbers, and underscore."
+            )
+        return normalized
+
     async def load_devices_from_csv(self) -> list[DeviceBase]:
         """Load devices from CSV file.
 
@@ -83,15 +99,79 @@ class SourceService:
         self._loaded = True
         return list(self._devices_cache.values())
 
-    async def load_devices_from_db(self):
-        """Load devices from database."""
-        # TODO: Implement database loading logic
-        return []
+    async def load_devices_from_postgres(self) -> list[DeviceBase]:
+        """Load devices from a PostgreSQL source table."""
+        src = self.settings.sources.postgres
+        source_url = self.settings.get_source_postgres_url()
+
+        table_name = self._validate_table_name(src.table)
+        quoted_table_name = f'"{table_name}"'
+
+        query = text(
+            f"""
+            SELECT
+                "group" AS "group",
+                device_name,
+                ip_address,
+                enabled
+            FROM {quoted_table_name}
+            """
+        )
+
+        engine = create_engine(
+            source_url,
+            future=True,
+            pool_pre_ping=True,
+            connect_args={"connect_timeout": 5},
+        )
+        try:
+            with engine.connect() as conn:
+                rows = conn.execute(query).mappings().all()
+        except OperationalError as e:
+            details = str(getattr(e, "orig", e)).lower()
+            if "password authentication failed" in details or "authentication failed" in details:
+                raise ValueError(
+                    "Unable to connect to sources.postgres: invalid credentials. "
+                    "Verify sources.postgres.username and sources.postgres.password."
+                ) from e
+            raise ValueError(
+                "Unable to connect to sources.postgres. Verify host, port, database, username, and password."
+            ) from e
+        except ProgrammingError as e:
+            details = str(getattr(e, "orig", e)).lower()
+            if "does not exist" in details and "column" in details:
+                raise ValueError(
+                    f"Configured source table '{table_name}' is missing one or more required columns: "
+                    "group, device_name, ip_address, enabled."
+                ) from e
+            if "does not exist" in details:
+                raise ValueError(
+                    f"Configured source table '{table_name}' was not found in the PostgreSQL source database."
+                ) from e
+            raise ValueError(
+                f"Invalid query against configured source table '{table_name}'. "
+                "Ensure required columns exist: group, device_name, ip_address, enabled."
+            ) from e
+        except SQLAlchemyError as e:
+            raise ValueError(
+                "Failed to load devices from sources.postgres due to a database error."
+            ) from e
+        finally:
+            engine.dispose()
+
+        for index, row in enumerate(rows, start=1):
+            self._cache_device_from_row(dict(row), f"db#{index}")
+
+        self._loaded = True
+        return list(self._devices_cache.values())
 
     async def load_devices(self) -> list[DeviceBase]:
         """Load devices from configured source (PostgreSQL preferred, CSV fallback)."""
 
-        return await self.load_devices_from_csv()
+        if self.settings.sources.postgres:
+            return await self.load_devices_from_postgres()
+        elif self.settings.sources.file:
+            return await self.load_devices_from_csv()
 
     async def get_device(self, device_name: str) -> DeviceBase | None:
         """Get a single device by name."""
@@ -125,6 +205,7 @@ class SourceService:
 
     def invalidate_cache(self) -> None:
         """Clear the device cache to force reload."""
+        self.settings = get_settings()
         self._devices_cache.clear()
         self._loaded = False
 

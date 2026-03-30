@@ -40,6 +40,35 @@ def validate_configuration() -> None:
         if not group_config.password:
             errors.append(f"Group '{group_name}' missing required 'password'")
 
+    ### Validate source selection (exactly one source is required)
+    has_file_source = bool(settings.sources and settings.sources.file is not None)
+    has_postgres_source = bool(settings.sources and settings.sources.postgres is not None)
+
+    if has_file_source and has_postgres_source:
+        errors.append("Configure only one source under 'sources': either 'file' or 'postgres', not both")
+    if not has_file_source and not has_postgres_source:
+        errors.append("One source is required under 'sources': configure either 'file' or 'postgres'")
+
+    if has_file_source:
+        file_source_path = str(settings.sources.file).strip()
+        if not file_source_path:
+            errors.append("sources.file must be a non-empty path")
+
+    if has_postgres_source:
+        postgres_source = settings.sources.postgres
+        if not str(postgres_source.host).strip():
+            errors.append("sources.postgres.host is required")
+        if not (1 <= postgres_source.port <= 65535):
+            errors.append("sources.postgres.port must be between 1 and 65535")
+        if not str(postgres_source.database).strip():
+            errors.append("sources.postgres.database is required")
+        if not str(postgres_source.table).strip():
+            errors.append("sources.postgres.table is required")
+        if not str(postgres_source.username).strip():
+            errors.append("sources.postgres.username is required")
+        if not str(postgres_source.password).strip():
+            errors.append("sources.postgres.password is required")
+
     ### Validate application database configuration
     app_db = settings.application_database
     if app_db is None:
@@ -63,6 +92,7 @@ def validate_configuration() -> None:
     logger.info(f"✓ Groups configured: {len(settings.groups)}")
     logger.info(f"✓ Vendors available: {len(settings.vendors)}")
     logger.info(f"✓ SSH profiles available: {len(settings.ssh_profiles.get('profiles', {}))}")
+    logger.info(f"✓ Device source configured: {'postgres' if has_postgres_source else 'file'}")
     logger.info("✓ Application database configured")
 
 def main() -> int:

@@ -39,7 +39,8 @@ class PostgresSourceConfig(BaseModel):
     host: str
     port: int = 5432
     database: str
-    user: str
+    table: str
+    username: str
     password: str
 
 
@@ -222,10 +223,31 @@ class Settings(BaseSettings):
         Returns:
             SQLAlchemy database URL string
         """
+        return self._build_postgres_url(
+            host=self.application_database.host,
+            port=self.application_database.port,
+            database=self.application_database.database,
+            user=self.application_database.user,
+            password=self.application_database.password,
+        )
 
-        escaped_user = quote_plus(self.application_database.user)
-        escaped_password = quote_plus(self.application_database.password)
-        return f"postgresql+psycopg://{escaped_user}:{escaped_password}@{self.application_database.host}:{self.application_database.port}/{self.application_database.database}"
+    @staticmethod
+    def _build_postgres_url(*, host: str, port: int, database: str, user: str, password: str) -> str:
+        """Build a SQLAlchemy PostgreSQL URL from raw connection fields."""
+
+        escaped_user = quote_plus(user)
+        escaped_password = quote_plus(password)
+        return f"postgresql+psycopg://{escaped_user}:{escaped_password}@{host}:{port}/{database}"
+
+    def get_source_postgres_url(self) -> str | None:
+        """Build PostgreSQL URL for device source when configured."""
+        return self._build_postgres_url(
+            host=self.sources.postgres.host,
+            port=self.sources.postgres.port,
+            database=self.sources.postgres.database,
+            user=self.sources.postgres.username,
+            password=self.sources.postgres.password,
+        )
 
     def get_device_config(self, group: str, device_name: str) -> dict[str, Any]:
         """
