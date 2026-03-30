@@ -187,7 +187,7 @@ async function triggerBackup() {
     if (devicesStore.selectedDevice) {
       devicesStore.selectedDevice.status = "backup_in_progress"
       // Also update in the devices array
-      const deviceIndex = devicesStore.devices.findIndex(d => d.device_name === deviceName.value)
+      const deviceIndex = devicesStore.devices.findIndex((d: { device_name: string }) => d.device_name === deviceName.value)
       if (deviceIndex >= 0) {
         devicesStore.devices[deviceIndex].status = "backup_in_progress"
       }
@@ -198,19 +198,6 @@ async function triggerBackup() {
     console.log("[Backup] Trigger response:", response)
     alert(`Backup triggered: ${response.message}`)
 
-    // Get status from API response
-    let newStatus: string = response.status || "backup_failed"
-
-    // Map API status to device status
-    if (newStatus === "success") {
-      newStatus = "backup_success"
-    } else if (newStatus === "no_changes") {
-      newStatus = "backup_no_changes"
-    } else if (newStatus === "failed") {
-      newStatus = "backup_failed"
-    }
-
-    console.log("[Backup] Status from API:", response.status, "-> Device status:", newStatus)
 
     // Reload history after backup (for UI update)
     await loadBackupHistory()
@@ -225,7 +212,7 @@ async function triggerBackup() {
     if (devicesStore.selectedDevice) {
       devicesStore.selectedDevice.status = "backup_failed"
       // Also update in the devices array
-      const deviceIndex = devicesStore.devices.findIndex(d => d.device_name === deviceName.value)
+      const deviceIndex = devicesStore.devices.findIndex((d: { device_name: string }) => d.device_name === deviceName.value)
       if (deviceIndex >= 0) {
         devicesStore.devices[deviceIndex].status = "backup_failed"
       }

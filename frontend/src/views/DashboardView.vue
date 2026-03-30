@@ -33,7 +33,7 @@ const stats = computed((): Stats => ({
   groups: Object.keys(devicesStore.devicesByGroup).length,
   vendors: configuredVendorCount.value || devicesStore.uniqueVendors.length,
   sshProfiles: configuredProfileCount.value || devicesStore.uniqueSshProfiles.length,
-  backupJobs: jobsStore.jobs.length,
+  backupJobs: jobsStore.totalJobs,
 }))
 
 const favoriteDevices = computed(() => {

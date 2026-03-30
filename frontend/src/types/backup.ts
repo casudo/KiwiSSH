@@ -43,3 +43,29 @@ export interface BackupJobStatus {
   timestamp: number
   message: string
 }
+
+export interface BackupJobRecord {
+  job_id: string
+  device_name: string
+  group: string
+  status: string
+  timestamp: string
+  error_message?: string | null
+  config_size_bytes?: number | null
+}
+
+export interface BackupJobsResponse {
+  count: number
+  total_count: number
+  limit: number
+  offset: number
+  status_totals?: {
+    pending: number
+    in_progress: number
+    success: number
+    failed: number
+    no_changes: number
+  }
+  error?: string
+  jobs: BackupJobRecord[]
+}

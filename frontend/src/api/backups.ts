@@ -1,5 +1,5 @@
 import api from "./index"
-import type { BackupTriggerResponse, BackupJobStatus } from "@/types/backup"
+import type { BackupTriggerResponse, BackupJobStatus, BackupJobsResponse } from "../types/backup"
 
 export const backupApi = {
   async triggerAll(params?: Record<string, string>): Promise<BackupTriggerResponse> {
@@ -7,16 +7,23 @@ export const backupApi = {
     return response.data
   },
 
-  async triggerDevice(deviceName: string): Promise<Record<string, unknown>> {
-    const response = await api.post(`/backups/trigger/${deviceName}`)
+  async triggerDevice(deviceName: string): Promise<BackupTriggerResponse> {
+    const response = await api.post<BackupTriggerResponse>(`/backups/trigger/${deviceName}`)
     return response.data
   },
 
-  async getJobs(deviceName?: string, status?: string, limit: number = 50): Promise<Record<string, unknown>> {
-    const params: Record<string, string | number> = { limit }
+  async getJobs(
+    deviceName?: string,
+    status?: string,
+    limit: number = 5000,
+    offset: number = 0,
+    jobId?: string,
+  ): Promise<BackupJobsResponse> {
+    const params: Record<string, string | number> = { limit, offset }
     if (deviceName) params.device_name = deviceName
     if (status) params.status = status
-    const response = await api.get("/backups/jobs", { params })
+    if (jobId) params.job_id = jobId
+    const response = await api.get<BackupJobsResponse>("/backups/jobs", { params })
     return response.data
   },
 

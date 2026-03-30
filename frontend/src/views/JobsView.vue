@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, computed, ref } from "vue"
+import { onMounted, onBeforeUnmount, computed, ref, watch } from "vue"
 import { useJobsStore } from "@/stores/jobs"
 import { useDevicesStore } from "@/stores/devices"
 import { backupApi } from "@/api/backups"
@@ -16,28 +16,43 @@ const filterIP = ref<string>("")
 const filterJobId = ref<string>("")
 const filterDateFrom = ref<string>("")
 const filterDateTo = ref<string>("")
+const pageSize = ref<number>(50)
+const currentPage = ref<number>(1)
+const pageSizeOptions = [25, 50, 100, 200]
+let jobIdSearchTimer: ReturnType<typeof setTimeout> | null = null
 
 onMounted(async () => {
   // Load jobs from database
-  await jobsStore.loadJobs()
+  await loadJobsPage()
 
   // Load devices for IP lookup
   if (devicesStore.devices.length === 0) {
     await devicesStore.fetchDevices()
   }
 
-  // Cleanup on unmount
-  return () => {
-    jobsStore.stopAutoRefresh()
+})
+
+onBeforeUnmount(() => {
+  jobsStore.stopAutoRefresh()
+  if (jobIdSearchTimer) {
+    clearTimeout(jobIdSearchTimer)
+    jobIdSearchTimer = null
   }
+})
+
+watch(filterJobId, (value) => {
+  if (jobIdSearchTimer) {
+    clearTimeout(jobIdSearchTimer)
+  }
+
+  jobIdSearchTimer = setTimeout(async () => {
+    currentPage.value = 1
+    await loadJobsPage(value.trim() || undefined)
+  }, 250)
 })
 
 const filteredJobs = computed(() => {
   let result = jobsStore.jobs
-
-  if (filterStatus.value) {
-    result = result.filter(j => j.status === filterStatus.value)
-  }
 
   if (filterDevice.value) {
     const search = filterDevice.value.toLowerCase()
@@ -52,31 +67,66 @@ const filteredJobs = computed(() => {
     })
   }
 
-  if (filterJobId.value) {
-    const search = filterJobId.value.toLowerCase()
-    result = result.filter(j => j.job_id.toLowerCase().includes(search))
-  }
-
   if (filterDateFrom.value) {
     const fromDate = new Date(filterDateFrom.value).getTime()
     result = result.filter(j => j.timestamp >= fromDate)
   }
 
   if (filterDateTo.value) {
-    const toDate = new Date(filterDateTo.value).getTime()
+    const toDate = new Date(filterDateTo.value)
     toDate.setHours(23, 59, 59, 999) // Include entire day
-    result = result.filter(j => j.timestamp <= toDate)
+    result = result.filter(j => j.timestamp <= toDate.getTime())
   }
 
   return result
 })
 
-const uniqueStatuses = computed(() => {
-  return Array.from(new Set(jobsStore.jobs.map(j => j.status)))
+const totalPages = computed(() => Math.max(1, Math.ceil(jobsStore.totalJobs / pageSize.value)))
+const pageStart = computed(() => {
+  if (jobsStore.totalJobs === 0) return 0
+  return (currentPage.value - 1) * pageSize.value + 1
 })
+const pageEnd = computed(() => Math.min(currentPage.value * pageSize.value, jobsStore.totalJobs))
+
+async function loadJobsPage(jobIdOverride?: string) {
+  const status = filterStatus.value || undefined
+  const jobId = (jobIdOverride ?? filterJobId.value.trim()) || undefined
+  const offset = (currentPage.value - 1) * pageSize.value
+
+  await jobsStore.loadJobs(undefined, status, pageSize.value, offset, jobId)
+
+  const maxPage = Math.max(1, Math.ceil(jobsStore.totalJobs / pageSize.value))
+  if (currentPage.value > maxPage) {
+    currentPage.value = maxPage
+    const nextOffset = (currentPage.value - 1) * pageSize.value
+    await jobsStore.loadJobs(undefined, status, pageSize.value, nextOffset, jobId)
+  }
+}
+
+function handlePageSizeChange() {
+  currentPage.value = 1
+  void loadJobsPage()
+}
+
+function handleStatusFilterChange() {
+  currentPage.value = 1
+  void loadJobsPage()
+}
+
+function goToPreviousPage() {
+  if (currentPage.value <= 1) return
+  currentPage.value -= 1
+  void loadJobsPage()
+}
+
+function goToNextPage() {
+  if (currentPage.value >= totalPages.value) return
+  currentPage.value += 1
+  void loadJobsPage()
+}
 
 async function handleRefresh() {
-  await jobsStore.loadJobs()
+  await loadJobsPage()
 }
 
 function clearFilters() {
@@ -86,6 +136,8 @@ function clearFilters() {
   filterJobId.value = ""
   filterDateFrom.value = ""
   filterDateTo.value = ""
+  currentPage.value = 1
+  void loadJobsPage()
 }
 
 function getDeviceInfo(deviceName: string) {
@@ -148,7 +200,7 @@ async function handleFlushDatabase() {
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm text-gray-500">Total Jobs</p>
-            <p class="text-2xl font-bold text-gray-900">{{ jobsStore.jobs.length }}</p>
+            <p class="text-2xl font-bold text-gray-900">{{ jobsStore.totalJobs }}</p>
           </div>
           <div class="text-3xl text-gray-300">📊</div>
         </div>
@@ -157,7 +209,7 @@ async function handleFlushDatabase() {
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm text-gray-500">In Progress</p>
-            <p class="text-2xl font-bold text-blue-600">{{ jobsStore.inProgressJobs.length }}</p>
+            <p class="text-2xl font-bold text-blue-600">{{ jobsStore.inProgressCount }}</p>
           </div>
           <div class="text-3xl text-blue-300">⏳</div>
         </div>
@@ -238,6 +290,15 @@ async function handleFlushDatabase() {
             />
           </div>
 
+          <div class="space-y-2">
+            <label class="label">Entries per page</label>
+            <select v-model.number="pageSize" @change="handlePageSizeChange" class="input text-sm">
+              <option v-for="option in pageSizeOptions" :key="option" :value="option">
+                {{ option }}
+              </option>
+            </select>
+          </div>
+
           <div class="flex gap-2">
             <button
               @click="handleRefresh"
@@ -261,7 +322,7 @@ async function handleFlushDatabase() {
           <div class="flex flex-col md:flex-row gap-4">
             <div class="flex-1">
               <label class="label">Filter by Status</label>
-              <select v-model="filterStatus" class="input">
+              <select v-model="filterStatus" @change="handleStatusFilterChange" class="input">
                 <option value="">All Status</option>
                 <option value="pending">Pending</option>
                 <option value="in_progress">In Progress</option>
@@ -308,70 +369,99 @@ async function handleFlushDatabase() {
       <p class="text-gray-400 text-sm mt-2">Trigger a backup to see jobs appear here</p>
     </div>
 
-    <div v-else class="space-y-3">
-      <div
-        v-for="job in filteredJobs"
-        :key="job.job_id"
-        @click="jobsStore.setSelectedJob(job)"
-        class="card-hover cursor-pointer p-4"
-      >
-        <div class="flex items-start justify-between gap-4">
-          <!-- Main info -->
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-3 mb-2">
-              <!-- Job message-->
-              <h3 class="font-semibold text-gray-900">
-                {{ job.message || "<No job message provided!>" }}
-              </h3>
+    <div v-else>
+      <div v-if="filteredJobs.length === 0" class="card text-center py-8">
+        <p class="text-gray-500 text-lg">No jobs match the current filters on this page</p>
+        <p class="text-gray-400 text-sm mt-2">Try broadening filters or switch pages</p>
+      </div>
 
-              <!-- Status -->
-              <span
-                :class="[
-                  'px-2 py-1 rounded-full text-xs font-medium',
-                  job.status === 'success' ? 'bg-green-100 text-green-700' :
-                  job.status === 'no_changes' ? 'bg-blue-100 text-blue-700' :
-                  job.status === 'failed' ? 'bg-red-100 text-red-700' :
-                  job.status === 'in_progress' ? 'bg-yellow-100 text-yellow-700' :
-                  'bg-gray-100 text-gray-700'
-                ]"
-              >
-                {{ formatStatus(job.status) }}
-              </span>
+      <div v-else class="space-y-3">
+        <div
+          v-for="job in filteredJobs"
+          :key="job.job_id"
+          @click="jobsStore.setSelectedJob(job)"
+          class="card-hover cursor-pointer p-4"
+        >
+          <div class="flex items-start justify-between gap-4">
+            <!-- Main info -->
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-3 mb-2">
+                <!-- Job message-->
+                <h3 class="font-semibold text-gray-900">
+                  {{ job.message || "<No job message provided!>" }}
+                </h3>
+
+                <!-- Status -->
+                <span
+                  :class="[
+                    'px-2 py-1 rounded-full text-xs font-medium',
+                    job.status === 'success' ? 'bg-green-100 text-green-700' :
+                    job.status === 'no_changes' ? 'bg-blue-100 text-blue-700' :
+                    job.status === 'failed' ? 'bg-red-100 text-red-700' :
+                    job.status === 'in_progress' ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-gray-100 text-gray-700'
+                  ]"
+                >
+                  {{ formatStatus(job.status) }}
+                </span>
+              </div>
+
+              <!-- Details -->
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <p class="text-gray-500 text-xs">Status</p>
+                  <p class="font-medium text-gray-900">{{ job.status }}</p>
+                </div>
+                <div>
+                  <p class="text-gray-500 text-xs">Group</p>
+                  <p class="font-medium text-gray-900">{{ job.group }}</p>
+                </div>
+                <div>
+                  <p class="text-gray-500 text-xs">Device Name</p>
+                  <p class="font-medium text-gray-900">{{ job.device_name }}</p>
+                </div>
+                <div>
+                  <p class="text-gray-500 text-xs">Device IP</p>
+                  <p class="font-medium text-gray-900">{{ getDeviceInfo(job.device_name)?.ip_address || "N/A" }}</p>
+                </div>
+              </div>
+
+              <!-- Timestamp -->
+              <div class="mt-3 text-xs text-gray-500">
+                <p>{{ new Date(job.timestamp).toLocaleString() }}</p>
+                <!-- <p class="text-gray-400 text-xs mt-1">ⓘ Timezone converted for your local region</p> -->
+              </div>
+
+              <!-- Error message -->
+              <div v-if="job.status === 'failed' && job.message" class="mt-3 p-3 bg-red-50 rounded text-sm text-red-700">
+                {{ job.message }}
+              </div>
             </div>
 
-            <!-- Details -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div>
-                <p class="text-gray-500 text-xs">Status</p>
-                <p class="font-medium text-gray-900">{{ job.status }}</p>
-              </div>
-              <div>
-                <p class="text-gray-500 text-xs">Group</p>
-                <p class="font-medium text-gray-900">{{ job.group }}</p>
-              </div>
-              <div>
-                <p class="text-gray-500 text-xs">Device Name</p>
-                <p class="font-medium text-gray-900">{{ job.device_name }}</p>
-              </div>
-              <div>
-                <p class="text-gray-500 text-xs">Device IP</p>
-                <p class="font-medium text-gray-900">{{ getDeviceInfo(job.device_name)?.ip_address || "N/A" }}</p>
-              </div>
-            </div>
-
-            <!-- Timestamp -->
-            <div class="mt-3 text-xs text-gray-500">
-              <p>{{ new Date(job.timestamp).toLocaleString() }}</p>
-              <!-- <p class="text-gray-400 text-xs mt-1">ⓘ Timezone converted for your local region</p> -->
-            </div>
-
-            <!-- Error message -->
-            <div v-if="job.status === 'failed' && job.message" class="mt-3 p-3 bg-red-50 rounded text-sm text-red-700">
-              {{ job.message }}
-            </div>
           </div>
-
         </div>
+      </div>
+    </div>
+
+    <div v-if="jobsStore.totalJobs > 0" class="mt-4 flex items-center justify-between">
+      <span class="text-sm text-gray-600">
+        Page {{ currentPage }} of {{ totalPages }} ({{ pageStart }}-{{ pageEnd }} of {{ jobsStore.totalJobs }} total)
+      </span>
+      <div class="flex gap-2">
+        <button
+          @click="goToPreviousPage"
+          :disabled="currentPage === 1"
+          class="btn btn-secondary py-1 px-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          ← Previous
+        </button>
+        <button
+          @click="goToNextPage"
+          :disabled="currentPage >= totalPages"
+          class="btn btn-secondary py-1 px-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Next →
+        </button>
       </div>
     </div>
 

@@ -1,7 +1,15 @@
 import { defineStore } from "pinia"
 import { ref, computed } from "vue"
 import { backupApi } from "@/api/backups"
-import type { BackupJobStatus } from "@/types/backup"
+import type { BackupJobStatus, BackupJobRecord } from "@/types/backup"
+
+interface JobsQueryState {
+  deviceName?: string
+  status?: string
+  limit: number
+  offset: number
+  jobId?: string
+}
 
 export const useJobsStore = defineStore("jobs", () => {
   // State
@@ -11,6 +19,14 @@ export const useJobsStore = defineStore("jobs", () => {
   const autoRefreshInterval = ref(3) // Default 3 seconds
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const totalJobs = ref(0)
+  const totalSuccessJobs = ref(0)
+  const totalFailedJobs = ref(0)
+  const totalInProgressJobs = ref(0)
+  const lastQuery = ref<JobsQueryState>({
+    limit: 5000,
+    offset: 0,
+  })
 
   let refreshTimer: ReturnType<typeof setInterval> | null = null
 
@@ -19,17 +35,15 @@ export const useJobsStore = defineStore("jobs", () => {
     jobs.value.filter(j => j.status === "pending" || j.status === "in_progress")
   )
 
+  const inProgressCount = computed(() => totalInProgressJobs.value)
+
   const completedJobs = computed(() =>
     jobs.value.filter(j => j.status === "success" || j.status === "failed" || j.status === "no_changes")
   )
 
-  const successCount = computed(() =>
-    jobs.value.filter(j => j.status === "success").length
-  )
+  const successCount = computed(() => totalSuccessJobs.value)
 
-  const failureCount = computed(() =>
-    jobs.value.filter(j => j.status === "failed").length
-  )
+  const failureCount = computed(() => totalFailedJobs.value)
 
   // Helper function to format job messages
   function getJobMessage(status: string, deviceName: string): string {
@@ -46,16 +60,34 @@ export const useJobsStore = defineStore("jobs", () => {
   }
 
   // Actions
-  async function loadJobs(deviceName?: string, status?: string, limit: number = 50) {
+  async function loadJobs(deviceName?: string, status?: string, limit: number = 5000, offset: number = 0, jobId?: string) {
     loading.value = true
     error.value = null
+    lastQuery.value = {
+      deviceName,
+      status,
+      limit,
+      offset,
+      jobId,
+    }
 
     try {
-      const response = await backupApi.getJobs(deviceName, status, limit)
+      const response = await backupApi.getJobs(deviceName, status, limit, offset, jobId)
       const rawJobs = response.jobs || []
+      totalJobs.value = typeof response.total_count === "number" ? response.total_count : rawJobs.length
+      const statusTotals = response.status_totals
+      if (statusTotals) {
+        totalSuccessJobs.value = statusTotals.success || 0
+        totalFailedJobs.value = statusTotals.failed || 0
+        totalInProgressJobs.value = (statusTotals.pending || 0) + (statusTotals.in_progress || 0)
+      } else {
+        totalSuccessJobs.value = rawJobs.filter((job: BackupJobRecord) => job.status === "success").length
+        totalFailedJobs.value = rawJobs.filter((job: BackupJobRecord) => job.status === "failed").length
+        totalInProgressJobs.value = rawJobs.filter((job: BackupJobRecord) => job.status === "pending" || job.status === "in_progress").length
+      }
 
       // Convert database records to BackupJobStatus format
-      jobs.value = rawJobs.map((job: any) => ({
+      jobs.value = rawJobs.map((job: BackupJobRecord) => ({
         job_id: job.job_id,
         device_name: job.device_name,
         group: job.group,
@@ -79,6 +111,10 @@ export const useJobsStore = defineStore("jobs", () => {
       jobs.value[existing] = job
     } else {
       jobs.value.unshift(job) // Add to beginning (newest first)
+      totalJobs.value += 1
+      if (job.status === "success") totalSuccessJobs.value += 1
+      if (job.status === "failed") totalFailedJobs.value += 1
+      if (job.status === "pending" || job.status === "in_progress") totalInProgressJobs.value += 1
     }
 
     // Keep max 100 jobs
@@ -126,7 +162,13 @@ export const useJobsStore = defineStore("jobs", () => {
     if (refreshTimer) return
 
     refreshTimer = setInterval(async () => {
-      await loadJobs()
+      await loadJobs(
+        lastQuery.value.deviceName,
+        lastQuery.value.status,
+        lastQuery.value.limit,
+        lastQuery.value.offset,
+        lastQuery.value.jobId,
+      )
     }, autoRefreshInterval.value * 1000) // Convert seconds to milliseconds
   }
 
@@ -148,6 +190,10 @@ export const useJobsStore = defineStore("jobs", () => {
   function clearAllJobs() {
     jobs.value = []
     selectedJob.value = null
+    totalJobs.value = 0
+    totalSuccessJobs.value = 0
+    totalFailedJobs.value = 0
+    totalInProgressJobs.value = 0
   }
 
   function setSelectedJob(job: BackupJobStatus | null) {
@@ -166,8 +212,13 @@ export const useJobsStore = defineStore("jobs", () => {
     autoRefreshInterval,
     loading,
     error,
+    totalJobs,
+    totalSuccessJobs,
+    totalFailedJobs,
+    totalInProgressJobs,
     // Getters
     inProgressJobs,
+    inProgressCount,
     completedJobs,
     successCount,
     failureCount,
