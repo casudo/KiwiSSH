@@ -19,11 +19,16 @@ PLACEHOLDER
 - [Features](#features)
 - [Supported OS](#supported-os)
 - [Screenshots](#screenshots)
-- [Usage](#usage)
+- [Installation](#installation)
   - [Docker](#docker)
+- [Configuration](#configuration)
+  - [YAML](#yaml)
+  - [Sources](#sources)
+    - [File](#file)
+    - [PostgreSQL](#postgresql)
 - [Future Goals](#future-goals)
 - [Technical Documentation](#technical-documentation)
-  - [PostgreSQL](#postgresql)
+  - [PostgreSQL](#postgresql-1)
 - [Development](#development)
 - [Legal Disclaimer](#legal-disclaimer)
 - [License](#license)
@@ -43,21 +48,27 @@ PLACEHolder
 
 ---
 
-# Usage
+# Installation
 
 ## Docker
+
+# Configuration
+
+## YAML
+
+## Sources
+
+### File
+
+### PostgreSQL
 
 ---
 
 # Future Goals
 
-How are Vendors, SSH Profiles filling their data in? Why dont they use /vendors and /ssh_profiles API endpoints?
-Add check to entrypoint if SSH profile and vendor is existing and not just set with random str
-
 **Short Term:**
 
 - More logging
-- PostgreSQL support for source AND backup job log
 - Support for external git storage location (Gitea, GitHub, GitLab, etc.)
 - Rename "Project Downtown" to "Kiwi SSH"
 - Checks for device source: No duplicate hostnames, valid IPs, ... (What if multiple groups hold the same IP address range?)
@@ -67,6 +78,8 @@ Add check to entrypoint if SSH profile and vendor is existing and not just set w
 - sources.file.path has no use since its currently hardcoded based on local_test_mode, which shouldnt
 - Dark mode needs update: Not everything is using it + make it a little bit lighter
 - Backup Job Length Status is capped at 50
+- app.debug isnt correctly used. Even if false, logs show debug lines
+- Cut off days which are too far in the past from the Backup Contribution graph
 
 **Mid-term:**
 
@@ -77,7 +90,6 @@ Add check to entrypoint if SSH profile and vendor is existing and not just set w
 - Jumphost support
 - Threaded/Async backup execution for better performance. Max threads configurable in downtown.yaml
 - For real SSH backups: Include time -> We can then display the avg. time as statistic somewhere and seconds needed for backup to the backup list viewW
-- Mark favorite decices consistently in database instead of localStorage
 
 **Long Term:**
 
@@ -94,6 +106,9 @@ Add check to entrypoint if SSH profile and vendor is existing and not just set w
 - Demo version with pre-filled config and mock device sources for users to try out without setting up their own environment (should reset after a certain time or when the user clicks a reset button)
 - Remove /redocs from FastAPI and only use OpenAPI 
 - /backups/trigger & /backups/trigger/{device} endpoints: They shouldnt wait for response, just return "Backup job triggered for device/group XY". Status and co can be seen in the frontend.
+- Migrate /favorites endpoint to /devices?
+- For better readibility, add a folder "database" to backend/app/services and place the database related services (backup_job_service, favorite_service) in there (where should source_service.py life?).
+- Fix logging strings to use lazy formatting instead of f-strings ([Ruff G004](https://docs.astral.sh/ruff/rules/logging-f-string/)) (Add to ruff.toml)
 
 ---
 
