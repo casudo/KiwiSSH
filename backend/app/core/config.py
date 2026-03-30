@@ -209,7 +209,10 @@ class Settings(BaseSettings):
 
     def get_ssh_profile(self, profile_name: str) -> dict[str, Any] | None:
         """Get SSH profile configuration by name."""
-        return self.ssh_profiles.get(profile_name)
+        profiles = self.ssh_profiles.get("profiles")
+        if not isinstance(profiles, dict):
+            return None
+        return profiles.get(profile_name)
 
     def get_vendor_config(self, vendor_id: str) -> dict[str, Any] | None:
         """Get vendor-specific configuration by ID."""
