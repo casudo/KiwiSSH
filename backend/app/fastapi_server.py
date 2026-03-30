@@ -68,7 +68,7 @@ def create_app() -> FastAPI:
     )
 
     ### Configure CORS (load from config or use defaults)
-    cors_origins = settings.api.cors_origins or [
+    cors_origins = settings.app.api.cors_origins or [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
     ]
@@ -96,7 +96,7 @@ if __name__ == "__main__":
     settings = get_settings()
     uvicorn.run(
         app,
-        host=settings.api.host,
-        port=settings.api.port,
+        host=settings.app.api.host,
+        port=settings.app.api.port,
         log_level="debug" if settings.app.debug else "info",
     )

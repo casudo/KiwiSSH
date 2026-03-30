@@ -123,8 +123,8 @@ def main() -> int:
         
         uvicorn.run(
             "app.fastapi_server:app", # Why :app here? 
-            host=settings.api.host,
-            port=settings.api.port,
+            host=settings.app.api.host,
+            port=settings.app.api.port,
             reload=settings.app.debug,
         ) # TODO: Do we need to set the app settings here? fastapi_server.py starts the app with the exact same settings
         return 0

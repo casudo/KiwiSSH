@@ -10,10 +10,18 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+class ApiConfig(BaseModel):
+    """API server configuration."""
+    host: str = "127.0.0.1"
+    port: int = 8000
+    cors_origins: list[str] = Field(default_factory=list)
+
+
 ### Application configuration models
 class AppConfig(BaseModel):
     """Application-level settings."""
     debug: bool = False
+    api: ApiConfig = Field(default_factory=ApiConfig)
 
 
 class GroupConfig(BaseModel):
@@ -82,13 +90,6 @@ class ScheduleConfig(BaseModel):
     enabled: bool = False
     cron: str | None = None
     timezone: str = "UTC"
-
-
-class ApiConfig(BaseModel):
-    """API server configuration."""
-    host: str = "127.0.0.1"
-    port: int = 8000
-    cors_origins: list[str] = Field(default_factory=list)
 
 
 class Settings(BaseSettings):
@@ -187,9 +188,6 @@ class Settings(BaseSettings):
                 schedule_data = file_content.get("schedule", {})
                 if schedule_data:
                     self.schedule = ScheduleConfig(**schedule_data)
-
-                ### Load API configuration
-                self.api = ApiConfig(**file_content.get("api", {}))
 
         ### Load SSH profiles
         ssh_profiles_file = self.config_dir / "ssh_profiles.yaml"
