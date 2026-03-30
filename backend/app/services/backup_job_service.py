@@ -49,6 +49,39 @@ class BackupJobService:
         return job
 
     @staticmethod
+    def update_job(
+        db: Session,
+        job_id: str,
+        status: str,
+        error_message: str | None = None,
+        config_size_bytes: int | None = None,
+    ) -> BackupJob | None:
+        """Update an existing backup job record by job ID.
+
+        Args:
+            db: Database session
+            job_id: Existing job ID
+            status: New job status
+            error_message: Error details for failed jobs
+            config_size_bytes: Size of backed up config
+
+        Returns:
+            Updated BackupJob record or None when not found
+        """
+
+        job = db.query(BackupJob).filter(BackupJob.id == job_id).first()
+        if job is None:
+            return None
+
+        job.status = status
+        job.timestamp = get_utc_now()
+        job.error_message = error_message
+        job.config_size_bytes = config_size_bytes
+        db.commit()
+        db.refresh(job)
+        return job
+
+    @staticmethod
     def get_latest_job(db: Session, device_name: str) -> BackupJob | None:
         """Get the most recent backup job for a device.
 
