@@ -8,7 +8,7 @@ import { useThemeStore } from "@/stores/theme"
 const favoritesStore = useFavoritesStore()
 const themeStore = useThemeStore()
 
-onMounted(() => {
+onMounted(async () => {
   // Load theme
   if (!themeStore.isLoaded) {
     themeStore.loadTheme()
@@ -17,7 +17,11 @@ onMounted(() => {
 
   // Load favorites
   if (!favoritesStore.isLoaded) {
-    favoritesStore.loadFavorites()
+    try {
+      await favoritesStore.loadFavorites()
+    } catch (e) {
+      console.warn("Failed to load favorites from backend:", e)
+    }
   }
 })
 </script>

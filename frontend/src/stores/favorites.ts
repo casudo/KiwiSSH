@@ -1,58 +1,74 @@
 import { defineStore } from "pinia"
 import { ref, computed } from "vue"
-
-const FAVORITES_STORAGE_KEY = "downtown-favorites"
+import { favoritesApi } from "@/api/favorites"
 
 export const useFavoritesStore = defineStore("favorites", () => {
-  // State - stored as array of device names
+  // State
   const favoriteDeviceNames = ref<string[]>([])
   const isLoaded = ref(false)
+  const loading = ref(false)
+  const error = ref<string | null>(null)
 
   // Actions
-  function loadFavorites() {
+  async function loadFavorites(forceRefresh = false) {
+    if (isLoaded.value && !forceRefresh) return
+
+    loading.value = true
+    error.value = null
+
     try {
-      const stored = localStorage.getItem(FAVORITES_STORAGE_KEY)
-      if (stored) {
-        favoriteDeviceNames.value = JSON.parse(stored)
-      }
+      favoriteDeviceNames.value = await favoritesApi.getAll()
       isLoaded.value = true
     } catch (e) {
-      console.error("[FavoritesStore] Failed to load favorites from localStorage:", e)
+      const errMsg = e instanceof Error ? e.message : "Failed to load favorites"
+      error.value = errMsg
+      console.error("[FavoritesStore] Failed to load favorites:", e)
       favoriteDeviceNames.value = []
       isLoaded.value = true
+      throw e
+    } finally {
+      loading.value = false
     }
   }
 
-  function saveFavorites() {
+  async function addFavorite(deviceName: string) {
+    if (favoriteDeviceNames.value.includes(deviceName)) return
+
+    const previous = [...favoriteDeviceNames.value]
+    favoriteDeviceNames.value.push(deviceName)
+
     try {
-      localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favoriteDeviceNames.value))
-    } catch (e) {
-      console.error("[FavoritesStore] Failed to save favorites to localStorage:", e)
-    }
-  }
-
-  function addFavorite(deviceName: string) {
-    if (!favoriteDeviceNames.value.includes(deviceName)) {
-      favoriteDeviceNames.value.push(deviceName)
-      saveFavorites()
+      await favoritesApi.add(deviceName)
       console.log("[FavoritesStore] Added favorite:", deviceName)
+    } catch (e) {
+      favoriteDeviceNames.value = previous
+      console.error("[FavoritesStore] Failed to add favorite:", e)
+      throw e
     }
   }
 
-  function removeFavorite(deviceName: string) {
+  async function removeFavorite(deviceName: string) {
     const index = favoriteDeviceNames.value.indexOf(deviceName)
-    if (index !== -1) {
-      favoriteDeviceNames.value.splice(index, 1)
-      saveFavorites()
+    if (index === -1) return
+
+    const previous = [...favoriteDeviceNames.value]
+    favoriteDeviceNames.value.splice(index, 1)
+
+    try {
+      await favoritesApi.remove(deviceName)
       console.log("[FavoritesStore] Removed favorite:", deviceName)
+    } catch (e) {
+      favoriteDeviceNames.value = previous
+      console.error("[FavoritesStore] Failed to remove favorite:", e)
+      throw e
     }
   }
 
-  function toggleFavorite(deviceName: string) {
+  async function toggleFavorite(deviceName: string) {
     if (isFavorite(deviceName)) {
-      removeFavorite(deviceName)
+      await removeFavorite(deviceName)
     } else {
-      addFavorite(deviceName)
+      await addFavorite(deviceName)
     }
   }
 
@@ -60,9 +76,9 @@ export const useFavoritesStore = defineStore("favorites", () => {
     return favoriteDeviceNames.value.includes(deviceName)
   }
 
-  function clearFavorites() {
-    favoriteDeviceNames.value = []
-    saveFavorites()
+  async function clearFavorites() {
+    const deviceNames = [...favoriteDeviceNames.value]
+    await Promise.all(deviceNames.map((deviceName) => removeFavorite(deviceName)))
     console.log("[FavoritesStore] Cleared all favorites")
   }
 
@@ -75,6 +91,8 @@ export const useFavoritesStore = defineStore("favorites", () => {
     // State
     favoriteDeviceNames,
     isLoaded,
+    loading,
+    error,
     // Getters
     favoritesCount,
     hasFavorites,

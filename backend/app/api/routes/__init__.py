@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from app.api.routes import backups, devices, health, ssh_profiles, vendors, groups
+from app.api.routes import backups, devices, favorites, groups, health, ssh_profiles, vendors
 
 api_router_v1 = APIRouter()
 
@@ -22,6 +22,12 @@ api_router_v1.include_router(
     groups.router,
     prefix="/groups",
     tags=["groups"],
+)
+
+api_router_v1.include_router(
+    favorites.router,
+    prefix="/favorites",
+    tags=["favorites"],
 )
 
 api_router_v1.include_router(

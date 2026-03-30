@@ -17,10 +17,14 @@ const isFavorite = computed(() => {
   return favoritesStore.isFavorite(props.device.device_name)
 })
 
-function handleToggleFavorite(e: Event) {
+async function handleToggleFavorite(e: Event) {
   e.stopPropagation()
   if (!props.device) return
-  favoritesStore.toggleFavorite(props.device.device_name)
+  try {
+    await favoritesStore.toggleFavorite(props.device.device_name)
+  } catch (error) {
+    console.error("Failed to toggle favorite:", error)
+  }
 }
 
 async function handleTriggerBackup(e: Event) {

@@ -165,8 +165,12 @@ function goBack() {
   router.push("/devices")
 }
 
-function toggleFavorite() {
-  favoritesStore.toggleFavorite(deviceName.value)
+async function toggleFavorite() {
+  try {
+    await favoritesStore.toggleFavorite(deviceName.value)
+  } catch (e) {
+    console.error("Failed to toggle favorite:", e)
+  }
 }
 
 async function triggerBackup() {

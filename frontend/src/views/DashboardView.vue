@@ -54,7 +54,11 @@ function goToDevice(deviceName: string) {
 }
 
 onMounted(async () => {
-  favoritesStore.loadFavorites()
+  try {
+    await favoritesStore.loadFavorites()
+  } catch (e) {
+    console.warn("Failed to load favorites from backend", e)
+  }
   
   // Fetch configured vendor and SSH profile counts from API
   try {
