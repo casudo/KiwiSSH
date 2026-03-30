@@ -43,11 +43,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     ### Load and log device count
     devices = await source_service.get_all_devices()
-    logger.info(f"Loaded {len(devices)} devices from CSV source") # TODO: Dont hardcode source, even if LOCAL_TEST_MODE is enabled. Maybe add a "default_source" setting for this case? Or just log the source type in the logs of the source service when loading devices?
+    logger.info(f"Loaded {len(devices)} devices")
     
-    ### Initialize database for backup jobs
-    init_database(settings.database_url)
-    logger.info(f"Database URL (type={settings.job_log_storage.type})")
+    ### Initialize PostgreSQL application database
+    logger.info("Initializing application database connection...")
+    init_database(settings)
+
+    logger.info("Starting backend services...")
 
     yield
 

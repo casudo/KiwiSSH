@@ -6,3 +6,4 @@ asyncssh==2.22.0
 gitpython==3.1.46
 ruff==0.15.7
 sqlalchemy==2.0.48
+psycopg[binary]==3.3.3

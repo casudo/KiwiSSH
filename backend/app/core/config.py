@@ -3,6 +3,7 @@
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote_plus
 
 import yaml
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -71,15 +72,14 @@ class GitConfig(BaseModel):
     remote: GitRemoteConfig | None = None
 
 
-class JobLogStorageConfig(BaseModel):
-    """Database configuration for backup job logs."""
-    type: str = "sqlite"
-    path: str | None = None  # For SQLite
-    host: str | None = None  # For PostgreSQL
-    port: int = 5432  # For PostgreSQL
-    database: str = "downtown"  # For PostgreSQL
-    user: str | None = None  # For PostgreSQL
-    password: str | None = None  # For PostgreSQL
+class ApplicationDatabaseConfig(BaseModel):
+    """Application PostgreSQL database configuration."""
+
+    host: str
+    port: int
+    database: str
+    user: str
+    password: str
 
 
 class ScheduleConfig(BaseModel):
@@ -118,7 +118,7 @@ class Settings(BaseSettings):
     nodes: dict[str, NodeConfig] = Field(default_factory=dict)
     sources: SourcesConfig | None = None
     git: GitConfig = Field(default_factory=GitConfig)
-    job_log_storage: JobLogStorageConfig = Field(default_factory=JobLogStorageConfig)
+    application_database: ApplicationDatabaseConfig | None = None
     schedule: ScheduleConfig | None = None
     api: ApiConfig = Field(default_factory=ApiConfig)
 
@@ -126,7 +126,7 @@ class Settings(BaseSettings):
     ssh_profiles: dict[str, Any] = Field(default_factory=dict)
     vendors: dict[str, dict[str, Any]] = Field(default_factory=dict)
 
-    ### Database URL (computed from job_log_storage config)
+    ### Database URL (computed from application_database config)
     database_url: str = ""
 
     @field_validator("config_dir", "backups_dir", mode="before")
@@ -187,8 +187,8 @@ class Settings(BaseSettings):
                 ### git
                 self.git = GitConfig(**file_content.get("git", {}))
 
-                ### job_log_storage
-                self.job_log_storage = JobLogStorageConfig(**file_content.get("job_log_storage", {}))
+                ### application_database
+                self.application_database = ApplicationDatabaseConfig(**file_content.get("application_database", {}))
                 
                 ### schedule
                 schedule_data = file_content.get("schedule", {})
@@ -213,7 +213,7 @@ class Settings(BaseSettings):
                     vendor_id = vendor_data["vendor"].get("id")
                     self.vendors[vendor_id] = vendor_data
 
-        ### Build database URL from job_log_storage config
+        ### Build application database URL from application_database config.
         self.database_url = self._build_database_url()
 
     def get_ssh_profile(self, profile_name: str) -> dict[str, Any] | None:
@@ -225,28 +225,15 @@ class Settings(BaseSettings):
         return self.vendors.get(vendor_id)
 
     def _build_database_url(self) -> str:
-        """Build database URL from job_log_storage configuration.
+        """Build application database URL from PostgreSQL configuration.
 
         Returns:
             SQLAlchemy database URL string
         """
-        if self.job_log_storage.type.lower() == "sqlite":
-            path = self.job_log_storage.path or "downtown.sqlite"
-            ### If relative path, make it absolute relative to config_dir
-            if not Path(path).is_absolute():
-                path = self.config_dir / path
-            return f"sqlite:///{Path(path).resolve()}"
 
-        elif self.job_log_storage.type.lower() == "postgresql":
-            if not all([self.job_log_storage.host, self.job_log_storage.user, self.job_log_storage.password]):
-                raise ValueError("Missing required PostgreSQL configuration fields (host, user, password)")
-            return (
-                f"postgresql://{self.job_log_storage.user}:{self.job_log_storage.password}"
-                f"@{self.job_log_storage.host}:{self.job_log_storage.port}/{self.job_log_storage.database}"
-            )
-
-        else:
-            raise ValueError(f"Unsupported database type: {self.job_log_storage.type}")
+        escaped_user = quote_plus(self.application_database.user)
+        escaped_password = quote_plus(self.application_database.password)
+        return f"postgresql+psycopg://{escaped_user}:{escaped_password}@{self.application_database.host}:{self.application_database.port}/{self.application_database.database}"
 
     def get_device_config(self, group: str, device_name: str) -> dict[str, Any]:
         """

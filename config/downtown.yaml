@@ -57,20 +57,16 @@ git:
   #   branch: "main"
   #   push_after_commit: false
 
-### Backup Job log storage (for tracking backup success/failure status)
-## Choose between SQLite (file-based) or PostgreSQL (WIP, untested)
-## NOTE: This is NOT the local git backup repository for the groups! 
-job_log_storage:
-  type: "sqlite"  # Options: sqlite, postgresql
-  path: "downtown.sqlite"  # WIll be placed in the same directory as downtown.yaml if relative, or can be absolute path
-
-  ### For PostgreSQL (UNTESTED):
-  # type: "postgresql"
-  # host: "localhost"
-  # port: 5432
-  # database: "downtown_backups"
-  # user: "downtown"
-  # password: "your-password"  # Can also use DOWNTOWN_JOB_LOG_STORAGE_PASSWORD env var
+### Downtown application database (PostgreSQL only)
+## This database stores Downtown-owned data (backup job logs, favorites, etc.)
+## The database itself and the user must already exist.
+## The app will create required Downtown tables automatically.
+application_database:
+  host: "localhost"
+  port: 5432
+  database: "downtown"
+  user: "downtown_user"
+  password: "downtown-user-password"
 
 # Backup scheduling (future feature)
 # schedule:
