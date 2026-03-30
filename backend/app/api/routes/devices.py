@@ -30,7 +30,9 @@ async def _enrich_device_with_backup_info(device_base: DeviceBase, db: Session =
             if latest_job:
                 logger.debug(f"Found latest job for {device.device_name}: status={latest_job.status}, timestamp={latest_job.timestamp}")
                 device.last_backup = latest_job.timestamp
-                if latest_job.status == "success":
+                if latest_job.status in {"pending", "in_progress"}:
+                    device.status = DeviceStatus.BACKUP_IN_PROGRESS
+                elif latest_job.status == "success":
                     device.status = DeviceStatus.BACKUP_SUCCESS
                     device.last_backup_success = latest_job.timestamp
                 elif latest_job.status == "no_changes":
