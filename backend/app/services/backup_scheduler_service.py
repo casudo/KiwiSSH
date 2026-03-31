@@ -62,12 +62,12 @@ class BackupSchedulerService:
         
         This is called by the scheduler at the configured cron time.
         """
-        logger.info(f"Scheduled backup triggered for device: {device.device_name}")
+        logger.debug(f"Scheduled backup triggered for device: {device.device_name}")
         
         try:
             ### Call the backup service
             await backup_service.backup_device(device)
-            logger.info(f"Scheduled backup completed for device: {device.device_name}")
+            logger.debug(f"Scheduled backup completed for device: {device.device_name}")
         except Exception as ex:
             logger.error(f"Scheduled backup failed for device {device.device_name}: {ex}")
 
@@ -114,7 +114,6 @@ class BackupSchedulerService:
             
             ### Start the scheduler
             self.scheduler.start()
-            logger.info(f"Backup scheduler started with {scheduled_count} scheduled device(s)")
             
         except Exception as ex:
             logger.error(f"Failed to start backup scheduler: {ex}")
