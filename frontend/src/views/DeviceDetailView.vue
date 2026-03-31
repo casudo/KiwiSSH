@@ -53,10 +53,10 @@ const diffLoading = ref(false)
 const diffError = ref<string | null>(null)
 
 onMounted(async () => {
-  await Promise.all([
-    devicesStore.fetchDevice(deviceName.value),
-    devicesStore.fetchVendors(),
-  ])
+  await devicesStore.fetchDevice(deviceName.value)
+  if (devicesStore.vendors.length === 0) {
+    await devicesStore.fetchVendors()
+  }
   await loadBackupHistory()
 })
 
