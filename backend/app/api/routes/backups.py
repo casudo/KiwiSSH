@@ -15,8 +15,6 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-
-
 async def _run_backup_in_background(
     enabled_devices: list,
     context_label: str,
@@ -26,16 +24,16 @@ async def _run_backup_in_background(
     BackupService.backup_device() handles all job persistence:
     """
 
-    logger.info("Background backup started for %s (%d devices)", context_label, len(enabled_devices))
+    logger.debug("Background backup started for %s (%d devices)", context_label, len(enabled_devices))
 
     for device in enabled_devices:
         try:
             result = await backup_service.backup_device(device)
-            logger.info(f"Backup for {device.device_name} completed with status: {result.status}")
+            logger.debug(f"Backup for {device.device_name} completed with status: {result.status}")
         except Exception as e:
             logger.error(f"Unexpected error backing up {device.device_name}: {e}")
 
-    logger.info("Background backup completed for %s", context_label)
+    logger.debug("Background backup completed for %s", context_label)
 
 
 def _run_backup_in_background_threadsafe(
@@ -60,7 +58,7 @@ async def trigger_backup(
     background_tasks: BackgroundTasks,
 ) -> BackupTriggerResponse:
     """Trigger a backup operation for a specific group or all devices."""
-    logger.info(f"Backup trigger endpoint called for group: {request.group or 'all'}")
+    logger.debug(f"Backup trigger endpoint called for group: {request.group or 'all'}")
 
     ### Get devices to backup
     if request.group:
@@ -69,7 +67,6 @@ async def trigger_backup(
         devices = await source_service.get_all_devices()
 
     enabled_devices = [d for d in devices if d.enabled]
-    logger.info(f"Found {len(enabled_devices)} enabled devices")
 
     if not enabled_devices:
         return BackupTriggerResponse(
@@ -95,7 +92,7 @@ async def trigger_device_backup(
     background_tasks: BackgroundTasks,
 ) -> BackupTriggerResponse:
     """Trigger backup for a specific device."""
-    logger.info(f"Backup trigger endpoint called for: {device_name}")
+    logger.debug(f"Backup trigger endpoint called for: {device_name}")
     device = await source_service.get_device(device_name)
     logger.debug(f"Device found: {device is not None}")
 

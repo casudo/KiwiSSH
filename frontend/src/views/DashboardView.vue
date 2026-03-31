@@ -104,7 +104,7 @@ onMounted(async () => {
       <StatCard title="Groups" :value="stats.groups" color="gray" />
       <StatCard title="Vendors" :value="stats.vendors" color="blue" />
       <StatCard title="SSH Profiles" :value="stats.sshProfiles" color="purple" />
-      <StatCard title="Backup Jobs" :value="stats.backupJobs" color="orange" />
+      <StatCard title="Backup Job Log Lines" :value="stats.backupJobs" color="orange" />
     </div>
 
     <!-- Health Status -->
