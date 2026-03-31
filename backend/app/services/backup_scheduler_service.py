@@ -5,6 +5,7 @@ and provides methods to determine which devices should have their backup trigger
 at any given time. Uses APScheduler to execute backups on configured cron schedules.
 """
 
+import hashlib
 import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -25,6 +26,30 @@ class BackupSchedulerService:
         self.settings = get_settings()
         self.scheduler: AsyncIOScheduler | None = None
         self.scheduled_devices: dict[str, str] = {}  # device_name -> job_id mapping
+
+    @staticmethod
+    def _stable_second_offset(device_name: str) -> int:
+        """Return a deterministic second offset (0-59) for a device.
+
+        Spreading jobs within each minute reduces scheduler bursts when many devices
+        share the same minute-level cron expression.
+        """
+        digest = hashlib.sha1(device_name.encode("utf-8")).hexdigest()
+        return int(digest[:8], 16) % 60
+
+    def _build_device_trigger(self, cron: str, timezone: ZoneInfo, device_name: str) -> CronTrigger:
+        """Create a cron trigger with a deterministic per-device second offset."""
+        minute, hour, day, month, day_of_week = cron.strip().split()
+        second = str(self._stable_second_offset(device_name))
+        return CronTrigger(
+            second=second,
+            minute=minute,
+            hour=hour,
+            day=day,
+            month=month,
+            day_of_week=day_of_week,
+            timezone=timezone,
+        )
 
     def get_device_schedule(self, device: DeviceBase) -> ScheduleConfig | None:
         """Resolve device schedule with priority: app < group < node.
@@ -82,7 +107,13 @@ class BackupSchedulerService:
             return
 
         try:
-            self.scheduler = AsyncIOScheduler()
+            self.scheduler = AsyncIOScheduler(
+                job_defaults={
+                    "coalesce": True,
+                    "misfire_grace_time": 300,
+                    "max_instances": 1,
+                }
+            )
             
             ### Schedule backups for all devices with enabled schedules
             scheduled_count = 0
@@ -94,7 +125,7 @@ class BackupSchedulerService:
                         tz = ZoneInfo(schedule.timezone)
                         
                         ### Schedule the backup job
-                        trigger = CronTrigger.from_crontab(schedule.cron, timezone=tz)
+                        trigger = self._build_device_trigger(schedule.cron, tz, device.device_name)
                         job = self.scheduler.add_job(
                             self._trigger_device_backup,
                             trigger=trigger,
@@ -102,6 +133,9 @@ class BackupSchedulerService:
                             id=f"backup_{device.device_name}",
                             name=f"Backup {device.device_name}",
                             replace_existing=True,
+                            misfire_grace_time=300,
+                            coalesce=True,
+                            max_instances=1,
                         )
                         self.scheduled_devices[device.device_name] = job.id
                         scheduled_count += 1
