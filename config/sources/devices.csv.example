@@ -1,6 +1,6 @@
 group,device_name,ip_address,enabled
-default,router-core-01,192.168.1.1,true
-default,router-core-02,192.168.1.2,,true
-default,switch-dist-01,192.168.1.10,true
-legacy,switch-access-01,192.168.2.1,true
-default,firewall-01,192.168.1.254,true
+customer-aaa,router-core-01,10.30.54.1,true
+customer-aaa,router-core-02,10.30.54.2,,true
+abc-company,switch-dist-01,172.16.28.50,true
+abc-company,switch-access-01,172.17.2.34,true
+it-department,firewall-01,192.168.1.254,true
