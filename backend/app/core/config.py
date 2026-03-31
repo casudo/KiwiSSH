@@ -1,13 +1,18 @@
 """Project Downtown application configuration."""
 
+import os
+import logging
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote_plus
+from zoneinfo import ZoneInfo
 
 import yaml
 from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger(__name__)
 
 
 class ApiConfig(BaseModel):
@@ -17,6 +22,32 @@ class ApiConfig(BaseModel):
     cors_origins: list[str] = Field(default_factory=list)
 
 
+class ScheduleConfig(BaseModel):
+    """Backup scheduling configuration."""
+    cron: str | None = "0 2 * * *"  # Default to daily at 2 AM
+    timezone: str = Field(default_factory=lambda: os.environ.get("TZ", "UTC"))
+    
+    @field_validator("timezone", mode="before")
+    @classmethod
+    def resolve_timezone(cls, tz: str | None) -> str:
+        """Use TZ env var if timezone not explicitly provided, otherwise default to UTC."""
+        if tz is None or tz == "":
+            return os.environ.get("TZ", "UTC")
+        return tz
+    
+    @field_validator("timezone", mode="after")
+    @classmethod
+    def validate_timezone(cls, tz: str) -> str:
+        """Validate timezone is supported by zoneinfo, fallback to UTC if invalid."""
+        try:
+            ZoneInfo(tz)
+        except Exception:
+            ### Log warning and fallback to UTC for invalid timezones
+            logger.warning(f"Invalid timezone '{tz}', falling back to UTC")
+            return "UTC"
+        return tz
+    
+
 ### Application configuration models
 class AppConfig(BaseModel):
     """Application-level settings."""
@@ -24,6 +55,7 @@ class AppConfig(BaseModel):
     timeout: int = Field(default=30, ge=1)
     retry: int = Field(default=3, ge=0)
     api: ApiConfig = Field(default_factory=ApiConfig)
+    schedule: ScheduleConfig = Field(default_factory=ScheduleConfig)
 
 
 class GroupConfig(BaseModel):
@@ -34,6 +66,7 @@ class GroupConfig(BaseModel):
     vendor: str | None = None
     timeout: int | None = Field(default=None, ge=1)
     retry: int | None = Field(default=None, ge=0)
+    schedule: ScheduleConfig | None = None
 
 
 class NodeConfig(BaseModel):
@@ -44,6 +77,7 @@ class NodeConfig(BaseModel):
     vendor: str | None = None
     timeout: int | None = Field(default=None, ge=1)
     retry: int | None = Field(default=None, ge=0)
+    schedule: ScheduleConfig | None = None
 
 
 class PostgresSourceConfig(BaseModel):
@@ -87,13 +121,6 @@ class ApplicationDatabaseConfig(BaseModel):
     database: str
     user: str
     password: str
-
-
-class ScheduleConfig(BaseModel):
-    """Backup scheduling configuration."""
-    enabled: bool = False
-    cron: str | None = None
-    timezone: str = "UTC"
 
 
 class Settings(BaseSettings):
@@ -187,11 +214,6 @@ class Settings(BaseSettings):
 
                 ### application_database
                 self.application_database = ApplicationDatabaseConfig(**file_content.get("application_database", {}))
-                
-                ### schedule
-                schedule_data = file_content.get("schedule", {})
-                if schedule_data:
-                    self.schedule = ScheduleConfig(**schedule_data)
 
         ### Load SSH profiles
         ssh_profiles_file = self.config_dir / "ssh_profiles.yaml"
@@ -265,6 +287,7 @@ class Settings(BaseSettings):
         device_config = {
             "timeout": self.app.timeout,
             "retry": self.app.retry,
+            "schedule": self.app.schedule
         }
 
         ### Step 1: Apply group-level defaults / overrides
@@ -280,6 +303,8 @@ class Settings(BaseSettings):
                 device_config["timeout"] = group_config.timeout
             if group_config.retry is not None:
                 device_config["retry"] = group_config.retry
+            if group_config.schedule and group_config.schedule.cron is not None:
+                device_config["schedule"] = group_config.schedule
 
         ### Step 2: Apply node-specific overrides
         ### NOTE: Group cannot be overridden here - must be changed in source
@@ -297,6 +322,8 @@ class Settings(BaseSettings):
                 device_config["username"] = node_config.username
             if node_config.password is not None:
                 device_config["password"] = node_config.password
+            if node_config.schedule and node_config.schedule.cron is not None:
+                device_config["schedule"] = node_config.schedule
 
         return device_config
 
