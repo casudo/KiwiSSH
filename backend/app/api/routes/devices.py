@@ -8,6 +8,7 @@ from app.models.device import DeviceBase, DeviceFull, DeviceStatus
 from app.services.source_service import source_service
 from app.services.git_service import git_service
 from app.services.backup_job_service import backup_job_service
+from app.core.config import get_settings
 from app.db.database import get_db
 
 router = APIRouter()
@@ -115,10 +116,17 @@ async def get_device(device_name: str, db: Session = Depends(get_db)) -> dict:
     except Exception:
         pass
 
+    ### Get device schedule
+    settings = get_settings()
+    device_config = settings.get_device_config(device.group, device_name)
+    schedule = device_config.get("schedule")
+    schedule_str = f"{schedule.cron} ({schedule.timezone})" if schedule and hasattr(schedule, 'cron') and schedule.cron else None
+
     ### Return full device config with backup information
     result = device.model_dump()
     result["status"] = device.status.value
     result["backup_count"] = backup_count
+    result["schedule"] = schedule_str
     return result
 
 
