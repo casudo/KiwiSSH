@@ -225,8 +225,9 @@ class GitService:
             raise ValueError(f"Commit {commit_hash} not found") from e
 
         ### Get all files in the commit
+        config_file = f"{device_name}.conf"
         for item in commit.tree.traverse():
-            if device_name in item.path:
+            if item.path == config_file:
                 return item.data_stream.read().decode("utf-8")
 
         raise ValueError(f"No config found for {device_name} at commit {commit_hash}")
@@ -258,8 +259,10 @@ class GitService:
         except Exception as e:
             raise ValueError(f"Commits not found: {e}") from e
 
-        ### Generate unified diff
-        diff_text = repo.git.diff(from_commit, to_commit)
+        ### Generate unified diff scoped to this device file only.
+        ### Without path scoping, git includes changes from other devices in the same repo.
+        config_file = f"{device_name}.conf"
+        diff_text = repo.git.diff(from_commit, to_commit, "--", config_file)
 
         ### Calculate statistics
         added_lines = diff_text.count("\n+") - diff_text.count("\n+++")
