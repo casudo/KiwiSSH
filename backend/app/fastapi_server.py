@@ -13,6 +13,7 @@ from app.api.routes import api_router_v1
 from app.core import get_settings
 from app.core.logging import configure_logging
 from app.services import source_service
+from app.services.backup_scheduler_service import backup_scheduler_service
 from app.services.backup_job_service import backup_job_service
 from app.db.database import init_database
 
@@ -43,6 +44,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info(f"Debug mode: {settings.app.debug}")
     logger.info(f"Loaded {len(settings.vendors)} vendor configurations")
     logger.info(f"Loaded {len(settings.ssh_profiles.get('profiles', {}))} SSH profiles")
+    logger.info(f"Global backup schedule: {settings.app.schedule.cron} ({settings.app.schedule.timezone})")
 
     ### Load and log device count
     devices = await source_service.get_all_devices()
@@ -65,11 +67,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
                 db.close()
         except Exception as e:
             logger.warning(f"Failed to clean up stuck jobs during startup: {e}")
+    
+    ### Start backup scheduler
+    backup_scheduler_service.start_scheduler(devices)
 
     yield
 
     ### Shutdown
     logger.info("Shutting down Project Downtown")
+    backup_scheduler_service.stop_scheduler()
 
 
 ### Definde FastAPI app
