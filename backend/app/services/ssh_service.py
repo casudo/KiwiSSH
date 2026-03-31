@@ -7,10 +7,14 @@ TODO: Implement actual SSH connection logic using asyncssh, including
 handling of different SSH profiles and vendor-specific quirks.
 """
 
+import asyncio
+import logging
 from typing import Any
 
 from app.core import get_settings
 from app.models.device import DeviceBase
+
+logger = logging.getLogger(__name__)
 
 
 class SSHService:
@@ -105,26 +109,50 @@ class SSHService:
 
         Raises:
             FileNotFoundError: If test device not found
+            TimeoutError: If all configured fetch attempts timed out
         """
-        ### TODO: FIX: Use local simulator for testing
+        timeout_seconds, retry_count = self._resolve_timeout_retry(device)
+        max_attempts = retry_count + 1
+
+        ### TODO: Replace simulator call with real SSH fetch once asyncssh integration is implemented.
         from app.services.local_ssh_simulator import local_ssh_simulator
 
-        return await local_ssh_simulator.get_config(device)
+        last_exception: Exception | None = None
+        for attempt in range(1, max_attempts + 1):
+            try:
+                ### TODO: Placeholder for get_config()
 
-    async def test_connection(self, device: DeviceBase, username: str, password: str) -> bool:
-        """
-        Test if device is reachable via SSH.
+                return await asyncio.wait_for(
+                    local_ssh_simulator.get_config(device),
+                    timeout=timeout_seconds,
+                )
+            except asyncio.TimeoutError:
+                last_exception = TimeoutError(
+                    f"SSH config fetch timed out after {timeout_seconds}s "
+                    f"(attempt {attempt}/{max_attempts})"
+                )
+                logger.warning(
+                    "Config fetch timeout for device '%s' on attempt %d/%d",
+                    device.device_name,
+                    attempt,
+                    max_attempts,
+                )
+            except Exception as exc:
+                last_exception = exc
+                logger.warning(
+                    "Config fetch failed for device '%s' on attempt %d/%d: %s",
+                    device.device_name,
+                    attempt,
+                    max_attempts,
+                    exc,
+                )
 
-        Args:
-            device: Device to test
-            username: SSH username
-            password: SSH password
+            if attempt < max_attempts:
+                await asyncio.sleep(0.25)
 
-        Returns:
-            True if connection successful, False otherwise
-        """
-        ### TODO: For base implementation, always returns False (not implemented)
-        return False
+        if last_exception is not None:
+            raise last_exception
+        raise RuntimeError("SSH config fetch failed without a captured exception!!")
 
 
 ### Singleton instance
