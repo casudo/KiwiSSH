@@ -110,7 +110,7 @@ async def trigger_device_backup(
 
 @router.get("/jobs")
 async def get_backup_jobs(
-    device_name: str | None = Query(None, description="Filter by device name"),
+    device_name: str | None = Query(None, description="Filter by partial device name"),
     job_id: str | None = Query(None, description="Filter by partial job ID"),
     status: str | None = Query(None, description="Filter by status (success, failed, no_changes)"),
     limit: int = Query(5000, ge=1, le=50000, description="Maximum number of jobs to return"),
@@ -124,7 +124,7 @@ async def get_backup_jobs(
     try:
         base_query = db.query(BackupJob)
         if device_name:
-            base_query = base_query.filter(BackupJob.device_name == device_name)
+            base_query = base_query.filter(BackupJob.device_name.ilike(f"%{device_name}%"))
         if job_id:
             base_query = base_query.filter(BackupJob.id.ilike(f"%{job_id}%"))
 
