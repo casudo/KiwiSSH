@@ -23,6 +23,7 @@ export const useJobsStore = defineStore("jobs", () => {
   const totalSuccessJobs = ref(0)
   const totalFailedJobs = ref(0)
   const totalInProgressJobs = ref(0)
+  const totalNoChangesJobs = ref(0)
   const lastQuery = ref<JobsQueryState>({
     limit: 5000,
     offset: 0,
@@ -44,6 +45,8 @@ export const useJobsStore = defineStore("jobs", () => {
   const successCount = computed(() => totalSuccessJobs.value)
 
   const failureCount = computed(() => totalFailedJobs.value)
+
+  const noChangesCount = computed(() => totalNoChangesJobs.value)
 
   // Helper function to format job messages
   function getJobMessage(status: string, deviceName: string): string {
@@ -80,10 +83,12 @@ export const useJobsStore = defineStore("jobs", () => {
         totalSuccessJobs.value = statusTotals.success || 0
         totalFailedJobs.value = statusTotals.failed || 0
         totalInProgressJobs.value = (statusTotals.pending || 0) + (statusTotals.in_progress || 0)
+        totalNoChangesJobs.value = statusTotals.no_changes || 0
       } else {
         totalSuccessJobs.value = rawJobs.filter((job: BackupJobRecord) => job.status === "success").length
         totalFailedJobs.value = rawJobs.filter((job: BackupJobRecord) => job.status === "failed").length
         totalInProgressJobs.value = rawJobs.filter((job: BackupJobRecord) => job.status === "pending" || job.status === "in_progress").length
+        totalNoChangesJobs.value = rawJobs.filter((job: BackupJobRecord) => job.status === "no_changes").length
       }
 
       // Convert database records to BackupJobStatus format
@@ -114,6 +119,7 @@ export const useJobsStore = defineStore("jobs", () => {
       totalJobs.value += 1
       if (job.status === "success") totalSuccessJobs.value += 1
       if (job.status === "failed") totalFailedJobs.value += 1
+      if (job.status === "no_changes") totalNoChangesJobs.value += 1
       if (job.status === "pending" || job.status === "in_progress") totalInProgressJobs.value += 1
     }
 
@@ -216,12 +222,14 @@ export const useJobsStore = defineStore("jobs", () => {
     totalSuccessJobs,
     totalFailedJobs,
     totalInProgressJobs,
+    totalNoChangesJobs,
     // Getters
     inProgressJobs,
     inProgressCount,
     completedJobs,
     successCount,
     failureCount,
+    noChangesCount,
     // Actions
     loadJobs,
     addJob,
