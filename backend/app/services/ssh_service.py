@@ -19,16 +19,23 @@ class SSHService:
     def __init__(self) -> None:
         self.settings = get_settings()
 
+    def _resolve_timeout_retry(self, device: DeviceBase) -> tuple[int, int]:
+        """Resolve timeout/retry with priority: app < group < node."""
+        device_config = self.settings.get_device_config(device.group, device.device_name)
+
+        timeout = int(device_config.get("timeout"))
+        retry = int(device_config.get("retry"))
+        return timeout, retry
+
     def _get_ssh_options(self, profile_name: str) -> dict[str, Any]:
         """Get SSH options from profile."""
         profile = self.settings.get_ssh_profile(profile_name)
 
         return {
             "kex_algs": profile.get("kex_algorithms"),
-            "encryption_algs": profile.get("encryption_algorithms"),
-            "mac_algs": profile.get("mac_algorithms"),
-            "connect_timeout": profile.get("connect_timeout", 10),
-            "known_hosts": None,  # TODO: Implement known_hosts handling
+            "encryption_algs": profile.get("ciphers"),
+            "server_host_key_algs": profile.get("host_key_algorithms"),
+            "known_hosts": profile.get("known_hosts_policy", "ignore").lower(),
         }
 
     async def connect(
