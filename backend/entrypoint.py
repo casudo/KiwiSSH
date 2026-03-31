@@ -4,6 +4,10 @@ TODO: First implementation, need maintenance"""
 
 import logging
 import sys
+from dotenv import load_dotenv
+
+### Load .env file early to set environment variables
+load_dotenv()
 
 ### Set up logging early
 logging.basicConfig(

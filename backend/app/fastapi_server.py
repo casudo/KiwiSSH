@@ -4,6 +4,7 @@ import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -13,6 +14,9 @@ from app.core import get_settings
 from app.core.logging import configure_logging
 from app.services import source_service
 from app.db.database import init_database
+
+### Load .env file early to ensure env vars are available
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
