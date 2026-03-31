@@ -7,7 +7,7 @@ const THEME_STORAGE_KEY = "downtown-theme"
 
 export const useThemeStore = defineStore("theme", () => {
   // State
-  const theme = ref<ThemeMode>("light")
+  const theme = ref<ThemeMode>("dark")
   const isLoaded = ref(false)
 
   // Computed dark mode status

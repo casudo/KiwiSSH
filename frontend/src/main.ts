@@ -6,6 +6,25 @@ import router from "./router"
 
 import "./style.css"
 
+function applyInitialTheme(): void {
+	const themeStorageKey = "downtown-theme"
+
+	try {
+		const storedTheme = localStorage.getItem(themeStorageKey)
+		const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
+		const shouldUseDark =
+			storedTheme == null ||
+			storedTheme === "dark" ||
+			(storedTheme === "system" && prefersDark)
+		document.documentElement.classList.toggle("dark", shouldUseDark)
+	} catch {
+		// If localStorage or matchMedia is unavailable, default to dark mode.
+		document.documentElement.classList.add("dark")
+	}
+}
+
+applyInitialTheme()
+
 const app = createApp(App)
 
 app.use(createPinia())
