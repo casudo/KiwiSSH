@@ -34,6 +34,11 @@ def configure_logging(debug: bool = False) -> None:
                 "stream": "ext://sys.stdout",
             },
         },
+        "loggers": {
+            "apscheduler": {
+                "level": "WARNING",  # Suppress all verbose + INFO APScheduler job store logs
+            },
+        },
         "root": {
             "level": level,
             "handlers": ["console"],
