@@ -29,13 +29,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     Everything after yield: runs on shutdown
     """
     ### Startup
-    settings = get_settings()
-    configure_logging(debug=settings.app.debug)
     
-
-    ## Clear caches to ensure fresh load from .env file
+    ## Clear caches before starting to ensure we have the latest config and data
     get_settings.cache_clear()
     source_service.invalidate_cache()
+    
+    settings = get_settings()
+    configure_logging(debug=settings.app.debug)
 
     logger.info(f"Starting Project Downtown v{__version__}")
     logger.info(f"Config directory: {settings.config_dir}")
