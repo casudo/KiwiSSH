@@ -23,7 +23,7 @@ const showEnabledOnly = ref<boolean>(false)
 const currentLayout = ref<LayoutType>("detailed")
 const showFilters = ref<boolean>(false)
 const currentPage = ref<number>(1)
-const pageSize = ref<number>(12)
+const pageSize = ref<number>(50)
 
 const LAYOUT_STORAGE_KEY = "devices-layout"
 
