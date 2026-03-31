@@ -16,7 +16,7 @@ type LayoutType = "detailed" | "compact" | "list"
 const selectedGroup = ref<string>("")
 const selectedVendor = ref<string>("")
 const selectedSshProfile = ref<string>("")
-const selectedStatus = ref<string>("")
+const selectedStatus = ref<string[]>([])
 const searchName = ref<string>("")
 const searchIP = ref<string>("")
 const showEnabledOnly = ref<boolean>(false)
@@ -24,8 +24,17 @@ const currentLayout = ref<LayoutType>("detailed")
 const showFilters = ref<boolean>(false)
 const currentPage = ref<number>(1)
 const pageSize = ref<number>(50)
+const showStatusDropdown = ref<boolean>(false)
 
 const LAYOUT_STORAGE_KEY = "devices-layout"
+
+const statusOptions = [
+  { value: "unknown", label: "Unknown" },
+  { value: "backup_in_progress", label: "Backup In Progress" },
+  { value: "backup_success", label: "Backup Success" },
+  { value: "backup_failed", label: "Backup Failed" },
+  { value: "backup_no_changes", label: "No Changes" },
+]
 
 const filteredDevices = computed((): Device[] => {
   let devices = devicesStore.devices
@@ -42,8 +51,8 @@ const filteredDevices = computed((): Device[] => {
     devices = devices.filter(d => d.ssh_profile === selectedSshProfile.value)
   }
 
-  if (selectedStatus.value) {
-    devices = devices.filter(d => d.status === selectedStatus.value)
+  if (selectedStatus.value.length > 0) {
+    devices = devices.filter(d => selectedStatus.value.includes(d.status))
   }
 
   if (searchName.value) {
@@ -84,7 +93,7 @@ function clearFilters() {
   selectedGroup.value = ""
   selectedVendor.value = ""
   selectedSshProfile.value = ""
-  selectedStatus.value = ""
+  selectedStatus.value = []
   searchName.value = ""
   searchIP.value = ""
   showEnabledOnly.value = false
@@ -93,6 +102,18 @@ function clearFilters() {
 
 function handlePageSizeChange() {
   currentPage.value = 1
+}
+
+function toggleStatusFilter(value: string) {
+  if (selectedStatus.value.includes(value)) {
+    selectedStatus.value = selectedStatus.value.filter(s => s !== value)
+  } else {
+    selectedStatus.value.push(value)
+  }
+}
+
+function removeStatusFilter(value: string) {
+  selectedStatus.value = selectedStatus.value.filter(s => s !== value)
 }
 
 async function handleReload() {
@@ -111,6 +132,14 @@ onMounted(async () => {
   if (savedLayout && ["detailed", "compact", "list"].includes(savedLayout)) {
     currentLayout.value = savedLayout
   }
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement
+    if (!target.closest('[data-status-filter]')) {
+      showStatusDropdown.value = false
+    }
+  })
 })
 </script>
 
@@ -243,15 +272,48 @@ onMounted(async () => {
                 </option>
               </select>
             </div>
-            <div>
+            <div data-status-filter>
               <label class="label">Filter by Status</label>
-              <select v-model="selectedStatus" class="input">
-                <option value="">All Status</option>
-                <option value="unknown">Unknown</option>
-                <option value="backup_success">Backup Success</option>
-                <option value="backup_failed">Backup Failed</option>
-                <option value="backup_in_progress">Backup In Progress</option>
-              </select>
+              <div class="relative">
+                <!-- Tag input field -->
+                <div class="input h-[39px] min-h-[39px] max-h-[39px] flex flex-nowrap items-center gap-2 overflow-x-auto overflow-y-hidden whitespace-nowrap py-1 cursor-text" @click="showStatusDropdown = !showStatusDropdown">
+                  <div
+                    v-for="status in selectedStatus"
+                    :key="status"
+                    class="shrink-0 flex items-center gap-2 bg-downtown-100 text-downtown-700 px-3 py-1 rounded-full text-sm font-medium"
+                  >
+                    {{ statusOptions.find(o => o.value === status)?.label || status }}
+                    <button
+                      type="button"
+                      @click.stop="removeStatusFilter(status)"
+                      class="hover:text-downtown-900 font-bold"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <span v-if="selectedStatus.length === 0" class="text-gray-400 text-sm">Select statuses...</span>
+                </div>
+
+                <!-- Dropdown menu -->
+                <div
+                  v-if="showStatusDropdown"
+                  class="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 max-h-48 overflow-y-auto"
+                >
+                  <label
+                    v-for="option in statusOptions"
+                    :key="option.value"
+                    class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                  >
+                    <input
+                      type="checkbox"
+                      :checked="selectedStatus.includes(option.value)"
+                      @change="() => toggleStatusFilter(option.value)"
+                      class="w-4 h-4 text-downtown-600 rounded border-gray-300 focus:ring-downtown-500"
+                    />
+                    <span class="text-sm text-gray-700">{{ option.label }}</span>
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -267,7 +329,7 @@ onMounted(async () => {
             </label>
 
             <button
-              v-if="selectedGroup || selectedVendor || selectedSshProfile || selectedStatus || searchName || searchIP || showEnabledOnly"
+              v-if="selectedGroup || selectedVendor || selectedSshProfile || selectedStatus.length > 0 || searchName || searchIP || showEnabledOnly"
               @click="clearFilters"
               class="text-sm text-downtown-600 hover:text-downtown-700 font-medium"
             >
@@ -293,7 +355,7 @@ onMounted(async () => {
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
       </svg>
       <p class="text-gray-500 text-lg">No devices found</p>
-      <p v-if="selectedGroup || selectedVendor || selectedSshProfile || selectedStatus || searchName || showEnabledOnly" class="text-gray-400 text-sm mt-2">
+      <p v-if="selectedGroup || selectedVendor || selectedSshProfile || selectedStatus.length > 0 || searchName || showEnabledOnly" class="text-gray-400 text-sm mt-2">
         Try adjusting your filters
       </p>
     </div>
