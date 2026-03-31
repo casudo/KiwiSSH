@@ -47,7 +47,7 @@ const favoriteDevices = computed(() => {
   )
 })
 
-const dashboardDevices = computed(() => favoriteDevices.value.slice(0, 6))
+const dashboardDevices = computed(() => favoriteDevices.value)
 
 function goToDevice(deviceName: string) {
   router.push(`/devices/${deviceName}`)
