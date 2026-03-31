@@ -2,144 +2,38 @@
 
 import asyncio
 import logging
-import uuid
 from fastapi import APIRouter, HTTPException, Depends, Query, BackgroundTasks
-from sqlalchemy import insert, update
 from sqlalchemy.orm import Session
 
-from app.models.backup import BackupTriggerRequest, BackupTriggerResponse, BackupStatus
+from app.models.backup import BackupTriggerRequest, BackupTriggerResponse
 from app.services.backup_service import backup_service
 from app.services.source_service import source_service
-from app.services.backup_job_service import backup_job_service
 from app.services.git_service import git_service
-from app.db.models import BackupJob
 from app.db.database import get_db
-from app.utils.timezone import get_utc_now
-import app.db.database as database_module
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-def _map_backup_status_to_job_status(status: BackupStatus) -> str:
-    """Map backup result status to persisted job status string."""
-
-    if status == BackupStatus.NO_CHANGES:
-        return "no_changes"
-    if status == BackupStatus.SUCCESS:
-        return "success"
-    return "failed"
-
-def _queue_devices_as_in_progress(enabled_devices: list) -> dict[str, str]:
-    """Persist queued devices as in-progress jobs and return job IDs by device name."""
-
-    session_factory = database_module.SessionLocal
-    if session_factory is None:
-        logger.error("Cannot queue backup jobs: database session factory not initialized")
-        return {}
-
-    db = session_factory()
-    queued_ids: dict[str, str] = {}
-    try:
-        device_names = [device.device_name for device in enabled_devices]
-
-        ### Close leftover queued/in-progress rows for the same devices so stale jobs
-        ### from previous interrupted runs do not remain stuck forever
-        stale_result = db.execute(
-            update(BackupJob)
-            .where(BackupJob.device_name.in_(device_names))
-            .where(BackupJob.status.in_(["pending", "in_progress"]))
-            .values(
-                status="failed",
-                error_message="Set to failed as part of stale job cleanup.",
-            )
-        )
-        stale_closed = stale_result.rowcount or 0
-
-        queued_rows = []
-        for device in enabled_devices:
-            queued_job_id = str(uuid.uuid4())
-            queued_ids[device.device_name] = queued_job_id
-            queued_rows.append(
-                {
-                    "id": queued_job_id,
-                    "device_name": device.device_name,
-                    "group": device.group,
-                    "status": "in_progress",
-                    "timestamp": get_utc_now(),
-                }
-            )
-
-        ### Use bulk insert for large trigger batches to avoid per-row ORM insert overhead.
-        db.execute(insert(BackupJob), queued_rows)
-        db.commit()
-
-        if stale_closed:
-            logger.warning("Closed %d stale pending/in_progress jobs before queueing new trigger", stale_closed)
-
-        return queued_ids
-    except Exception:
-        db.rollback()
-        logger.exception("Failed to queue backup jobs as in_progress")
-        return {}
-    finally:
-        db.close()
 
 
 async def _run_backup_in_background(
     enabled_devices: list,
     context_label: str,
-    queued_job_ids: dict[str, str] | None = None,
 ) -> None:
-    """Run backups and persist final job statuses after HTTP response is returned."""
+    """Run backups in background.
+    
+    BackupService.backup_device() handles all job persistence:
+    """
 
     logger.info("Background backup started for %s (%d devices)", context_label, len(enabled_devices))
 
-    session_factory = database_module.SessionLocal
-    if session_factory is None:
-        logger.error("Cannot persist backup jobs: database session factory not initialized")
-        return
-
-    db = session_factory()
-    try:
-        for device in enabled_devices:
+    for device in enabled_devices:
+        try:
             result = await backup_service.backup_device(device)
-            job_status = _map_backup_status_to_job_status(result.status)
-            queued_job_id = queued_job_ids.get(device.device_name) if queued_job_ids else None
-
-            try:
-                if queued_job_id:
-                    updated_job = backup_job_service.update_job(
-                        db=db,
-                        job_id=queued_job_id,
-                        status=job_status,
-                        error_message=result.error_message,
-                        config_size_bytes=result.config_size_bytes,
-                    )
-                    if updated_job is None:
-                        backup_job_service.create_job(
-                            db=db,
-                            job_id=result.id,
-                            device_name=result.device_name,
-                            group=device.group,
-                            status=job_status,
-                            error_message=result.error_message,
-                            config_size_bytes=result.config_size_bytes,
-                        )
-                else:
-                    backup_job_service.create_job(
-                        db=db,
-                        job_id=result.id,
-                        device_name=result.device_name,
-                        group=device.group,
-                        status=job_status,
-                        error_message=result.error_message,
-                        config_size_bytes=result.config_size_bytes,
-                    )
-            except Exception as e:
-                logger.warning("Failed to persist backup job for %s: %s", result.device_name, e)
-    finally:
-        db.close()
+            logger.info(f"Backup for {device.device_name} completed with status: {result.status}")
+        except Exception as e:
+            logger.error(f"Unexpected error backing up {device.device_name}: {e}")
 
     logger.info("Background backup completed for %s", context_label)
 
@@ -147,7 +41,6 @@ async def _run_backup_in_background(
 def _run_backup_in_background_threadsafe(
     enabled_devices: list,
     context_label: str,
-    queued_job_ids: dict[str, str] | None = None,
 ) -> None:
     """Run async backup worker in a dedicated thread/event loop.
 
@@ -156,7 +49,7 @@ def _run_backup_in_background_threadsafe(
     """
 
     try:
-        asyncio.run(_run_backup_in_background(enabled_devices, context_label, queued_job_ids))
+        asyncio.run(_run_backup_in_background(enabled_devices, context_label))
     except Exception:
         logger.exception("Background backup task failed")
 
@@ -185,13 +78,12 @@ async def trigger_backup(
             job_id=None,
         )
 
-    queued_job_ids = _queue_devices_as_in_progress(enabled_devices)
     device_names = [d.device_name for d in enabled_devices]
     context_label = f"group '{request.group}'" if request.group else "all enabled devices"
-    background_tasks.add_task(_run_backup_in_background_threadsafe, enabled_devices, context_label, queued_job_ids)
+    background_tasks.add_task(_run_backup_in_background_threadsafe, enabled_devices, context_label)
 
     return BackupTriggerResponse(
-        message=f"Backup job triggered for {context_label}. {len(device_names)} devices queued as in_progress.",
+        message=f"Backup job triggered for {context_label}. {len(device_names)} devices queued. Jobs will show 'in_progress' status immediately.",
         devices_queued=device_names,
         job_id=None,
     )
@@ -210,14 +102,12 @@ async def trigger_device_backup(
     if device is None:
         raise HTTPException(status_code=404, detail=f"Device '{device_name}' not found")
 
-    queued_job_ids = _queue_devices_as_in_progress([device])
-    job_id = queued_job_ids.get(device_name)
-    background_tasks.add_task(_run_backup_in_background_threadsafe, [device], f"device '{device_name}'", queued_job_ids)
+    background_tasks.add_task(_run_backup_in_background_threadsafe, [device], f"device '{device_name}'")
 
     return BackupTriggerResponse(
-        message=f"Backup job triggered for device {device_name}. Device queued as in_progress.",
+        message=f"Backup job triggered for device {device_name}. Job will show 'in_progress' status immediately.",
         devices_queued=[device_name],
-        job_id=job_id,
+        job_id=None,
     )
 
 

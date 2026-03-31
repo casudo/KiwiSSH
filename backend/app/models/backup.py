@@ -24,6 +24,7 @@ class BackupRecord(BaseModel):
     device_name: str
     timestamp: datetime
     status: BackupStatus
+    job_id: Optional[str] = None  # Database job tracking ID
     git_commit: Optional[str] = None
     error_message: Optional[str] = None
     config_size_bytes: Optional[int] = None
