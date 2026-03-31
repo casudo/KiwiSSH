@@ -129,7 +129,8 @@ def main() -> int:
             "app.fastapi_server:app", # Why :app here? 
             host=settings.app.api.host,
             port=settings.app.api.port,
-            reload=settings.app.debug,
+            reload=settings.app.debug, # TODO: What is reload and why does it use the debug setting?
+            log_level="debug" if settings.app.debug else "info",
         ) # TODO: Do we need to set the app settings here? fastapi_server.py starts the app with the exact same settings
         return 0
         

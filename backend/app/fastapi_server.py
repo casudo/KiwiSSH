@@ -93,7 +93,7 @@ def create_app() -> FastAPI:
 
 app = create_app()
 
-
+### TODO: Remove since we now have the entrypoint.py for starting the server?
 if __name__ == "__main__":
     import uvicorn
 
