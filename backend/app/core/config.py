@@ -9,8 +9,12 @@ from urllib.parse import quote_plus
 from zoneinfo import ZoneInfo
 
 import yaml
+from dotenv import load_dotenv
 from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Load .env file early to ensure environment variables (especially TZ) are available
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
