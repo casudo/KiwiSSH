@@ -3,6 +3,7 @@
 ## Application settings
 app:
   debug: true
+  threads: 20 # Max concurrent SSH fetch sessions across scheduled/API-triggered backups
   timeout: 30 # Global SSH timeout in seconds (can be overridden in groups/nodes)
   retry: 3 # Global SSH retry count (additional attempts after the first)
   api:

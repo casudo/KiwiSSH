@@ -4,9 +4,11 @@ This service coordinates the backup process, combining SSH and Git services
 to backup device configurations.
 """
 
+import asyncio
 import logging
 import uuid
 
+from app.core import get_settings
 from app.models.backup import BackupRecord, BackupStatus
 from app.models.device import DeviceBase
 from app.services.ssh_service import ssh_service
@@ -20,6 +22,21 @@ logger = logging.getLogger(__name__)
 
 class BackupService:
     """Service for orchestrating device backups."""
+
+    def __init__(self) -> None:
+        self._ssh_fetch_semaphore: asyncio.Semaphore | None = None
+        self._ssh_fetch_limit: int | None = None
+
+    def _get_ssh_fetch_semaphore(self) -> asyncio.Semaphore:
+        """Get semaphore that limits concurrent SSH fetch sessions globally."""
+        configured_limit = max(1, int(get_settings().app.threads))
+
+        if self._ssh_fetch_semaphore is None or self._ssh_fetch_limit != configured_limit:
+            self._ssh_fetch_semaphore = asyncio.Semaphore(configured_limit)
+            self._ssh_fetch_limit = configured_limit
+            logger.info("Configured concurrent SSH fetch limit: %d", configured_limit)
+
+        return self._ssh_fetch_semaphore
 
     def _map_status_to_job_status(self, status: BackupStatus) -> str:
         """Map backup result status to persisted job status string.
@@ -115,7 +132,9 @@ class BackupService:
         try:
             logger.info(f"Backing up device: {device.device_name} (group: {device.group})")
             ### Get config from device via SSH (or simulator)
-            config = await ssh_service.get_config(device, username="", password="")
+            ssh_fetch_semaphore = self._get_ssh_fetch_semaphore()
+            async with ssh_fetch_semaphore:
+                config = await ssh_service.get_config(device, username="", password="")
             logger.debug(f"Got config for {device.device_name} ({len(config)} bytes)")
 
             ### Save config to git (using device's group)
