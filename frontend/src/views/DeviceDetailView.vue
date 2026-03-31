@@ -301,7 +301,7 @@ function formatFileSize(bytes: number): string {
         </div>
 
         <!-- Device details -->
-        <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="mt-6 grid grid-cols-2 md:grid-cols-5 gap-4">
           <div>
             <dt class="text-sm text-gray-500">Group</dt>
             <dd class="font-medium">{{ devicesStore.selectedDevice.group }}</dd>
@@ -317,6 +317,10 @@ function formatFileSize(bytes: number): string {
           <div>
             <dt class="text-sm text-gray-500">Enabled</dt>
             <dd class="font-medium">{{ devicesStore.selectedDevice.enabled ? "Yes" : "No" }}</dd>
+          </div>
+          <div>
+            <dt class="text-sm text-gray-500">Schedule</dt>
+            <dd class="font-medium">{{ devicesStore.selectedDevice?.schedule || "No schedule" }}</dd>
           </div>
         </div>
       </div>

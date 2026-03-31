@@ -20,6 +20,7 @@ export interface Device {
   last_backup: string | null
   last_backup_success: string | null
   last_error?: string | null
+  schedule?: string | null
 }
 
 export interface DeviceGroup {
