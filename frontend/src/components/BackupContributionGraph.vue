@@ -162,11 +162,11 @@ const monthLabels = computed((): Array<{ month: string; startWeekIndex: number; 
 
 // Calculate color intensity based on backup count
 function getColorClass(count: number): string {
-  if (count === 0) return 'bg-gray-100 hover:bg-gray-200'
-  if (count === 1) return 'bg-downtown-200 hover:bg-downtown-300'
-  if (count <= 3) return 'bg-downtown-400 hover:bg-downtown-500'
-  if (count <= 5) return 'bg-downtown-600 hover:bg-downtown-700'
-  return 'bg-downtown-800 hover:bg-downtown-900'
+  if (count === 0) return 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700'
+  if (count === 1) return 'bg-downtown-200 hover:bg-downtown-300 dark:bg-downtown-900/65 dark:hover:bg-downtown-800/75'
+  if (count <= 3) return 'bg-downtown-400 hover:bg-downtown-500 dark:bg-downtown-700/80 dark:hover:bg-downtown-600/90'
+  if (count <= 5) return 'bg-downtown-600 hover:bg-downtown-700 dark:bg-downtown-500/90 dark:hover:bg-downtown-400'
+  return 'bg-downtown-800 hover:bg-downtown-900 dark:bg-downtown-300 dark:hover:bg-downtown-200'
 }
 
 function handleDayClick(cell: DayCell) {
@@ -183,14 +183,14 @@ const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 <template>
   <div class="card">
-    <h3 class="text-lg font-semibold text-gray-900 mb-4">Backup Contribution Graph</h3>
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Backup Contribution Graph</h3>
 
     <div class="overflow-x-auto pb-4">
       <div class="inline-block min-w-max">
         <!-- Month labels row -->
         <div class="flex gap-px mb-2">
           <div class="w-10" /><!-- spacer for day labels -->
-          <div v-for="label in monthLabels" :key="`${label.month}-${label.startWeekIndex}`" class="text-xs text-gray-600 font-medium" :style="{ width: `${(label.endWeekIndex - label.startWeekIndex + 1) * 13 - 1}px` }">
+          <div v-for="label in monthLabels" :key="`${label.month}-${label.startWeekIndex}`" class="text-xs text-gray-600 dark:text-gray-400 font-medium" :style="{ width: `${(label.endWeekIndex - label.startWeekIndex + 1) * 13 - 1}px` }">
             {{ label.month }}
           </div>
         </div>
@@ -199,7 +199,7 @@ const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
         <div class="flex gap-px">
           <!-- Day labels (Y-axis) -->
           <div class="flex flex-col gap-px min-w-max">
-            <div v-for="(label, idx) in dayLabels" :key="label" class="text-xs text-gray-600 font-medium text-right w-10 h-3 leading-3 flex items-center justify-end px-1">
+            <div v-for="(label, idx) in dayLabels" :key="label" class="text-xs text-gray-600 dark:text-gray-400 font-medium text-right w-10 h-3 leading-3 flex items-center justify-end px-1">
               {{ label }}
             </div>
           </div>
@@ -214,7 +214,7 @@ const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
                 @click="handleDayClick(cell)"
                 class="w-3 h-3 rounded-sm cursor-pointer transition-colors border"
                 :class="[
-                  cell.date ? [getColorClass(cell.count), props.selectedDate === cell.date ? 'ring-2 ring-gray-400 ring-offset-1' : 'border-gray-200'] : 'bg-transparent border-transparent cursor-default',
+                  cell.date ? [getColorClass(cell.count), props.selectedDate === cell.date ? 'ring-2 ring-downtown-500 dark:ring-downtown-300 ring-offset-1 ring-offset-white dark:ring-offset-slate-900' : 'border-slate-200 dark:border-slate-700'] : 'bg-transparent border-transparent cursor-default',
                 ]"
               />
             </div>
@@ -224,37 +224,37 @@ const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
     </div>
 
     <!-- Legend -->
-    <div class="mt-4 pt-4 border-t border-gray-200">
-      <div class="text-xs text-gray-600 mb-2">Backup frequency:</div>
+    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-slate-700">
+      <div class="text-xs text-gray-600 dark:text-gray-400 mb-2">Backup frequency:</div>
       <div class="flex items-center gap-3 flex-wrap">
         <div class="flex items-center gap-2">
-          <div class="w-3 h-3 rounded-sm bg-gray-100 border border-gray-200" />
-          <span class="text-xs text-gray-600">None</span>
+          <div class="w-3 h-3 rounded-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+          <span class="text-xs text-gray-600 dark:text-gray-400">None</span>
         </div>
         <div class="flex items-center gap-2">
-          <div class="w-3 h-3 rounded-sm bg-downtown-200" />
-          <span class="text-xs text-gray-600">1</span>
+          <div class="w-3 h-3 rounded-sm bg-downtown-200 dark:bg-downtown-900/50" />
+          <span class="text-xs text-gray-600 dark:text-gray-400">1</span>
         </div>
         <div class="flex items-center gap-2">
-          <div class="w-3 h-3 rounded-sm bg-downtown-400" />
-          <span class="text-xs text-gray-600">2-3</span>
+          <div class="w-3 h-3 rounded-sm bg-downtown-400 dark:bg-downtown-700/70" />
+          <span class="text-xs text-gray-600 dark:text-gray-400">2-3</span>
         </div>
         <div class="flex items-center gap-2">
-          <div class="w-3 h-3 rounded-sm bg-downtown-600" />
-          <span class="text-xs text-gray-600">4-5</span>
+          <div class="w-3 h-3 rounded-sm bg-downtown-600 dark:bg-downtown-500" />
+          <span class="text-xs text-gray-600 dark:text-gray-400">4-5</span>
         </div>
         <div class="flex items-center gap-2">
-          <div class="w-3 h-3 rounded-sm bg-downtown-800" />
-          <span class="text-xs text-gray-600">6+</span>
+          <div class="w-3 h-3 rounded-sm bg-downtown-800 dark:bg-downtown-300" />
+          <span class="text-xs text-gray-600 dark:text-gray-400">6+</span>
         </div>
       </div>
     </div>
 
-    <div v-if="selectedDate" class="mt-4 text-sm text-downtown-600">
-      <button @click="emit('dayCleared')" class="text-downtown-600 hover:text-downtown-700 underline">
+    <div v-if="selectedDate" class="mt-4 text-sm text-downtown-600 dark:text-downtown-400">
+      <button @click="emit('dayCleared')" class="text-downtown-600 dark:text-downtown-400 hover:text-downtown-700 dark:hover:text-downtown-300 underline">
         ✕ Clear filter
       </button>
-      <span class="ml-2 text-gray-600">Showing backups for {{ selectedDate }}</span>
+      <span class="ml-2 text-gray-600 dark:text-gray-400">Showing backups for {{ selectedDate }}</span>
     </div>
   </div>
 </template>

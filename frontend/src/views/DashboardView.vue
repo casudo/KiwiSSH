@@ -93,8 +93,8 @@ onMounted(async () => {
 <template>
   <div>
     <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
-      <p class="text-gray-500 mt-1">Overview of your network device backups</p>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
+      <p class="text-gray-500 dark:text-gray-400 mt-1">Overview of your network device backups</p>
     </div>
 
     <!-- Stats Cards -->
@@ -111,8 +111,8 @@ onMounted(async () => {
     <div v-if="appStore.health" class="card mb-8">
       <div class="flex items-center justify-between">
         <div>
-          <h2 class="text-lg font-semibold text-gray-900">System Status</h2>
-          <p class="text-sm text-gray-500">API health check</p>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">System Status</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400">API health check</p>
         </div>
         <div class="flex items-center space-x-2">
           <span
@@ -122,7 +122,7 @@ onMounted(async () => {
           <span class="font-medium capitalize">{{ appStore.health.status }}</span>
         </div>
       </div>
-      <div class="mt-4 text-sm text-gray-500">
+      <div class="mt-4 text-sm text-gray-500 dark:text-gray-400">
         Config loaded: {{ appStore.health.config_loaded ? "Yes" : "No" }}
       </div>
     </div>
@@ -130,8 +130,8 @@ onMounted(async () => {
     <!-- Favorite Devices -->
     <section>
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-semibold text-gray-900">Favorite Devices</h2>
-        <RouterLink to="/devices" class="text-downtown-600 hover:text-downtown-700 text-sm font-medium">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Favorite Devices</h2>
+        <RouterLink to="/devices" class="text-downtown-600 dark:text-downtown-400 hover:text-downtown-700 dark:hover:text-downtown-300 text-sm font-medium">
           View all →
         </RouterLink>
       </div>
@@ -146,16 +146,16 @@ onMounted(async () => {
       </div>
 
       <div v-else-if="devicesStore.devices.length === 0" class="card text-center py-12">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
         </svg>
-        <p class="text-gray-500 text-lg">No devices configured yet</p>
-        <p class="text-gray-400 text-sm mt-2">Add devices to your CSV source file to get started.</p>
+        <p class="text-gray-500 dark:text-gray-400 text-lg">No devices configured yet</p>
+        <p class="text-gray-400 dark:text-gray-500 text-sm mt-2">Add devices to your CSV source file to get started.</p>
       </div>
 
       <div v-else-if="favoriteDevices.length === 0" class="card text-center py-12">
-        <p class="text-gray-500 text-lg">No favorites selected yet</p>
-        <p class="text-gray-400 text-sm mt-2">Mark devices with the ☆ icon in the Devices view to pin them here.</p>
+        <p class="text-gray-500 dark:text-gray-400 text-lg">No favorites selected yet</p>
+        <p class="text-gray-400 dark:text-gray-500 text-sm mt-2">Mark devices with the ☆ icon in the Devices view to pin them here.</p>
       </div>
 
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

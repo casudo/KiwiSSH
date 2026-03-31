@@ -1,7 +1,7 @@
 <template>
-  <footer class="bg-downtown-800 dark:bg-gray-800 border-t border-downtown-700 dark:border-gray-700 mt-auto transition-colors">
+  <footer class="bg-downtown-900/90 dark:bg-slate-900/85 border-t border-downtown-700/70 dark:border-slate-700 mt-auto backdrop-blur transition-colors">
     <div class="container mx-auto px-4 py-6">
-      <div class="flex flex-wrap justify-center items-center gap-6 text-sm text-gray-300 dark:text-gray-400">
+      <div class="flex flex-wrap justify-center items-center gap-6 text-sm text-downtown-100/85 dark:text-gray-400">
         <!-- GitHub -->
         <a
           href="#"

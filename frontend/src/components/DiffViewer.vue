@@ -62,13 +62,13 @@ const parsedDiff = computed((): { left: DiffLine[]; right: DiffLine[] } => {
 function getLineClass(type: string): string {
   switch (type) {
     case "removed":
-      return "bg-red-50 border-l-4 border-red-300"
+      return "bg-rose-50 dark:bg-rose-950/30 border-l-4 border-rose-300 dark:border-rose-800"
     case "added":
-      return "bg-green-50 border-l-4 border-green-300"
+      return "bg-emerald-50 dark:bg-emerald-950/30 border-l-4 border-emerald-300 dark:border-emerald-800"
     case "header":
-      return "bg-gray-100 border-b border-gray-300 text-gray-700 font-medium text-sm"
+      return "bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-100 font-medium text-sm"
     default:
-      return "bg-white border-l-4 border-gray-200"
+      return "bg-slate-50/70 dark:bg-slate-900/90 border-l-4 border-slate-200 dark:border-slate-700"
   }
 }
 </script>
@@ -78,22 +78,22 @@ function getLineClass(type: string): string {
     <!-- Stats -->
     <div class="flex items-center space-x-6 text-sm">
       <span class="flex items-center space-x-2">
-        <span class="text-green-600 font-medium">+{{ linesAdded }}</span>
-        <span class="text-gray-600">added</span>
+        <span class="text-green-600 dark:text-green-400 font-medium">+{{ linesAdded }}</span>
+        <span class="text-gray-600 dark:text-gray-400">added</span>
       </span>
       <span class="flex items-center space-x-2">
-        <span class="text-red-600 font-medium">-{{ linesRemoved }}</span>
-        <span class="text-gray-600">removed</span>
+        <span class="text-red-600 dark:text-red-400 font-medium">-{{ linesRemoved }}</span>
+        <span class="text-gray-600 dark:text-gray-400">removed</span>
       </span>
     </div>
 
     <!-- Side-by-side diff viewer -->
-    <div class="border border-gray-200 rounded-lg overflow-hidden">
-      <div class="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x lg:divide-gray-200">
+    <div class="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-slate-200 dark:divide-slate-700">
         <!-- Left side (From/Removed) -->
-        <div class="font-mono text-sm bg-white overflow-x-auto">
+        <div class="font-mono text-sm bg-slate-50/50 dark:bg-slate-900 overflow-x-auto">
           <div class="min-w-max">
-            <div class="sticky top-0 bg-gray-50 border-b border-gray-200 px-4 py-2 font-medium text-gray-700 text-xs">
+            <div class="sticky top-0 bg-slate-100/90 dark:bg-slate-800/95 border-b border-slate-200 dark:border-slate-700 px-4 py-2 font-medium text-slate-700 dark:text-slate-100 text-xs">
               Original (Removed lines in red)
             </div>
             <div
@@ -102,11 +102,11 @@ function getLineClass(type: string): string {
               :class="getLineClass(line.type)"
               class="flex"
             >
-              <div v-if="line.type !== 'header'" class="flex-shrink-0 w-12 px-3 py-1 text-right text-gray-500 bg-gray-50 select-none border-r border-gray-200 text-xs">
+              <div v-if="line.type !== 'header'" class="flex-shrink-0 w-12 px-3 py-1 text-right text-gray-500 dark:text-gray-400 bg-slate-100/70 dark:bg-slate-800/80 select-none border-r border-slate-200 dark:border-slate-700 text-xs">
                 {{ line.lineNum }}
               </div>
               <div v-else class="flex-shrink-0 w-12" />
-              <pre class="flex-1 px-4 py-1 text-gray-800 whitespace-pre-wrap break-words">{{
+              <pre class="flex-1 px-4 py-1 text-gray-800 dark:text-gray-100 whitespace-pre-wrap break-words">{{
                 line.content
               }}</pre>
             </div>
@@ -114,9 +114,9 @@ function getLineClass(type: string): string {
         </div>
 
         <!-- Right side (To/Added) -->
-        <div class="font-mono text-sm bg-white overflow-x-auto">
+        <div class="font-mono text-sm bg-slate-50/50 dark:bg-slate-900 overflow-x-auto">
           <div class="min-w-max">
-            <div class="sticky top-0 bg-gray-50 border-b border-gray-200 px-4 py-2 font-medium text-gray-700 text-xs">
+            <div class="sticky top-0 bg-slate-100/90 dark:bg-slate-800/95 border-b border-slate-200 dark:border-slate-700 px-4 py-2 font-medium text-slate-700 dark:text-slate-100 text-xs">
               Modified (Added lines in green)
             </div>
             <div
@@ -125,11 +125,11 @@ function getLineClass(type: string): string {
               :class="getLineClass(line.type)"
               class="flex"
             >
-              <div v-if="line.type !== 'header'" class="flex-shrink-0 w-12 px-3 py-1 text-right text-gray-500 bg-gray-50 select-none border-r border-gray-200 text-xs">
+              <div v-if="line.type !== 'header'" class="flex-shrink-0 w-12 px-3 py-1 text-right text-gray-500 dark:text-gray-400 bg-slate-100/70 dark:bg-slate-800/80 select-none border-r border-slate-200 dark:border-slate-700 text-xs">
                 {{ line.lineNum }}
               </div>
               <div v-else class="flex-shrink-0 w-12" />
-              <pre class="flex-1 px-4 py-1 text-gray-800 whitespace-pre-wrap break-words">{{
+              <pre class="flex-1 px-4 py-1 text-gray-800 dark:text-gray-100 whitespace-pre-wrap break-words">{{
                 line.content
               }}</pre>
             </div>
@@ -139,8 +139,8 @@ function getLineClass(type: string): string {
     </div>
   </div>
 
-  <div v-else class="text-center text-gray-500 py-8">
+  <div v-else class="text-center text-gray-500 dark:text-gray-400 py-8">
     <p>No diff available</p>
-    <p class="text-sm mt-1">Select two commits to view differences</p>
+    <p class="text-sm mt-1 text-gray-500 dark:text-gray-500">Select two commits to view differences</p>
   </div>
 </template>

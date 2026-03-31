@@ -42,16 +42,16 @@ async function handleTriggerBackup(e: Event) {
   <div class="card-hover p-4">
     <div class="flex items-start justify-between gap-2">
       <div class="flex-1 min-w-0">
-        <h3 class="text-sm font-semibold text-gray-900 truncate">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
           {{ device.device_name }}
         </h3>
-        <p class="text-xs text-gray-500 font-mono truncate">{{ device.ip_address }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 font-mono truncate">{{ device.ip_address }}</p>
       </div>
       <div class="flex items-center gap-1 flex-shrink-0">
         <button
           @click="handleToggleFavorite"
           class="px-1.5 py-0.5 text-xs rounded transition border"
-          :class="isFavorite ? 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'"
+          :class="isFavorite ? 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-700 dark:hover:bg-amber-900/60' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600'"
           :title="isFavorite ? 'Remove from favorites' : 'Add to favorites'"
           :aria-label="isFavorite ? 'Remove from favorites' : 'Add to favorites'"
         >
@@ -61,7 +61,7 @@ async function handleTriggerBackup(e: Event) {
         <button
           @click="handleTriggerBackup"
           :disabled="triggering"
-          class="px-1.5 py-0.5 text-xs bg-downtown-100 text-downtown-700 hover:bg-downtown-200 rounded transition"
+          class="px-1.5 py-0.5 text-xs bg-downtown-100 text-downtown-700 hover:bg-downtown-200 dark:bg-downtown-900/40 dark:text-downtown-300 dark:hover:bg-downtown-900/60 rounded transition"
           title="Trigger backup"
         >
           {{ triggering ? "..." : "▶" }}

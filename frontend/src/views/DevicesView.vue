@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue"
+import { ref, onMounted, onBeforeUnmount, computed } from "vue"
 import { useRouter } from "vue-router"
 import { useDevicesStore } from "@/stores/devices"
 import DeviceCard from "@/components/DeviceCard.vue"
@@ -25,6 +25,13 @@ const showFilters = ref<boolean>(false)
 const currentPage = ref<number>(1)
 const pageSize = ref<number>(50)
 const showStatusDropdown = ref<boolean>(false)
+
+const handleDocumentClick = (e: MouseEvent) => {
+  const target = e.target as HTMLElement
+  if (!target.closest("[data-status-filter]")) {
+    showStatusDropdown.value = false
+  }
+}
 
 const LAYOUT_STORAGE_KEY = "devices-layout"
 
@@ -134,12 +141,11 @@ onMounted(async () => {
   }
 
   // Close dropdown when clicking outside
-  document.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement
-    if (!target.closest('[data-status-filter]')) {
-      showStatusDropdown.value = false
-    }
-  })
+  document.addEventListener("click", handleDocumentClick)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener("click", handleDocumentClick)
 })
 </script>
 
@@ -147,8 +153,8 @@ onMounted(async () => {
   <div>
     <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
       <div>
-        <h1 class="text-3xl font-bold text-gray-900">Devices</h1>
-        <p class="text-gray-500 mt-1">Manage your network devices</p>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Devices</h1>
+        <p class="text-gray-500 dark:text-gray-400 mt-1">Manage your network devices</p>
       </div>
       <div class="mt-4 md:mt-0">
         <button @click="handleReload" class="btn btn-secondary" :disabled="devicesStore.loading">
@@ -165,7 +171,7 @@ onMounted(async () => {
           'px-4 py-2 rounded font-medium text-sm transition',
           currentLayout === 'compact'
             ? 'bg-downtown-600 text-white'
-            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
         ]"
       >
         Compact
@@ -176,7 +182,7 @@ onMounted(async () => {
           'px-4 py-2 rounded font-medium text-sm transition',
           currentLayout === 'detailed'
             ? 'bg-downtown-600 text-white'
-            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
         ]"
       >
         Detailed
@@ -187,7 +193,7 @@ onMounted(async () => {
           'px-4 py-2 rounded font-medium text-sm transition',
           currentLayout === 'list'
             ? 'bg-downtown-600 text-white'
-            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
         ]"
       >
         List
@@ -195,14 +201,14 @@ onMounted(async () => {
     </div>
 
     <!-- Filters -->
-    <div class="card mb-6">
+    <div class="card mb-6 relative z-20 overflow-visible">
       <div class="space-y-4">
         <!-- Header with toggle button -->
         <div class="flex items-center justify-between mb-2">
-          <h3 class="text-sm font-semibold text-gray-900">Filters</h3>
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Filters</h3>
           <button
             @click="showFilters = !showFilters"
-            class="text-sm text-downtown-600 hover:text-downtown-700 font-medium flex items-center gap-1"
+            class="text-sm text-downtown-600 dark:text-downtown-400 hover:text-downtown-700 dark:hover:text-downtown-300 font-medium flex items-center gap-1"
           >
             {{ showFilters ? "▼ Hide" : "▶ Show" }} Filters
           </button>
@@ -272,7 +278,7 @@ onMounted(async () => {
                 </option>
               </select>
             </div>
-            <div data-status-filter>
+            <div data-status-filter class="relative z-30">
               <label class="label">Filter by Status</label>
               <div class="relative">
                 <!-- Tag input field -->
@@ -280,29 +286,29 @@ onMounted(async () => {
                   <div
                     v-for="status in selectedStatus"
                     :key="status"
-                    class="shrink-0 flex items-center gap-2 bg-downtown-100 text-downtown-700 px-3 py-1 rounded-full text-sm font-medium"
+                    class="shrink-0 flex items-center gap-2 bg-downtown-100 text-downtown-700 dark:bg-downtown-900/40 dark:text-downtown-300 px-3 py-1 rounded-full text-sm font-medium"
                   >
                     {{ statusOptions.find(o => o.value === status)?.label || status }}
                     <button
                       type="button"
                       @click.stop="removeStatusFilter(status)"
-                      class="hover:text-downtown-900 font-bold"
+                      class="hover:text-downtown-900 dark:hover:text-downtown-200 font-bold"
                     >
                       ×
                     </button>
                   </div>
-                  <span v-if="selectedStatus.length === 0" class="text-gray-400 text-sm">Select statuses...</span>
+                  <span v-if="selectedStatus.length === 0" class="text-gray-400 dark:text-gray-500 text-sm">Select statuses...</span>
                 </div>
 
                 <!-- Dropdown menu -->
                 <div
                   v-if="showStatusDropdown"
-                  class="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 max-h-48 overflow-y-auto"
+                  class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded shadow-lg dark:shadow-black/40 z-50 max-h-48 overflow-y-auto"
                 >
                   <label
                     v-for="option in statusOptions"
                     :key="option.value"
-                    class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                    class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-100 dark:border-slate-700 last:border-b-0"
                   >
                     <input
                       type="checkbox"
@@ -310,7 +316,7 @@ onMounted(async () => {
                       @change="() => toggleStatusFilter(option.value)"
                       class="w-4 h-4 text-downtown-600 rounded border-gray-300 focus:ring-downtown-500"
                     />
-                    <span class="text-sm text-gray-700">{{ option.label }}</span>
+                    <span class="text-sm text-gray-700 dark:text-gray-200">{{ option.label }}</span>
                   </label>
                 </div>
               </div>
@@ -325,13 +331,13 @@ onMounted(async () => {
                 v-model="showEnabledOnly"
                 class="w-4 h-4 text-downtown-600 rounded border-gray-300 focus:ring-downtown-500"
               >
-              <span class="ml-2 text-sm text-gray-700">Show enabled only</span>
+              <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Show enabled only</span>
             </label>
 
             <button
               v-if="selectedGroup || selectedVendor || selectedSshProfile || selectedStatus.length > 0 || searchName || searchIP || showEnabledOnly"
               @click="clearFilters"
-              class="text-sm text-downtown-600 hover:text-downtown-700 font-medium"
+              class="text-sm text-downtown-600 dark:text-downtown-400 hover:text-downtown-700 dark:hover:text-downtown-300 font-medium"
             >
               Clear filters
             </button>
@@ -351,11 +357,11 @@ onMounted(async () => {
     </div>
 
     <div v-else-if="filteredDevices.length === 0" class="card text-center py-12">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
       </svg>
-      <p class="text-gray-500 text-lg">No devices found</p>
-      <p v-if="selectedGroup || selectedVendor || selectedSshProfile || selectedStatus.length > 0 || searchName || showEnabledOnly" class="text-gray-400 text-sm mt-2">
+      <p class="text-gray-500 dark:text-gray-400 text-lg">No devices found</p>
+      <p v-if="selectedGroup || selectedVendor || selectedSshProfile || selectedStatus.length > 0 || searchName || showEnabledOnly" class="text-gray-400 dark:text-gray-500 text-sm mt-2">
         Try adjusting your filters
       </p>
     </div>
@@ -400,7 +406,7 @@ onMounted(async () => {
           v-for="device in paginatedDevices"
           :key="device.device_name"
           @click="goToDevice(device.device_name)"
-          class="cursor-pointer hover:bg-gray-50 transition"
+          class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/70 transition"
         >
           <DeviceListRow :device="device" />
         </div>
@@ -409,7 +415,7 @@ onMounted(async () => {
 
     <!-- Pagination controls -->
     <div v-if="filteredDevices.length > 0" class="mt-4 flex items-center justify-between">
-      <span class="text-sm text-gray-600">
+      <span class="text-sm text-gray-600 dark:text-gray-400">
         Page {{ currentPage }} of {{ totalPages }} ({{ filteredDevices.length }} total)
       </span>
       <div class="flex gap-2">

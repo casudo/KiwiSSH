@@ -68,11 +68,16 @@ async function loadBackupHistory() {
     const response = await backupApi.getHistory(deviceName.value)
     backupHistory.value = response.history || []
 
-    // Auto-select the two most recent commits for diff
-    if (backupHistory.value.length >= 2) {
-      selectedFromCommit.value = backupHistory.value[1].hash
-      selectedToCommit.value = backupHistory.value[0].hash
+    // Auto-select the two most recent valid commits for diff
+    if (commitOptions.value.length >= 2) {
+      selectedFromCommit.value = commitOptions.value[1].hash
+      selectedToCommit.value = commitOptions.value[0].hash
       await loadDiff()
+    } else {
+      selectedFromCommit.value = ""
+      selectedToCommit.value = ""
+      diffContent.value = ""
+      diffStats.value = { added: 0, removed: 0 }
     }
   } catch (e) {
     historyError.value = e instanceof Error ? e.message : "Failed to load backup history"
@@ -115,6 +120,10 @@ const filteredBackupHistory = computed((): BackupEntry[] => {
 const hasActiveFilters = computed(
   () => filterDateFrom.value || filterDateTo.value || filterSearch.value || selectedDateInGraph.value
 )
+
+const commitOptions = computed((): BackupEntry[] => {
+  return backupHistory.value.filter((backup) => backup.hash.trim() !== "" && backup.short_hash.trim() !== "")
+})
 
 // Pagination computed properties
 const totalPages = computed(() => Math.ceil(filteredBackupHistory.value.length / pageSize.value))
@@ -255,7 +264,7 @@ function formatFileSize(bytes: number): string {
 <template>
   <div>
     <!-- Back Button -->
-    <button @click="goBack" class="flex items-center text-gray-600 hover:text-gray-900 mb-6">
+    <button @click="goBack" class="flex items-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 mb-6">
       <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
         <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
       </svg>
@@ -277,12 +286,12 @@ function formatFileSize(bytes: number): string {
         <div class="flex flex-col md:flex-row md:items-start md:justify-between">
           <div>
             <div class="flex items-center space-x-3">
-              <h1 class="text-2xl font-bold text-gray-900">
+              <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {{ devicesStore.selectedDevice.device_name }}
               </h1>
               <StatusBadge :status="devicesStore.selectedDevice.status" />
             </div>
-            <p class="text-gray-500 font-mono mt-1">{{ devicesStore.selectedDevice.ip_address }}</p>
+            <p class="text-gray-500 dark:text-gray-400 font-mono mt-1">{{ devicesStore.selectedDevice.ip_address }}</p>
           </div>
 
           <!-- Favorite Button-->
@@ -290,7 +299,7 @@ function formatFileSize(bytes: number): string {
             <button
               @click="toggleFavorite"
               class="px-3 py-2 rounded-md text-sm font-medium transition border"
-              :class="isFavorite ? 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200' : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200'"
+              :class="isFavorite ? 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-700 dark:hover:bg-amber-900/60' : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600'"
             >
               {{ isFavorite ? "★ Favorited" : "☆ Favorite" }}
             </button>
@@ -303,24 +312,24 @@ function formatFileSize(bytes: number): string {
         <!-- Device details -->
         <div class="mt-6 grid grid-cols-2 md:grid-cols-5 gap-4">
           <div>
-            <dt class="text-sm text-gray-500">Group</dt>
-            <dd class="font-medium">{{ devicesStore.selectedDevice.group }}</dd>
+            <dt class="text-sm text-gray-500 dark:text-gray-400">Group</dt>
+            <dd class="font-medium text-gray-900 dark:text-gray-100">{{ devicesStore.selectedDevice.group }}</dd>
           </div>
           <div>
-            <dt class="text-sm text-gray-500">Vendor</dt>
-            <dd class="font-medium">{{ vendorName }}</dd>
+            <dt class="text-sm text-gray-500 dark:text-gray-400">Vendor</dt>
+            <dd class="font-medium text-gray-900 dark:text-gray-100">{{ vendorName }}</dd>
           </div>
           <div>
-            <dt class="text-sm text-gray-500">SSH Profile</dt>
-            <dd class="font-medium">{{ devicesStore.selectedDevice.ssh_profile }}</dd>
+            <dt class="text-sm text-gray-500 dark:text-gray-400">SSH Profile</dt>
+            <dd class="font-medium text-gray-900 dark:text-gray-100">{{ devicesStore.selectedDevice.ssh_profile }}</dd>
           </div>
           <div>
-            <dt class="text-sm text-gray-500">Enabled</dt>
-            <dd class="font-medium">{{ devicesStore.selectedDevice.enabled ? "Yes" : "No" }}</dd>
+            <dt class="text-sm text-gray-500 dark:text-gray-400">Enabled</dt>
+            <dd class="font-medium text-gray-900 dark:text-gray-100">{{ devicesStore.selectedDevice.enabled ? "Yes" : "No" }}</dd>
           </div>
           <div>
-            <dt class="text-sm text-gray-500">Schedule</dt>
-            <dd class="font-medium">{{ devicesStore.selectedDevice?.schedule || "No schedule" }}</dd>
+            <dt class="text-sm text-gray-500 dark:text-gray-400">Schedule</dt>
+            <dd class="font-medium text-gray-900 dark:text-gray-100">{{ devicesStore.selectedDevice?.schedule || "No schedule" }}</dd>
           </div>
         </div>
       </div>
@@ -335,7 +344,7 @@ function formatFileSize(bytes: number): string {
 
       <!-- Backup history section -->
       <div class="card mb-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Backup History</h2>
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Backup History</h2>
 
         <LoadingSpinner v-if="historyLoading" size="md" />
 
@@ -345,7 +354,7 @@ function formatFileSize(bytes: number): string {
 
         <div v-else>
           <!-- Filter controls -->
-          <div v-if="backupHistory.length > 0" class="card-hover p-4 mb-4 bg-gray-50 border border-gray-200">
+          <div v-if="backupHistory.length > 0" class="p-4 mb-4 rounded-lg border border-gray-200/80 dark:border-slate-700/80 bg-white/70 dark:bg-slate-900/55 backdrop-blur-sm">
             <div class="space-y-3">
               <div class="flex flex-col md:flex-row gap-4">
                 <div class="flex-1">
@@ -369,8 +378,8 @@ function formatFileSize(bytes: number): string {
               </div>
 
               <div v-if="hasActiveFilters" class="flex items-center justify-between">
-                <span class="text-sm text-gray-600">{{ filteredBackupHistory.length }} of {{ backupHistory.length }} backups</span>
-                <button @click="clearFilters" class="text-sm text-downtown-600 hover:text-downtown-700 underline">
+                <span class="text-sm text-gray-600 dark:text-gray-400">{{ filteredBackupHistory.length }} of {{ backupHistory.length }} backups</span>
+                <button @click="clearFilters" class="text-sm text-downtown-600 dark:text-downtown-400 hover:text-downtown-700 dark:hover:text-downtown-300 underline">
                   Clear Filters
                 </button>
               </div>
@@ -388,10 +397,10 @@ function formatFileSize(bytes: number): string {
           </div>
 
           <!-- Backup history list -->
-          <div v-if="filteredBackupHistory.length === 0" class="text-center text-gray-500 py-8">
+          <div v-if="filteredBackupHistory.length === 0" class="text-center text-gray-500 dark:text-gray-400 py-8">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              class="h-12 w-12 mx-auto mb-4 text-gray-300"
+              class="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -404,30 +413,30 @@ function formatFileSize(bytes: number): string {
               />
             </svg>
             <p>No backup history available</p>
-            <p class="text-sm mt-1">
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
               <span v-if="hasActiveFilters">No backups match your filters. </span>Click "Trigger Backup" to create the first backup
             </p>
           </div>
 
-          <div v-else class="space-y-2 border border-gray-200 rounded-lg divide-y">
+          <div v-else class="space-y-2 border border-gray-200 dark:border-gray-700 rounded-lg divide-y dark:divide-gray-700">
             <div
               v-for="backup in paginatedBackupHistory"
               :key="backup.hash"
-              class="p-3 hover:bg-gray-50 transition-colors"
+              class="p-3 hover:bg-gray-50 dark:hover:bg-gray-800/70 transition-colors"
             >
               <div class="flex items-center justify-between gap-4">
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-2 mb-1">
-                    <span class="text-xs font-bold px-2 py-1 rounded-full bg-downtown-100 text-downtown-700">
+                    <span class="text-xs font-bold px-2 py-1 rounded-full bg-downtown-100 text-downtown-700 dark:bg-downtown-900/40 dark:text-downtown-300">
                       v{{ backup.version_number }}
                     </span>
-                    <code class="text-sm font-mono bg-gray-100 px-2 py-1 rounded">{{ backup.short_hash }}</code>
-                    <span class="text-xs text-gray-500">{{ formatFileSize(backup.file_size_bytes) }}</span>
+                    <code class="text-sm font-mono bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-2 py-1 rounded">{{ backup.short_hash }}</code>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatFileSize(backup.file_size_bytes) }}</span>
                   </div>
                   <div class="flex items-center gap-2">
-                    <span class="text-sm text-gray-700 font-medium truncate">{{ backup.message }}</span>
+                    <span class="text-sm text-gray-700 dark:text-gray-200 font-medium truncate">{{ backup.message }}</span>
                   </div>
-                  <p class="text-xs text-gray-500 mt-1">
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     {{ backup.author }} on {{ new Date(backup.timestamp).toLocaleString() }}
                   </p>
                 </div>
@@ -457,7 +466,7 @@ function formatFileSize(bytes: number): string {
 
           <!-- Pagination controls -->
           <div v-if="filteredBackupHistory.length > 0" class="mt-4 flex items-center justify-between">
-            <span class="text-sm text-gray-600">
+            <span class="text-sm text-gray-600 dark:text-gray-400">
               Page {{ currentPage }} of {{ totalPages }} ({{ filteredBackupHistory.length }} total)
             </span>
             <div class="flex gap-2">
@@ -482,14 +491,14 @@ function formatFileSize(bytes: number): string {
 
       <!-- Config diff selector and viewer -->
       <div class="card mb-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Configuration Diff</h2>
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Configuration Diff</h2>
 
-        <div v-if="backupHistory.length >= 2" class="mb-4 flex flex-col md:flex-row gap-4">
+        <div v-if="commitOptions.length >= 2" class="mb-4 flex flex-col md:flex-row gap-4">
           <div class="flex-1">
             <label class="label">From Commit</label>
             <select v-model="selectedFromCommit" @change="loadDiff" class="input">
-              <option value=""></option>
-              <option v-for="backup in backupHistory" :key="`from-${backup.hash}`" :value="backup.hash">
+              <option disabled value="">Select commit</option>
+              <option v-for="backup in commitOptions" :key="`from-${backup.hash}`" :value="backup.hash">
                 v{{ backup.version_number }} - {{ backup.short_hash }} - {{ backup.message.substring(0, 40) }}
               </option>
             </select>
@@ -497,8 +506,8 @@ function formatFileSize(bytes: number): string {
           <div class="flex-1">
             <label class="label">To Commit</label>
             <select v-model="selectedToCommit" @change="loadDiff" class="input">
-              <option value=""></option>
-              <option v-for="backup in backupHistory" :key="`to-${backup.hash}`" :value="backup.hash">
+              <option disabled value="">Select commit</option>
+              <option v-for="backup in commitOptions" :key="`to-${backup.hash}`" :value="backup.hash">
                 v{{ backup.version_number }} - {{ backup.short_hash }} - {{ backup.message.substring(0, 40) }}
               </option>
             </select>
@@ -521,7 +530,7 @@ function formatFileSize(bytes: number): string {
     </div>
 
     <div v-else class="card text-center py-12">
-      <p class="text-gray-500">Device not found</p>
+      <p class="text-gray-500 dark:text-gray-400">Device not found</p>
     </div>
   </div>
 </template>
