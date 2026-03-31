@@ -20,6 +20,7 @@ const pageSize = ref<number>(50)
 const currentPage = ref<number>(1)
 const pageSizeOptions = [25, 50, 100, 200]
 let jobIdSearchTimer: ReturnType<typeof setTimeout> | null = null
+let deviceSearchTimer: ReturnType<typeof setTimeout> | null = null
 
 onMounted(async () => {
   // Load jobs from database
@@ -38,6 +39,10 @@ onBeforeUnmount(() => {
     clearTimeout(jobIdSearchTimer)
     jobIdSearchTimer = null
   }
+  if (deviceSearchTimer) {
+    clearTimeout(deviceSearchTimer)
+    deviceSearchTimer = null
+  }
 })
 
 watch(filterJobId, (value) => {
@@ -48,6 +53,17 @@ watch(filterJobId, (value) => {
   jobIdSearchTimer = setTimeout(async () => {
     currentPage.value = 1
     await loadJobsPage(value.trim() || undefined)
+  }, 250)
+})
+
+watch(filterDevice, (value) => {
+  if (deviceSearchTimer) {
+    clearTimeout(deviceSearchTimer)
+  }
+
+  deviceSearchTimer = setTimeout(async () => {
+    currentPage.value = 1
+    await loadJobsPage(undefined, value.trim() || undefined)
   }, 250)
 })
 
@@ -88,18 +104,19 @@ const pageStart = computed(() => {
 })
 const pageEnd = computed(() => Math.min(currentPage.value * pageSize.value, jobsStore.totalJobs))
 
-async function loadJobsPage(jobIdOverride?: string) {
+async function loadJobsPage(jobIdOverride?: string, deviceNameOverride?: string) {
   const status = filterStatus.value || undefined
   const jobId = (jobIdOverride ?? filterJobId.value.trim()) || undefined
+  const deviceName = (deviceNameOverride ?? filterDevice.value.trim()) || undefined
   const offset = (currentPage.value - 1) * pageSize.value
 
-  await jobsStore.loadJobs(undefined, status, pageSize.value, offset, jobId)
+  await jobsStore.loadJobs(deviceName, status, pageSize.value, offset, jobId)
 
   const maxPage = Math.max(1, Math.ceil(jobsStore.totalJobs / pageSize.value))
   if (currentPage.value > maxPage) {
     currentPage.value = maxPage
     const nextOffset = (currentPage.value - 1) * pageSize.value
-    await jobsStore.loadJobs(undefined, status, pageSize.value, nextOffset, jobId)
+    await jobsStore.loadJobs(deviceName, status, pageSize.value, nextOffset, jobId)
   }
 }
 
