@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../tailwind.config.js";
 
 @layer base {
   html.dark {
@@ -53,7 +52,7 @@
   }
 
   .card-hover {
-    @apply card hover:shadow-lg dark:hover:shadow-black/50 transition-shadow duration-200 cursor-pointer;
+    @apply bg-white/95 dark:bg-slate-900/85 rounded-lg shadow-md dark:shadow-black/30 p-6 border border-gray-200/90 dark:border-slate-700/90 backdrop-blur-sm hover:shadow-lg dark:hover:shadow-black/50 transition-shadow duration-200 cursor-pointer;
   }
 
   .input {
