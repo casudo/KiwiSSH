@@ -11,6 +11,8 @@ from app.models.backup import BackupRecord, BackupStatus
 from app.models.device import DeviceBase
 from app.services.ssh_service import ssh_service
 from app.services.git_service import git_service
+from app.services.backup_job_service import backup_job_service
+from app.db import database
 from app.utils.timezone import get_utc_now
 
 logger = logging.getLogger(__name__)
