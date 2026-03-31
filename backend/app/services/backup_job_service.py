@@ -1,7 +1,7 @@
 """Service for managing backup job records in the database."""
 
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy import desc, update
 from app.db.models import BackupJob
 from app.utils.timezone import get_utc_now
 
@@ -9,6 +9,31 @@ from app.utils.timezone import get_utc_now
 
 class BackupJobService:
     """Service for persisting and retrieving backup job records."""
+
+    @staticmethod
+    def mark_stuck_jobs_as_failed(db: Session) -> int:
+        """Mark all in_progress and pending jobs as failed during startup recovery.
+        
+        This handles the case where the backend crashed/stopped while backups were running.
+        Those jobs will never complete, so they should be marked as failed.
+        
+        Args:
+            db: Database session
+            
+        Returns:
+            Number of jobs marked as failed
+        """
+        result = db.execute(
+            update(BackupJob)
+            .where(BackupJob.status.in_(["in_progress", "pending"]))
+            .values(
+                status="failed",
+                error_message="Marked failed during startup recovery - backend shutdown interrupted this job",
+                timestamp=get_utc_now(),
+            )
+        )
+        db.commit()
+        return result.rowcount or 0
 
     @staticmethod
     def create_job(

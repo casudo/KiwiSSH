@@ -13,6 +13,7 @@ from app.api.routes import api_router_v1
 from app.core import get_settings
 from app.core.logging import configure_logging
 from app.services import source_service
+from app.services.backup_job_service import backup_job_service
 from app.db.database import init_database
 
 ### Load .env file early to ensure env vars are available
@@ -50,6 +51,20 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     ### Initialize PostgreSQL application database
     logger.info("Initializing application database connection...")
     init_database(settings)
+    
+    ### Startup recovery: mark stuck jobs as failed
+    from app.db.database import SessionLocal
+    if SessionLocal is not None:
+        try:
+            db = SessionLocal()
+            try:
+                stuck_jobs_count = backup_job_service.mark_stuck_jobs_as_failed(db)
+                if stuck_jobs_count > 0:
+                    logger.warning(f"Marked {stuck_jobs_count} stuck backup job(s) as failed during startup recovery")
+            finally:
+                db.close()
+        except Exception as e:
+            logger.warning(f"Failed to clean up stuck jobs during startup: {e}")
 
     yield
 
