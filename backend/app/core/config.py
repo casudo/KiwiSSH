@@ -7,13 +7,14 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import quote_plus
 from zoneinfo import ZoneInfo
+from apscheduler.triggers.cron import CronTrigger
 
 import yaml
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Load .env file early to ensure environment variables (especially TZ) are available
+# Load .env file early to ensure environment variables are available
 load_dotenv()
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,34 @@ class ScheduleConfig(BaseModel):
     """Backup scheduling configuration."""
     cron: str | None = "0 2 * * *"  # Default to daily at 2 AM
     timezone: str = Field(default_factory=lambda: os.environ.get("TZ", "UTC"))
+    
+    @field_validator("cron", mode="before")
+    @classmethod
+    def validate_cron(cls, cron: str | None) -> str | None:
+        """Validate cron expression format (must have 5 fields).
+        
+        Valid format: minute hour day month day_of_week
+        Example: '0 2 * * *' (daily at 2 AM)
+        """
+        if cron is None or cron == "":
+            return cron
+        
+        ### Run very basic validation to check for 5 fields
+        fields = cron.strip().split()
+        if len(fields) != 5:
+            raise ValueError(
+                f"Invalid cron expression '{cron}': expected 5 fields "
+                "(minute hour day month day_of_week), got {len(fields)}. "
+                f"Example: '0 2 * * *' for daily at 2 AM"
+            )
+        
+        ### Try to parse with APScheduler to catch other invalid expressions
+        try:
+            CronTrigger.from_crontab(cron)
+        except Exception as e:
+            raise ValueError(f"Invalid cron expression '{cron}': {str(e)}")
+        
+        return cron
     
     @field_validator("timezone", mode="before")
     @classmethod
