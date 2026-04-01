@@ -150,7 +150,24 @@ class GitRemoteConfig(BaseModel):
     enabled: bool = False
     url: str | None = None
     branch: str = "main"
-    push_after_commit: bool = False
+
+    @field_validator("url", mode="before")
+    @classmethod
+    def normalize_url(cls, url: str | None) -> str | None:
+        """Normalize optional URL values by trimming whitespace."""
+        if url is None:
+            return None
+        text = str(url).strip()
+        return text or None
+
+    @model_validator(mode="after")
+    def validate_remote_when_enabled(self) -> "GitRemoteConfig":
+        """Validate required fields when remote push is enabled."""
+        if self.enabled:
+            if not self.branch.strip():
+                raise ValueError("git.remote.branch must be non-empty when git.remote.enabled is true")
+            # NOTE: git.remote.url can be None if group-level overrides are used
+        return self
 
 
 class GitConfig(BaseModel):
