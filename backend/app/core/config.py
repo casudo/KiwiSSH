@@ -155,10 +155,22 @@ class GitRemoteConfig(BaseModel):
 
 class GitConfig(BaseModel):
     """Git repository settings."""
-    local_path: str = "./backups"
-    auto_commit: bool = True
+    local_path: str = "/config/backups"
     commit_message_template: str = "Backup: {device_name} at {timestamp}"
     remote: GitRemoteConfig | None = None
+
+    @field_validator("local_path", mode="before")
+    @classmethod
+    def validate_local_path(cls, local_path: str) -> str:
+        """Ensure git.local_path is configured and absolute."""
+        if local_path is None or not str(local_path).strip():
+            raise ValueError("git.local_path must be a non-empty path")
+
+        path = Path(str(local_path).strip()).expanduser()
+        if not path.is_absolute():
+            raise ValueError("git.local_path must be an absolute path")
+
+        return str(path)
 
 
 class ApplicationDatabaseConfig(BaseModel):
