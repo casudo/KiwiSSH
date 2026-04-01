@@ -74,10 +74,9 @@ sources:
 git:
   local_path: "/config/backups"
   commit_message_template: "Backup: {group}/{device_name} at {timestamp}"
-  ### Default remote template used by groups without overrides. (optional)
-  ### URL can be optional if group-level overrides are used, but if remote.enabled is true, at least one URL must be provided either globally or at the group level.
+  ### Optional global remote git location for groups without overrides.
+  ### If this block is configured, git.remote.url is required.
   # remote:
-  #   enabled: true
   #   url: "git@github.com:<YOUR_ORGANIZATION_HERE>/{group}.git" # Keep {group} placeholder for dynamic repo names based on group
   #   branch: "main" # Optional, defaults to main
 

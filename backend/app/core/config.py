@@ -177,7 +177,6 @@ class SourcesConfig(BaseModel):
 ### Git Configuration
 class GitRemoteConfig(BaseModel):
     """Git remote repository configuration."""
-    enabled: bool = False
     url: str | None = None
     branch: str = "main"
 
@@ -200,12 +199,10 @@ class GitRemoteConfig(BaseModel):
         return text or "main"
 
     @model_validator(mode="after")
-    def validate_remote_when_enabled(self) -> "GitRemoteConfig":
-        """Validate required fields when remote push is enabled."""
-        if self.enabled:
-            if not self.branch.strip():
-                raise ValueError("git.remote.branch must be non-empty when git.remote.enabled is true")
-            # NOTE: git.remote.url can be None if group-level overrides are used
+    def validate_remote(self) -> "GitRemoteConfig":
+        """Validate required fields when git.remote is configured."""
+        if self.url is None:
+            raise ValueError("git.remote.url is required when git.remote is configured")
         return self
 
 
