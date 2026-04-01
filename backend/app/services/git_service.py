@@ -4,15 +4,21 @@ This service handles Git-based configuration storage, including
 commits, history retrieval, and diff generation.
 """
 
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from git import Repo, Actor, InvalidGitRepositoryError
+from git.exc import GitCommandError
+from git.remote import PushInfo
 
 from app.core import get_settings
 from app.models.backup import BackupDiff
 from app.utils.timezone import get_utc_now
+
+
+logger = logging.getLogger(__name__)
 
 
 class GitService:
@@ -91,6 +97,38 @@ class GitService:
             return False
 
         return group_config.git.remote.url is not None
+
+    @staticmethod
+    def _push_result_has_error(push_result: PushInfo) -> bool:
+        """Return True when a Git push result contains an error flag."""
+        error_mask = (
+            getattr(PushInfo, "ERROR", 0)
+            | getattr(PushInfo, "REJECTED", 0)
+            | getattr(PushInfo, "REMOTE_REJECTED", 0)
+            | getattr(PushInfo, "REMOTE_FAILURE", 0)
+            | getattr(PushInfo, "NO_MATCH", 0)
+        )
+        return (push_result.flags & error_mask) != 0
+
+    @staticmethod
+    def _has_commits(repo: Repo) -> bool:
+        """Check whether the repository contains at least one commit."""
+        try:
+            repo.commit("HEAD")
+            return True
+        except Exception:
+            return False
+    def _ensure_origin_remote(self, repo: Repo, remote_url: str):
+        """Ensure an origin remote exists and points to configured URL."""
+        if any(existing_remote.name == "origin" for existing_remote in repo.remotes):
+            remote = repo.remote("origin")
+            current_urls = list(remote.urls)
+            if not current_urls or current_urls[0] != remote_url:
+                remote.set_url(remote_url)
+            return remote
+
+        return repo.create_remote("origin", remote_url)
+
     def _ensure_repo(self, group: str) -> Repo:
         """
         Ensure git repository exists for group, create if needed.
@@ -365,17 +403,105 @@ class GitService:
         """
         raise NotImplementedError("Latest commit retrieval not yet implemented")
 
-    async def push_to_remote(self) -> bool:
+    async def push_to_remote(self, group: str | None = None) -> bool:
         """
         Push local commits to remote repository.
 
+        If group is provided, pushes only that group's repository.
+        Otherwise pushes all repositories loaded in this process.
+
         Returns:
             True if push successful, False otherwise
-
-        Raises:
-            NotImplementedError: Remote push not yet implemented
         """
-        raise NotImplementedError("Remote push not yet implemented")
+        ### Determine target groups to push
+        target_groups: list[str]
+        if group is not None:
+            target_groups = [group]
+        else:
+            target_groups = list(self._repos.keys())
+
+        if not target_groups:
+            logger.info("Remote push skipped because no repositories are initialized yet")
+            return False
+
+        overall_success = True
+        attempted_push = False
+
+        ### Iterate over target groups and attempt push if remote is configured
+        for group_name in target_groups:
+            repo = self._ensure_repo(group_name)
+
+            ### Step 0: Check remote target
+            try:
+                remote_url, branch_name = self._resolve_remote_target(group_name)
+            except ValueError as ex:
+                logger.warning("Remote push skipped for group %s: %s", group_name, ex)
+                continue
+
+            if not self._has_commits(repo):
+                logger.warning(
+                    "Remote push skipped for group %s because repository has no commits",
+                    group_name,
+                )
+                continue
+
+            ### Step 1: Push commits to remote and handle errors
+            try:
+                attempted_push = True
+                remote = self._ensure_origin_remote(repo, remote_url)
+
+                try:
+                    current_branch = repo.active_branch.name
+                except TypeError:
+                    current_branch = None
+
+                ### Switch to target branch if not already on it
+                if current_branch != branch_name:
+                    repo.git.checkout("-B", branch_name)
+
+                push_results = remote.push(refspec=f"{branch_name}:{branch_name}")
+                if not push_results:
+                    overall_success = False
+                    logger.error("Remote push returned no result for group %s", group_name)
+                    continue
+
+                errors = [
+                    result.summary
+                    for result in push_results
+                    if self._push_result_has_error(result)
+                ]
+
+                if errors:
+                    overall_success = False
+                    logger.error(
+                        "Remote push failed for group %s: %s",
+                        group_name,
+                        "; ".join(errors),
+                    )
+                    continue
+
+                ### Relief..
+                logger.info(
+                    "Successfully pushed group %s to remote branch %s",
+                    group_name,
+                    branch_name,
+                )
+            except GitCommandError as ex:
+                overall_success = False
+                logger.error(
+                    "Remote push failed for group %s: %s",
+                    group_name,
+                    ex,
+                )
+            except Exception as ex:
+                overall_success = False
+                logger.error("Remote push failed for group %s: %s", group_name, ex)
+
+        if not attempted_push:
+            logger.info("Remote push skipped because no configured remotes had commits to push")
+            return False
+
+        return overall_success
 
 
 ### Singleton instance
