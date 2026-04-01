@@ -28,12 +28,7 @@ class SourceService:
         if not configured_path:
             configured_path = default_config_path
 
-        if configured_path.strip() == default_config_path:
-            return (self.settings.config_dir / "sources" / "devices.csv").resolve()
-
         candidate = Path(configured_path)
-        if not candidate.is_absolute():
-            candidate = self.settings.config_dir / candidate
         return candidate.resolve()
 
     def _cache_device_from_row(self, row: dict, row_num: int | str) -> None:

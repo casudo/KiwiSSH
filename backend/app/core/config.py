@@ -129,6 +129,20 @@ class SourcesConfig(BaseModel):
     file: str | None = None
     postgres: PostgresSourceConfig | None = None
 
+    @field_validator("file", mode="before")
+    @classmethod
+    def validate_file_source_path(cls, value: str | None) -> str | None:
+        """Ensure sources.file is absolute when configured."""
+        if value is None:
+            return None
+
+        raw_path = str(value).strip()
+        path = Path(raw_path).expanduser()
+        if not path.is_absolute():
+            raise ValueError("sources.file must be an absolute path")
+
+        return str(path)
+
 
 ### Git Configuration
 class GitRemoteConfig(BaseModel):
