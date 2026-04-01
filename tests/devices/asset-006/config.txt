@@ -1,5 +1,5 @@
 config system global
-    set hostname "access-point-001"
+    set hostname "asset-006"
     set timezone "UTC"
     set admintimeout 480
     set language "english"

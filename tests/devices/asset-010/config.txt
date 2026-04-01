@@ -1,5 +1,5 @@
 config system global
-    set hostname "access-001"
+    set hostname "asset-010"
     set timezone "UTC"
     set admintimeout 480
     set language "english"
@@ -10,7 +10,7 @@ end
 config system admin
     edit "admin"
         set vdom "root"
-        set password ENC AK0wEwJiIjEyMzQNjc4OTAx.............
+        set password ENC "1"
         set trusthost1 "10.0.0.0 255.255.255.0"
     next
 end
@@ -121,7 +121,7 @@ end
 config system ha
     set mode a-p
     set ha-mgmt-status enable
-    set password ENC AK0wEwJiIjEyMzQNjc4OTAx.............
+    set password ENC RHGDHUIGDOJVBDOIUHRTDVOSI
 end
 
 config log syslogd setting
