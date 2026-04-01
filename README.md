@@ -1,5 +1,5 @@
 <div align="center">
-  <img alt="Logo" src="readme_images/multi_device_mockup.png"></a>
+  <img alt="Logo" src="readme_images/kiwissh_logo.png"></a>
   <br>
   <h1>KiwiSSH</h1>
   Very cool placeholder text
@@ -24,10 +24,12 @@ PLACEHOLDER
   - [Docker](#docker)
 - [Configuration](#configuration)
   - [Environment Variables](#environment-variables)
-  - [Main YAML config file](#main-yaml-config-file)
+  - [Main YAML Config File](#main-yaml-config-file)
     - [Sources](#sources)
       - [File](#file)
       - [PostgreSQL](#postgresql)
+    - [Remote Git Locations](#remote-git-locations)
+      - [Remote Repository Setup](#remote-repository-setup)
   - [Vendor folder](#vendor-folder)
   - [SSH Profiles YAML file](#ssh-profiles-yaml-file)
 - [Future Goals](#future-goals)
@@ -71,13 +73,18 @@ WIP
 
 # Configuration
 
-KiwiSSH will be configured using a combination of environment variables and a YAML configuration file. The YAML file contains the main configuration settings, while environment variables are used to define global, application-unspecific values for different deployments.
+KiwiSSH can be configured using a combination of environment variables and a [YAML configuration file](config/kiwissh.yaml). The YAML file contains the main configuration settings, while environment variables are used to define global, application-unspecific values for different deployments.
 
 ## Environment Variables
 
-You will find an overview of the available environment variables in the [`backend/.env.example`](backend/.env.example) file. Either rename it to `.env` and fill in the values or set the environment variables directly in your deployment environment (e.g. Docker, systemd, etc.). KiwiSSH will automatically load these environment variables on startup.
+See the example [`backend/.env.example`](backend/.env.example) file. Either rename it to `.env` and fill in the values or set the environment variables directly in your deployment environment (e.g. Docker, systemd, etc.). KiwiSSH will automatically load these environment variables on startup.
 
-## Main YAML config file
+| Variable Name | Description | Required | Default Value |
+| ------------- | ----------- | -------- | ------------- |
+| `KIWISSH_LOCAL_TEST_MODE` | If set to true, the application will run in local test mode, which enforces certain config values for easier local testing and development. | **No** | false |
+| `TZ` | Timezone for the application. This is used for timestamps in backup job logs and Git commit messages. | **No** | UTC |
+
+## Main YAML Config File
 
 > /config/kiwissh.yaml
 
@@ -102,6 +109,8 @@ Whether you've configured the device source as file or PostgreSQL, the expected 
 sources:
   file: "/config/sources/devices.csv"
 ```
+
+`sources.file` must be an absolute path.
 
 The devices will be loaded from the specified CSV file. The headers must be seperated by commas like this:
 
@@ -128,6 +137,63 @@ postgres:
 
 Make sure that the specified PostgreSQL database and table exist and that the provided user has read access to it.
 
+### Remote Git Locations
+
+> [!NOTE]
+> Local git storage is always active to keep track of configuration changes and enable the configuration diff feature.
+
+KiwiSSH creates one git repository per device group in the directory configured via `git.local_path`. To push these commits to a remote repository, you can configure a remote repository via the `git.remote` block. You can also set per-group overrides for the remote repository URL and branch if different groups should push to different repositories or branches.
+
+> [!IMPORTANT]
+> > When do I choose the global `git.remote` vs per-group overrides (`groups.<group>.git.remote`)?
+>
+> **Global:** You should use the global `git.remote` configuration if all your groups should push to the same remote organization/repository structure (for example one repository per group **under the same** organization on GitHub). In this case, you can use the `{group}` placeholder in the global `git.remote.url` to dynamically generate the remote URL for each group based on its name.
+> -> Example:`git.remote.url: git@github.com:<YOUR_ORGANIZATION_HERE>/{group}.git` will result in repositories like `<YOUR_ORGANIZATION_HERE>/customer-aaa.git`, `<YOUR_ORGANIZATION_HERE>/abc-company.git`, etc.
+>
+> **Group overrides:** If your groups belong to different organizations or if you need more granular control over the remote URL each group, setup per-group overrides. In this case, you would leave the global `git.remote` configuration empty (aka remove it) and set the `git.remote.url` and optionally `git.remote.branch` for each group under `groups.<group>.git.remote`.
+> -> Example: Group 1 `groups.datacenter-firewalls.git.remote.url: ssh://git@192.168.45.25:222/company-abc/datacenter-firewalls.git`, Group 2 `groups.office-switches.git.remote.url: ssh://git@192.168.45.25:222/company-xyz/office-switches.git`
+
+In the next example, the global `git.remote.url` is configured with a placeholder `{group}` which will be replaced by the actual group name for each group. All groups will use the global template except for `development-firewalls` which has a per-group override for the remote URL, so it will push to the specified SSH URL instead of the global template.
+
+```yaml
+git:
+  local_path: "/config/backups"
+  commit_message_template: "Backup: {group}/{device_name} at {timestamp}"
+  remote:
+    url: "git@github.com:<YOUR_ORGANIZATION_HERE>/kiwissh-{group}.git"
+
+groups:
+  customer-development-firewalls:
+    username: "admin"
+    password: "password"
+    vendor: "forti_os"
+    ssh_profile: "modern"
+    git:
+      remote:
+        url: "git@github.com:dev_orga/development-firewalls.git"
+        branch: "dev"
+```
+
+Available placeholders:
+
+- `commit_message_template`: `{group}`, `{device_name}`, `{timestamp}`
+- `git.remote.url`: `{group}`
+
+#### Remote Repository Setup
+
+KiwiSSH uses pushed git commits via SSH to their remote repository. To set up the remote repositories (in general), follow these steps: 
+
+1. Create one remote repository per group.
+   - If all groups live under one org, use one global template in `git.remote.url` with `{group}`.
+   - If groups are spread across multiple organizations, set per-group overrides under `groups.<group>.git.remote.url`.
+2. Ensure the branch from `git.remote.branch` (or per-group branch override) exists or can be created by the push user. Default is `main`.
+3. Create an SSH keypair for KiwiSSH if you haven't already and add the public key to your Git provider.
+4. Make sure the remote Git user has write access to the repositories
+5. Run backup and confirm commits are present locally and remotely.
+
+> [!TIP]
+> Since KiwiSSH will use the local OpenSSH client to push commits to the remote repository, the SSH config file (`~/.ssh/config` or `C:\Users\user\.ssh\config`) can be used to manage SSH connection details for the Git provider (e.g. GitHub, GitLab, etc.) and set up things like SSH key usage, custom ports, etc.
+
 ## Vendor folder
 
 > /config/vendors
@@ -153,12 +219,10 @@ WIP explain in more detail what every segment does
 **Short Term:**
 
 - More logging
-- Support for external git storage location (Gitea, GitHub, GitLab, etc.)
-- Rename "KiwiSSH" to "Kiwi SSH"
 - Checks for device source: No duplicate hostnames, valid IPs, ... (What if multiple groups hold the same IP address range?)
 - SSH Key pair support instead of just passwords
 - Override SSH port (Probably better placed in groups/nodes than SSH profiles?)
-- sources.file.path has no use since its currently hardcoded based on local_test_mode, which shouldnt
+- Update "Configuration Diff" to not just highlight the affected line (green/red) but also the actual characters which were added/removed (brighter green/red) for better readability
 
 **Mid-term:**
 
@@ -171,6 +235,10 @@ WIP explain in more detail what every segment does
 - Implement backup job log rotation and retention policies (e.g. delete logs if line >10000 or older than 90 days)
 - Add visual popup when opening JobView.vue for the first initial load takes longer than 3 seconds to inform the user that the page is still loading and to prevent them from thinking the UI is frozen
 - Move function-level imports to top-level imports to comply with PEP8
+- Configuration Diff should show the actual line number of the config file
+- Move config validation from `entrypoint.py` to `@field_validator` or `@model_validator` in the Pydantic models in `config.py`. These get directly called when the config is loaded via `get_settings()`. This is the first and fastest way to validate the config. Maybe the entrypoint file is obsolite after that or can be simplified to just validate environment variables. `entrypoint.py` is still useful to check for non-empty fields.
+- Pentests
+- Rework Pydantic models (required vs optional fields, default values, validators, etc.)
 
 **Long Term:**
 
