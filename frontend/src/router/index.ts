@@ -60,7 +60,7 @@ const router = createRouter({
 // Update document title on route change
 router.beforeEach((to, from, next) => {
   const title = to.meta.title as string || "Page"
-  document.title = `${title} | Project Downtown`
+  document.title = `${title} | KiwiSSH`
   next()
 })
 

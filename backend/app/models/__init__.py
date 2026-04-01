@@ -1,4 +1,4 @@
-"""Pydantic models for Project Downtown."""
+"""Pydantic models for KiwiSSH."""
 
 from app.models.device import (
     DeviceBase,

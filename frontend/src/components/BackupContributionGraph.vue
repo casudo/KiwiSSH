@@ -163,10 +163,10 @@ const monthLabels = computed((): Array<{ month: string; startWeekIndex: number; 
 // Calculate color intensity based on backup count
 function getColorClass(count: number): string {
   if (count === 0) return 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700'
-  if (count === 1) return 'bg-downtown-200 hover:bg-downtown-300 dark:bg-downtown-900/65 dark:hover:bg-downtown-800/75'
-  if (count <= 3) return 'bg-downtown-400 hover:bg-downtown-500 dark:bg-downtown-700/80 dark:hover:bg-downtown-600/90'
-  if (count <= 5) return 'bg-downtown-600 hover:bg-downtown-700 dark:bg-downtown-500/90 dark:hover:bg-downtown-400'
-  return 'bg-downtown-800 hover:bg-downtown-900 dark:bg-downtown-300 dark:hover:bg-downtown-200'
+  if (count === 1) return 'bg-kiwissh-200 hover:bg-kiwissh-300 dark:bg-kiwissh-900/65 dark:hover:bg-kiwissh-800/75'
+  if (count <= 3) return 'bg-kiwissh-400 hover:bg-kiwissh-500 dark:bg-kiwissh-700/80 dark:hover:bg-kiwissh-600/90'
+  if (count <= 5) return 'bg-kiwissh-600 hover:bg-kiwissh-700 dark:bg-kiwissh-500/90 dark:hover:bg-kiwissh-400'
+  return 'bg-kiwissh-800 hover:bg-kiwissh-900 dark:bg-kiwissh-300 dark:hover:bg-kiwissh-200'
 }
 
 function handleDayClick(cell: DayCell) {
@@ -214,7 +214,7 @@ const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
                 @click="handleDayClick(cell)"
                 class="w-3 h-3 rounded-sm cursor-pointer transition-colors border"
                 :class="[
-                  cell.date ? [getColorClass(cell.count), props.selectedDate === cell.date ? 'ring-2 ring-downtown-500 dark:ring-downtown-300 ring-offset-1 ring-offset-white dark:ring-offset-slate-900' : 'border-slate-200 dark:border-slate-700'] : 'bg-transparent border-transparent cursor-default',
+                  cell.date ? [getColorClass(cell.count), props.selectedDate === cell.date ? 'ring-2 ring-kiwissh-500 dark:ring-kiwissh-300 ring-offset-1 ring-offset-white dark:ring-offset-slate-900' : 'border-slate-200 dark:border-slate-700'] : 'bg-transparent border-transparent cursor-default',
                 ]"
               />
             </div>
@@ -232,26 +232,26 @@ const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
           <span class="text-xs text-gray-600 dark:text-gray-400">None</span>
         </div>
         <div class="flex items-center gap-2">
-          <div class="w-3 h-3 rounded-sm bg-downtown-200 dark:bg-downtown-900/50" />
+          <div class="w-3 h-3 rounded-sm bg-kiwissh-200 dark:bg-kiwissh-900/50" />
           <span class="text-xs text-gray-600 dark:text-gray-400">1</span>
         </div>
         <div class="flex items-center gap-2">
-          <div class="w-3 h-3 rounded-sm bg-downtown-400 dark:bg-downtown-700/70" />
+          <div class="w-3 h-3 rounded-sm bg-kiwissh-400 dark:bg-kiwissh-700/70" />
           <span class="text-xs text-gray-600 dark:text-gray-400">2-3</span>
         </div>
         <div class="flex items-center gap-2">
-          <div class="w-3 h-3 rounded-sm bg-downtown-600 dark:bg-downtown-500" />
+          <div class="w-3 h-3 rounded-sm bg-kiwissh-600 dark:bg-kiwissh-500" />
           <span class="text-xs text-gray-600 dark:text-gray-400">4-5</span>
         </div>
         <div class="flex items-center gap-2">
-          <div class="w-3 h-3 rounded-sm bg-downtown-800 dark:bg-downtown-300" />
+          <div class="w-3 h-3 rounded-sm bg-kiwissh-800 dark:bg-kiwissh-300" />
           <span class="text-xs text-gray-600 dark:text-gray-400">6+</span>
         </div>
       </div>
     </div>
 
-    <div v-if="selectedDate" class="mt-4 text-sm text-downtown-600 dark:text-downtown-400">
-      <button @click="emit('dayCleared')" class="text-downtown-600 dark:text-downtown-400 hover:text-downtown-700 dark:hover:text-downtown-300 underline">
+    <div v-if="selectedDate" class="mt-4 text-sm text-kiwissh-600 dark:text-kiwissh-400">
+      <button @click="emit('dayCleared')" class="text-kiwissh-600 dark:text-kiwissh-400 hover:text-kiwissh-700 dark:hover:text-kiwissh-300 underline">
         ✕ Clear filter
       </button>
       <span class="ml-2 text-gray-600 dark:text-gray-400">Showing backups for {{ selectedDate }}</span>

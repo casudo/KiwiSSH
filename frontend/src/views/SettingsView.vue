@@ -6,7 +6,7 @@
   <div>
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Settings</h1>
-      <p class="text-gray-500 dark:text-gray-400 mt-1">Configure Project Downtown</p>
+      <p class="text-gray-500 dark:text-gray-400 mt-1">Configure KiwiSSH</p>
     </div>
 
     <div class="card">
@@ -26,19 +26,19 @@
         <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Configuration Files</h2>
         <div class="space-y-3 text-sm">
           <div class="flex items-start">
-            <code class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-downtown-700 dark:text-downtown-300 font-mono">config/downtown.yaml</code>
+            <code class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-kiwissh-700 dark:text-kiwissh-300 font-mono">config/kiwissh.yaml</code>
             <span class="ml-3 text-gray-600 dark:text-gray-300">Main application configuration</span>
           </div>
           <div class="flex items-start">
-            <code class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-downtown-700 dark:text-downtown-300 font-mono">config/ssh_profiles.yaml</code>
+            <code class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-kiwissh-700 dark:text-kiwissh-300 font-mono">config/ssh_profiles.yaml</code>
             <span class="ml-3 text-gray-600 dark:text-gray-300">SSH connection profiles</span>
           </div>
           <div class="flex items-start">
-            <code class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-downtown-700 dark:text-downtown-300 font-mono">config/vendors/</code>
+            <code class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-kiwissh-700 dark:text-kiwissh-300 font-mono">config/vendors/</code>
             <span class="ml-3 text-gray-600 dark:text-gray-300">Vendor-specific backup instructions</span>
           </div>
           <div class="flex items-start">
-            <code class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-downtown-700 dark:text-downtown-300 font-mono">config/sources/devices.csv</code>
+            <code class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-kiwissh-700 dark:text-kiwissh-300 font-mono">config/sources/devices.csv</code>
             <span class="ml-3 text-gray-600 dark:text-gray-300">Device inventory</span>
           </div>
         </div>

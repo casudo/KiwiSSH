@@ -1,4 +1,4 @@
-"""Project Downtown application configuration."""
+"""KiwiSSH application configuration."""
 
 import os
 import logging
@@ -161,7 +161,7 @@ class Settings(BaseSettings):
     """Application settings loaded from environment and config files."""
 
     model_config = SettingsConfigDict(
-        env_prefix="DOWNTOWN_",
+        env_prefix="KIWISSH_",
         env_file=".env",
         extra="ignore",
     )
@@ -222,7 +222,7 @@ class Settings(BaseSettings):
     def load_yaml_configs(self) -> None:
         """Load YAML configuration files."""
         ### Load main config
-        config_file = self.config_dir / "downtown.yaml"
+        config_file = self.config_dir / "kiwissh.yaml"
         if config_file.exists():
             with open(config_file, encoding="utf-8") as f:
                 file_content = yaml.safe_load(f) or {}

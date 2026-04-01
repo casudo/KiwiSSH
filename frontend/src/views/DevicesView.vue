@@ -170,7 +170,7 @@ onBeforeUnmount(() => {
         :class="[
           'px-4 py-2 rounded font-medium text-sm transition',
           currentLayout === 'compact'
-            ? 'bg-downtown-600 text-white'
+            ? 'bg-kiwissh-600 text-white'
             : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
         ]"
       >
@@ -181,7 +181,7 @@ onBeforeUnmount(() => {
         :class="[
           'px-4 py-2 rounded font-medium text-sm transition',
           currentLayout === 'detailed'
-            ? 'bg-downtown-600 text-white'
+            ? 'bg-kiwissh-600 text-white'
             : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
         ]"
       >
@@ -192,7 +192,7 @@ onBeforeUnmount(() => {
         :class="[
           'px-4 py-2 rounded font-medium text-sm transition',
           currentLayout === 'list'
-            ? 'bg-downtown-600 text-white'
+            ? 'bg-kiwissh-600 text-white'
             : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
         ]"
       >
@@ -208,7 +208,7 @@ onBeforeUnmount(() => {
           <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Filters</h3>
           <button
             @click="showFilters = !showFilters"
-            class="text-sm text-downtown-600 dark:text-downtown-400 hover:text-downtown-700 dark:hover:text-downtown-300 font-medium flex items-center gap-1"
+            class="text-sm text-kiwissh-600 dark:text-kiwissh-400 hover:text-kiwissh-700 dark:hover:text-kiwissh-300 font-medium flex items-center gap-1"
           >
             {{ showFilters ? "▼ Hide" : "▶ Show" }} Filters
           </button>
@@ -286,13 +286,13 @@ onBeforeUnmount(() => {
                   <div
                     v-for="status in selectedStatus"
                     :key="status"
-                    class="shrink-0 flex items-center gap-2 bg-downtown-100 text-downtown-700 dark:bg-downtown-900/40 dark:text-downtown-300 px-3 py-1 rounded-full text-sm font-medium"
+                    class="shrink-0 flex items-center gap-2 bg-kiwissh-100 text-kiwissh-700 dark:bg-kiwissh-900/40 dark:text-kiwissh-300 px-3 py-1 rounded-full text-sm font-medium"
                   >
                     {{ statusOptions.find(o => o.value === status)?.label || status }}
                     <button
                       type="button"
                       @click.stop="removeStatusFilter(status)"
-                      class="hover:text-downtown-900 dark:hover:text-downtown-200 font-bold"
+                      class="hover:text-kiwissh-900 dark:hover:text-kiwissh-200 font-bold"
                     >
                       ×
                     </button>
@@ -314,7 +314,7 @@ onBeforeUnmount(() => {
                       type="checkbox"
                       :checked="selectedStatus.includes(option.value)"
                       @change="() => toggleStatusFilter(option.value)"
-                      class="w-4 h-4 text-downtown-600 rounded border-gray-300 focus:ring-downtown-500"
+                      class="w-4 h-4 text-kiwissh-600 rounded border-gray-300 focus:ring-kiwissh-500"
                     />
                     <span class="text-sm text-gray-700 dark:text-gray-200">{{ option.label }}</span>
                   </label>
@@ -329,7 +329,7 @@ onBeforeUnmount(() => {
               <input
                 type="checkbox"
                 v-model="showEnabledOnly"
-                class="w-4 h-4 text-downtown-600 rounded border-gray-300 focus:ring-downtown-500"
+                class="w-4 h-4 text-kiwissh-600 rounded border-gray-300 focus:ring-kiwissh-500"
               >
               <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Show enabled only</span>
             </label>
@@ -337,7 +337,7 @@ onBeforeUnmount(() => {
             <button
               v-if="selectedGroup || selectedVendor || selectedSshProfile || selectedStatus.length > 0 || searchName || searchIP || showEnabledOnly"
               @click="clearFilters"
-              class="text-sm text-downtown-600 dark:text-downtown-400 hover:text-downtown-700 dark:hover:text-downtown-300 font-medium"
+              class="text-sm text-kiwissh-600 dark:text-kiwissh-400 hover:text-kiwissh-700 dark:hover:text-kiwissh-300 font-medium"
             >
               Clear filters
             </button>

@@ -64,7 +64,7 @@ async function handleTriggerBackup(e: Event) {
         <button
           @click="handleTriggerBackup"
           :disabled="triggering"
-          class="px-2 py-1 text-xs bg-downtown-100 text-downtown-700 hover:bg-downtown-200 dark:bg-downtown-900/40 dark:text-downtown-300 dark:hover:bg-downtown-900/60 rounded transition"
+          class="px-2 py-1 text-xs bg-kiwissh-100 text-kiwissh-700 hover:bg-kiwissh-200 dark:bg-kiwissh-900/40 dark:text-kiwissh-300 dark:hover:bg-kiwissh-900/60 rounded transition"
           title="Trigger backup"
         >
           {{ triggering ? "..." : "▶" }}

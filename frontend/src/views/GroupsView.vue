@@ -128,7 +128,7 @@ onMounted(async () => {
           :class="[
             'px-4 py-2 rounded font-medium text-sm transition',
             currentLayout === 'card'
-              ? 'bg-downtown-600 text-white'
+              ? 'bg-kiwissh-600 text-white'
               : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
           ]"
         >
@@ -139,7 +139,7 @@ onMounted(async () => {
           :class="[
             'px-4 py-2 rounded font-medium text-sm transition',
             currentLayout === 'list'
-              ? 'bg-downtown-600 text-white'
+              ? 'bg-kiwissh-600 text-white'
               : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
           ]"
         >
@@ -150,7 +150,7 @@ onMounted(async () => {
           :class="[
             'px-4 py-2 rounded font-medium text-sm transition',
             currentLayout === 'table'
-              ? 'bg-downtown-600 text-white'
+              ? 'bg-kiwissh-600 text-white'
               : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
           ]"
         >

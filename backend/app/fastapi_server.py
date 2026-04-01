@@ -39,7 +39,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
     configure_logging(debug=settings.app.debug)
 
-    logger.info(f"Starting Project Downtown v{__version__}")
+    logger.info(f"Starting KiwiSSH v{__version__}")
     logger.info(f"Config directory: {settings.config_dir}")
     logger.info(f"Debug mode: {settings.app.debug}")
     logger.info(f"Loaded {len(settings.vendors)} vendor configurations")
@@ -75,7 +75,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     yield
 
     ### Shutdown
-    logger.info("Shutting down Project Downtown")
+    logger.info("Shutting down KiwiSSH")
     backup_scheduler_service.stop_scheduler()
 
 
@@ -85,7 +85,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
 
     app = FastAPI(
-        title="Project Downtown",
+        title="KiwiSSH",
         description="Network configuration backup application",
         version=__version__,
         lifespan=lifespan,

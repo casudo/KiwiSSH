@@ -379,7 +379,7 @@ function formatFileSize(bytes: number): string {
 
               <div v-if="hasActiveFilters" class="flex items-center justify-between">
                 <span class="text-sm text-gray-600 dark:text-gray-400">{{ filteredBackupHistory.length }} of {{ backupHistory.length }} backups</span>
-                <button @click="clearFilters" class="text-sm text-downtown-600 dark:text-downtown-400 hover:text-downtown-700 dark:hover:text-downtown-300 underline">
+                <button @click="clearFilters" class="text-sm text-kiwissh-600 dark:text-kiwissh-400 hover:text-kiwissh-700 dark:hover:text-kiwissh-300 underline">
                   Clear Filters
                 </button>
               </div>
@@ -427,7 +427,7 @@ function formatFileSize(bytes: number): string {
               <div class="flex items-center justify-between gap-4">
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-2 mb-1">
-                    <span class="text-xs font-bold px-2 py-1 rounded-full bg-downtown-100 text-downtown-700 dark:bg-downtown-900/40 dark:text-downtown-300">
+                    <span class="text-xs font-bold px-2 py-1 rounded-full bg-kiwissh-100 text-kiwissh-700 dark:bg-kiwissh-900/40 dark:text-kiwissh-300">
                       v{{ backup.version_number }}
                     </span>
                     <code class="text-sm font-mono bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-2 py-1 rounded">{{ backup.short_hash }}</code>

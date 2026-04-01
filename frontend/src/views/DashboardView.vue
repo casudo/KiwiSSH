@@ -99,7 +99,7 @@ onMounted(async () => {
 
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
-      <StatCard title="Total Devices" :value="stats.total" color="downtown" />
+      <StatCard title="Total Devices" :value="stats.total" color="kiwissh" />
       <StatCard title="Enabled" :value="stats.enabled" color="green" />
       <StatCard title="Groups" :value="stats.groups" color="gray" />
       <StatCard title="Vendors" :value="stats.vendors" color="blue" />
@@ -131,7 +131,7 @@ onMounted(async () => {
     <section>
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Favorite Devices</h2>
-        <RouterLink to="/devices" class="text-downtown-600 dark:text-downtown-400 hover:text-downtown-700 dark:hover:text-downtown-300 text-sm font-medium">
+        <RouterLink to="/devices" class="text-kiwissh-600 dark:text-kiwissh-400 hover:text-kiwissh-700 dark:hover:text-kiwissh-300 text-sm font-medium">
           View all →
         </RouterLink>
       </div>

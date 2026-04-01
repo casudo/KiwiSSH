@@ -108,7 +108,7 @@ def main() -> int:
         Exit code (0 for success, 1 for validation failure)
     """
     try:
-        logger.info("Project Downtown - Validating YAML configuration...")
+        logger.info("KiwiSSH - Validating YAML configuration...")
 
         ### Step 1: Validate envionment variables
         # TODO

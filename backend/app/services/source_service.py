@@ -46,7 +46,7 @@ class SourceService:
             raise ValueError(f"Row {row_num}: 'group' column is required")
         if group not in self.settings.groups:
             raise ValueError(
-                f"Row {row_num} (device '{device_name}'): Group '{group}' not found in downtown.yaml. "
+                f"Row {row_num} (device '{device_name}'): Group '{group}' not found in kiwissh.yaml. "
                 f"Available groups: {', '.join(self.settings.groups.keys())}"
             )
 
@@ -83,7 +83,7 @@ class SourceService:
         """Load devices from CSV file.
 
         CSV columns required: group, device_name, ip_address, enabled
-        Vendor and ssh_profile are resolved from downtown.yaml configuration.
+        Vendor and ssh_profile are resolved from kiwissh.yaml configuration.
         Priority: App defaults < Group defaults < Node-specific overrides
         """
         csv_path = self._get_csv_source_path()

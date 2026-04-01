@@ -136,7 +136,7 @@ onMounted(async () => {
           :class="[
             'px-4 py-2 rounded font-medium text-sm transition',
             currentLayout === 'card'
-              ? 'bg-downtown-600 text-white'
+              ? 'bg-kiwissh-600 text-white'
               : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
           ]"
         >
@@ -147,7 +147,7 @@ onMounted(async () => {
           :class="[
             'px-4 py-2 rounded font-medium text-sm transition',
             currentLayout === 'list'
-              ? 'bg-downtown-600 text-white'
+              ? 'bg-kiwissh-600 text-white'
               : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
           ]"
         >
@@ -158,7 +158,7 @@ onMounted(async () => {
           :class="[
             'px-4 py-2 rounded font-medium text-sm transition',
             currentLayout === 'table'
-              ? 'bg-downtown-600 text-white'
+              ? 'bg-kiwissh-600 text-white'
               : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
           ]"
         >
@@ -211,8 +211,8 @@ onMounted(async () => {
               <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ vendor.name }}</h3>
               <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ vendor.count }} {{ vendor.count === 1 ? "device" : "devices" }}</p>
             </div>
-            <span class="inline-flex items-center justify-center h-12 w-12 rounded-lg bg-downtown-100 dark:bg-downtown-900">
-              <span class="text-lg font-semibold text-downtown-600 dark:text-downtown-400">{{ vendor.count }}</span>
+            <span class="inline-flex items-center justify-center h-12 w-12 rounded-lg bg-kiwissh-100 dark:bg-kiwissh-900">
+              <span class="text-lg font-semibold text-kiwissh-600 dark:text-kiwissh-400">{{ vendor.count }}</span>
             </span>
           </div>
 
@@ -247,7 +247,7 @@ onMounted(async () => {
         >
           <h3 class="font-semibold text-gray-900 dark:text-white text-sm mb-1">{{ vendor.name }}</h3>
           <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ vendor.count }} {{ vendor.count === 1 ? "device" : "devices" }}</p>
-          <span class="inline-block px-2 py-1 bg-downtown-100 dark:bg-downtown-900 text-downtown-700 dark:text-downtown-300 rounded text-xs font-medium">
+          <span class="inline-block px-2 py-1 bg-kiwissh-100 dark:bg-kiwissh-900 text-kiwissh-700 dark:text-kiwissh-300 rounded text-xs font-medium">
             {{ vendor.count }}
           </span>
         </div>

@@ -56,8 +56,8 @@ class GitService:
             repo = Repo.init(repo_path)
             ### Configure git user
             with repo.config_writer() as config:
-                config.set_value("user", "name", "Downtown Backup System")
-                config.set_value("user", "email", "backup@downtown.local")
+                config.set_value("user", "name", "KiwiSSH Backup System")
+                config.set_value("user", "email", "backup@kiwissh.local")
                 ### TODO: Fix for prod
 
         self._repos[group] = repo
@@ -115,7 +115,7 @@ class GitService:
             message = f"Backup: {device_name} at {timestamp}"
 
         ### Commit
-        actor = Actor("Downtown Backup System", "backup@downtown.local")
+        actor = Actor("KiwiSSH Backup System", "backup@kiwissh.local")
         commit = repo.index.commit(message, author=actor, committer=actor)
 
         return (commit.hexsha, True)

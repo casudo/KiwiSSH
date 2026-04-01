@@ -268,7 +268,7 @@ async function handleFlushDatabase() {
           <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Filters</h3>
           <button
             @click="showFilters = !showFilters"
-            class="text-sm text-downtown-600 dark:text-downtown-400 hover:text-downtown-700 dark:hover:text-downtown-300 font-medium flex items-center gap-1"
+            class="text-sm text-kiwissh-600 dark:text-kiwissh-400 hover:text-kiwissh-700 dark:hover:text-kiwissh-300 font-medium flex items-center gap-1"
           >
             {{ showFilters ? "▼ Hide" : "▶ Show" }} Filters
           </button>
@@ -302,7 +302,7 @@ async function handleFlushDatabase() {
                 type="checkbox"
                 :checked="jobsStore.autoRefreshEnabled"
                 @change="jobsStore.toggleAutoRefresh()"
-                class="w-4 h-4 text-downtown-600 rounded border-gray-300"
+                class="w-4 h-4 text-kiwissh-600 rounded border-gray-300"
               >
               <span class="text-sm text-gray-700 dark:text-gray-300">Auto-refresh (sec)</span>
             </label>

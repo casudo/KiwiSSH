@@ -40,7 +40,7 @@ async def readiness_check() -> dict:
 
     checks = {
         "config_dir_exists": settings.config_dir.exists(),
-        "main_config_exists": (settings.config_dir / "downtown.yaml").exists(),
+        "main_config_exists": (settings.config_dir / "kiwissh.yaml").exists(),
         "ssh_profiles_loaded": bool(settings.ssh_profiles),
         "vendors_loaded": bool(settings.vendors),
     }

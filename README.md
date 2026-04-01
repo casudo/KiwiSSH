@@ -7,10 +7,10 @@
   ---
 
   <!-- Placeholder for badges -->
-  ![GitHub License](https://img.shields.io/github/license/casudo/PLACEHOLDER_URL) ![GitHub release (with filter)](https://img.shields.io/github/v/release/casudo/PLACEHOLDER_URL) ![GitHub action checks](https://img.shields.io/github/check-runs/casudo/PLACEHOLDER_URL/main) ![GitHub issues](https://img.shields.io/github/issues/casudo/PLACEHOLDER_URL) ![GitHub last commit](https://img.shields.io/github/last-commit/casudo/PLACEHOLDER_URL)
+  ![GitHub License](https://img.shields.io/github/license/casudo/KiwiSSH) ![GitHub release (with filter)](https://img.shields.io/github/v/release/casudo/KiwiSSH) ![GitHub action checks](https://img.shields.io/github/check-runs/casudo/KiwiSSH/main) ![GitHub issues](https://img.shields.io/github/issues/casudo/KiwiSSH) ![GitHub last commit](https://img.shields.io/github/last-commit/casudo/KiwiSSH)
 </div>
 
-# About Kiwi SSH <!-- omit from toc -->
+# About KiwiSSH <!-- omit from toc -->
 
 PLACEHOLDER
 
@@ -60,7 +60,7 @@ To run KiwiSSH on your local machine without Docker, follow these steps:
 
 1. Clone the repository
 2. Navigate to the backend directory and install the required Python dependencies from `requirements.txt`
-3. Set up the `downtown.yaml` configuration file in the `config` directory
+3. Set up the `kiwissh.yaml` configuration file in the `config` directory
 4. Run the backend using `python entrypoint.py`
 5. Navigate to the frontend directory and install the dependencies with `npm install`
 6. Start the frontend with `npm run dev`
@@ -79,12 +79,12 @@ You will find an overview of the available environment variables in the [`backen
 
 ## Main YAML config file
 
-> /config/downtown.yaml
+> /config/kiwissh.yaml
 
-The main configuration file [downtown.yaml](config/downtown.yaml) should explain itself with the comments. For a more detailed understanding of what each segment does, see the headings below.
+The main configuration file [kiwissh.yaml](config/kiwissh.yaml) should explain itself with the comments. For a more detailed understanding of what each segment does, see the headings below.
 
 > [IMPORTANT]
-> Changes to the `downtown.yaml` file will require a restart of the backend application to take effect.
+> Changes to the `kiwissh.yaml` file will require a restart of the backend application to take effect.
 
 ### Sources
 
@@ -154,7 +154,7 @@ WIP explain in more detail what every segment does
 
 - More logging
 - Support for external git storage location (Gitea, GitHub, GitLab, etc.)
-- Rename "Project Downtown" to "Kiwi SSH"
+- Rename "KiwiSSH" to "Kiwi SSH"
 - Checks for device source: No duplicate hostnames, valid IPs, ... (What if multiple groups hold the same IP address range?)
 - SSH Key pair support instead of just passwords
 - Override SSH port (Probably better placed in groups/nodes than SSH profiles?)
@@ -201,7 +201,7 @@ Placeholder
 
 KiwiSSH will store it's application data in a PostgreSQL database. As of **v0.1.0** this includes backup job logs and favorite devices.
 
-You'll be asked to provide the connection details to your PostgreSQL database in the `downtown.yaml` configuration file. KiwiSSH will automatically create the necessary tables on startup.
+You'll be asked to provide the connection details to your PostgreSQL database in the `kiwissh.yaml` configuration file. KiwiSSH will automatically create the necessary tables on startup.
 
 ```yaml
 application_database:

@@ -3,7 +3,7 @@ import { ref, watch } from "vue"
 
 export type ThemeMode = "light" | "dark" | "system"
 
-const THEME_STORAGE_KEY = "downtown-theme"
+const THEME_STORAGE_KEY = "kiwissh-theme"
 
 export const useThemeStore = defineStore("theme", () => {
   // State

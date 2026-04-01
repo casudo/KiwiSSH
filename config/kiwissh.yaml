@@ -1,4 +1,4 @@
-### Project Downtown - Main Configuration
+### KiwiSSH - Main Configuration
 
 ## Application settings
 app:
@@ -16,7 +16,7 @@ app:
     cron: "0 2 * * *"
 
 ### Device groups configuration
-## TODO: Also allow passwords to be set via environment variables (e.g., DOWNTOWN_GROUP_<GROUP_NAME>_PASSWORD)
+## TODO: Also allow passwords to be set via environment variables (e.g., KIWISSH_GROUP_<GROUP_NAME>_PASSWORD)
 ## Priority for device configuration (default to most specific): app: -> groups: -> nodes:
 groups:
   customer-abc-switches:
@@ -76,13 +76,13 @@ git:
   #   branch: "main"
   #   push_after_commit: false
 
-### Downtown application database (PostgreSQL only)
-## This database stores Downtown-owned data (backup job logs, favorites, etc.)
+### KiwiSSH application database (PostgreSQL only)
+## This database stores KiwiSSH-owned data (backup job logs, favorites, etc.)
 ## The database itself and the user must already exist.
 ## The app will create the required tables automatically.
 application_database:
   host: "localhost"
   port: 5432
-  database: "downtown"
-  user: "downtown_user"
-  password: "downtown-user-password"
+  database: "kiwissh"
+  user: "kiwissh_user"
+  password: "kiwissh-user-password"

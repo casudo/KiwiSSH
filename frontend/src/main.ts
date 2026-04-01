@@ -7,7 +7,7 @@ import router from "./router"
 import "./style.css"
 
 function applyInitialTheme(): void {
-	const themeStorageKey = "downtown-theme"
+	const themeStorageKey = "kiwissh-theme"
 
 	try {
 		const storedTheme = localStorage.getItem(themeStorageKey)

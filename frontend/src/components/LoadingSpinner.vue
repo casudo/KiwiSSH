@@ -21,7 +21,7 @@ const sizeClasses: Record<Size, string> = {
   <div class="flex items-center justify-center">
     <svg
       :class="sizeClasses[props.size]"
-      class="animate-spin text-downtown-600 dark:text-downtown-400"
+      class="animate-spin text-kiwissh-600 dark:text-kiwissh-400"
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"

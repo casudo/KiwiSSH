@@ -5,17 +5,17 @@ const props = withDefaults(
   defineProps<{
     title: string
     value: number | string
-    color?: "downtown" | "green" | "red" | "yellow" | "gray" | "blue" | "purple" | "orange"
+    color?: "kiwissh" | "green" | "red" | "yellow" | "gray" | "blue" | "purple" | "orange"
     icon?: string | null
   }>(),
   {
-    color: "downtown",
+    color: "kiwissh",
     icon: null,
   }
 )
 
 const colorClasses: Record<string, string> = {
-  downtown: "text-downtown-600 dark:text-downtown-400",
+  kiwissh: "text-kiwissh-600 dark:text-kiwissh-400",
   green: "text-green-600 dark:text-green-400",
   red: "text-red-600 dark:text-red-400",
   yellow: "text-yellow-600 dark:text-yellow-400",
@@ -25,7 +25,7 @@ const colorClasses: Record<string, string> = {
   orange: "text-orange-600 dark:text-orange-400",
 }
 
-const textColorClass = computed(() => colorClasses[props.color] || colorClasses.downtown)
+const textColorClass = computed(() => colorClasses[props.color] || colorClasses.kiwissh)
 </script>
 
 <template>
