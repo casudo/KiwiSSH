@@ -50,6 +50,36 @@ class GitService:
                 ex,
             )
             return f"Backup: {device_name} at {timestamp}"
+
+    def _resolve_remote_target(self, group: str) -> tuple[str, str]:
+        """Resolve remote URL and branch with optional per-group overrides."""
+        remote_config = self.settings.git.remote
+        remote_url = remote_config.url if remote_config is not None else None
+        remote_branch = remote_config.branch.strip() if remote_config is not None else "main"
+
+        ### Checks over checks over checks over checks...
+        group_config = self.settings.groups.get(group)
+        if group_config is not None and group_config.git is not None and group_config.git.remote is not None:
+            group_remote = group_config.git.remote
+            if group_remote.url is not None:
+                remote_url = group_remote.url
+            if group_remote.branch is not None:
+                remote_branch = group_remote.branch
+
+        if remote_url is None:
+            raise ValueError(
+                f"No remote URL configured for group '{group}'. "
+                "Set git.remote.url or groups.<group>.git.remote.url"
+            )
+
+        try:
+            ### Fill in {group} placeholder in URL if present, otherwise return as-is
+            return (remote_url.format(group=group), remote_branch)
+        except KeyError as ex:
+            raise ValueError(
+                "Invalid placeholder in git.remote.url. Only {group} is supported."
+            ) from ex
+
     def _has_remote_target(self, group: str) -> bool:
         """Return True when a group can resolve to a global or per-group remote URL."""
         global_remote = self.settings.git.remote
