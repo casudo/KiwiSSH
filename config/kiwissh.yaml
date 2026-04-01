@@ -28,6 +28,11 @@ groups:
     retry: 2
     schedule:
       cron: "0 7 * * *" # Daily at 7 AM
+    ### Optional per-group remote override for multi-org setups:
+    # git:
+    #   remote:
+    #     url: "ssh://git@172.16.50.50:222/customer-abc/leaf-switches.git"
+    #     branch: "main"
 
   customer-abc-firewalls:
     username: "admin"
@@ -64,17 +69,17 @@ sources:
 #     username: "inventory_reader"
 #     password: "inventory-reader-password"
 
-# Git backup repository settings
+### Git backup repository settings
+### Local git storage is always active and stores one repository per group under local_path.
 git:
-  local_path: "./backups"
-  auto_commit: true
-  commit_message_template: "Backup: {device_name} at {timestamp}"
-  # Remote repository configuration (optional)
+  local_path: "/config/backups"
+  commit_message_template: "Backup: {group}/{device_name} at {timestamp}"
+  ### Default remote template used by groups without overrides. (optional)
+  ### URL can be optional if group-level overrides are used, but if remote.enabled is true, at least one URL must be provided either globally or at the group level.
   # remote:
-  #   enabled: false
-  #   url: "git@github.com:org/network-backups.git"
+  #   enabled: true
+  #   url: "git@github.com:<YOUR_ORGANIZATION_HERE>/{group}.git" # Keep {group} placeholder for dynamic repo names based on group
   #   branch: "main"
-  #   push_after_commit: false
 
 ### KiwiSSH application database (PostgreSQL only)
 ## This database stores KiwiSSH-owned data (backup job logs, favorites, etc.)

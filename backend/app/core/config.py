@@ -92,6 +92,35 @@ class AppConfig(BaseModel):
     schedule: ScheduleConfig = Field(default_factory=ScheduleConfig)
 
 
+class GroupGitRemoteConfig(BaseModel):
+    """Optional per-group override for remote git target."""
+    url: str | None = None
+    branch: str | None = None
+
+    @field_validator("url", mode="before")
+    @classmethod
+    def normalize_url(cls, url: str | None) -> str | None:
+        """Normalize optional URL value by trimming whitespace."""
+        if url is None:
+            return None
+        text = str(url).strip()
+        return text or None
+
+    @field_validator("branch", mode="before")
+    @classmethod
+    def normalize_branch(cls, branch: str | None) -> str | None:
+        """Normalize optional branch value by trimming whitespace."""
+        if branch is None:
+            return None
+        text = str(branch).strip()
+        return text or None
+
+
+class GroupGitConfig(BaseModel):
+    """Optional per-group git configuration overrides."""
+    remote: GroupGitRemoteConfig | None = None
+
+
 class GroupConfig(BaseModel):
     """Device group configuration."""
     username: str | None = None
@@ -101,6 +130,7 @@ class GroupConfig(BaseModel):
     timeout: int | None = Field(default=None, ge=1)
     retry: int | None = Field(default=None, ge=0)
     schedule: ScheduleConfig | None = None
+    git: GroupGitConfig | None = None
 
 
 class NodeConfig(BaseModel):
