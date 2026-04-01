@@ -142,7 +142,6 @@ class BackupService:
                 device.device_name,
                 config,
                 group=device.group,
-                message=f"Backup: {device.device_name}",
             )
 
             config_size = len(config.encode("utf-8"))

@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Load .env file early to ensure environment variables are available
+### Load .env file early to ensure environment variables are available
 load_dotenv()
 
 logger = logging.getLogger(__name__)
