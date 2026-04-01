@@ -342,6 +342,9 @@ class Settings(BaseSettings):
                 ### git
                 self.git = GitConfig(**file_content.get("git", {}))
 
+                ### Validate cross-section git remote requirements
+                self._validate_git_remote_configuration()
+
                 ### application_database
                 self.application_database = ApplicationDatabaseConfig(**file_content.get("application_database", {}))
 
@@ -373,6 +376,25 @@ class Settings(BaseSettings):
     def get_vendor_config(self, vendor_id: str) -> dict[str, Any] | None:
         """Get vendor-specific configuration by ID."""
         return self.vendors.get(vendor_id)
+
+    def _validate_git_remote_configuration(self) -> None:
+        """Validate global and group-level git remote URL requirements."""
+        if self.git.remote is not None:
+            return
+
+        invalid_groups = [
+            group_name
+            for group_name, group_cfg in self.groups.items()
+            if group_cfg.git is not None
+            and group_cfg.git.remote is not None
+            and group_cfg.git.remote.url is None
+        ] # If no URL is configured
+
+        if invalid_groups:
+            raise ValueError(
+                "groups.<group>.git.remote.url is required when no global git.remote.url is configured. "
+                f"Missing URL for groups: {', '.join(invalid_groups)}"
+            )
 
     def _build_database_url(self) -> str:
         """Build application database URL from PostgreSQL configuration.
