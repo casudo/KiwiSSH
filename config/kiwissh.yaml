@@ -79,7 +79,7 @@ git:
   # remote:
   #   enabled: true
   #   url: "git@github.com:<YOUR_ORGANIZATION_HERE>/{group}.git" # Keep {group} placeholder for dynamic repo names based on group
-  #   branch: "main"
+  #   branch: "main" # Optional, defaults to main
 
 ### KiwiSSH application database (PostgreSQL only)
 ## This database stores KiwiSSH-owned data (backup job logs, favorites, etc.)

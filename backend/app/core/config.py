@@ -95,7 +95,7 @@ class AppConfig(BaseModel):
 class GroupGitRemoteConfig(BaseModel):
     """Optional per-group override for remote git target."""
     url: str | None = None
-    branch: str | None = None
+    branch: str = "main"
 
     @field_validator("url", mode="before")
     @classmethod
@@ -108,12 +108,12 @@ class GroupGitRemoteConfig(BaseModel):
 
     @field_validator("branch", mode="before")
     @classmethod
-    def normalize_branch(cls, branch: str | None) -> str | None:
-        """Normalize optional branch value by trimming whitespace."""
+    def normalize_branch(cls, branch: str | None) -> str:
+        """Normalize branch value by trimming whitespace and defaulting to main."""
         if branch is None:
-            return None
+            return "main"
         text = str(branch).strip()
-        return text or None
+        return text or "main"
 
 
 class GroupGitConfig(BaseModel):
@@ -189,6 +189,15 @@ class GitRemoteConfig(BaseModel):
             return None
         text = str(url).strip()
         return text or None
+
+    @field_validator("branch", mode="before")
+    @classmethod
+    def normalize_branch(cls, branch: str | None) -> str:
+        """Normalize branch value by trimming whitespace and defaulting to main."""
+        if branch is None:
+            return "main"
+        text = str(branch).strip()
+        return text or "main"
 
     @model_validator(mode="after")
     def validate_remote_when_enabled(self) -> "GitRemoteConfig":
