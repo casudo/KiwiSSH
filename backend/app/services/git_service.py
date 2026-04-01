@@ -31,6 +31,25 @@ class GitService:
         """Get repo path for a specific group."""
         return self.backups_base_dir / group
 
+    def _render_commit_message(self, device_name: str, group: str) -> str:
+        """Render commit message from configured template with fallback."""
+        timestamp = get_utc_now().isoformat()
+        template = self.settings.git.commit_message_template
+
+        try:
+            ### Fill in template placeholders
+            return template.format(
+                device_name=device_name,
+                group=group,
+                timestamp=timestamp,
+            )
+        except (KeyError, ValueError) as ex:
+            logger.warning(
+                "Invalid git.commit_message_template '%s': %s. Falling back to default template.",
+                template,
+                ex,
+            )
+            return f"Backup: {device_name} at {timestamp}"
     def _ensure_repo(self, group: str) -> Repo:
         """
         Ensure git repository exists for group, create if needed.
@@ -107,12 +126,11 @@ class GitService:
             return ("", False) # TODO: Why do we need the hash here?
 
         ### Stage the file
-        repo.index.add([str(config_file)])
+        repo.index.add([config_file.name])
 
-        ### Create commit message if not provided
+        ### Create commit message
         if message is None:
-            timestamp = get_utc_now().isoformat()
-            message = f"Backup: {device_name} at {timestamp}"
+            message = self._render_commit_message(device_name=device_name, group=group)
 
         ### Commit
         actor = Actor("KiwiSSH Backup System", "backup@kiwissh.local")
