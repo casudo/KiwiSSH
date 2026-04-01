@@ -50,6 +50,17 @@ class GitService:
                 ex,
             )
             return f"Backup: {device_name} at {timestamp}"
+    def _has_remote_target(self, group: str) -> bool:
+        """Return True when a group can resolve to a global or per-group remote URL."""
+        global_remote = self.settings.git.remote
+        if global_remote is not None and global_remote.url is not None:
+            return True
+
+        group_config = self.settings.groups.get(group)
+        if group_config is None or group_config.git is None or group_config.git.remote is None:
+            return False
+
+        return group_config.git.remote.url is not None
     def _ensure_repo(self, group: str) -> Repo:
         """
         Ensure git repository exists for group, create if needed.
@@ -135,6 +146,15 @@ class GitService:
         ### Commit
         actor = Actor("KiwiSSH Backup System", "backup@kiwissh.local")
         commit = repo.index.commit(message, author=actor, committer=actor)
+
+        if self._has_remote_target(group):
+            push_ok = await self.push_to_remote(group=group)
+            if not push_ok:
+                logger.warning(
+                    "Local commit created for %s but push to remote failed (group: %s)",
+                    device_name,
+                    group,
+                )
 
         return (commit.hexsha, True)
 
