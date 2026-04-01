@@ -3,7 +3,7 @@
 import os
 import logging
 from functools import lru_cache
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 from urllib.parse import quote_plus
 from zoneinfo import ZoneInfo
@@ -162,16 +162,24 @@ class SourcesConfig(BaseModel):
     @field_validator("file", mode="before")
     @classmethod
     def validate_file_source_path(cls, value: str | None) -> str | None:
-        """Ensure sources.file is absolute when configured."""
+        """Ensure sources.file is absolute when configured (Windows or POSIX)."""
         if value is None:
             return None
 
         raw_path = str(value).strip()
-        path = Path(raw_path).expanduser()
-        if not path.is_absolute():
+        expanded_path = os.path.expanduser(raw_path)
+
+        native_path = Path(expanded_path)
+        is_native_absolute = native_path.is_absolute()
+        is_posix_absolute = PurePosixPath(expanded_path).is_absolute()
+
+        if not is_native_absolute and not is_posix_absolute:
             raise ValueError("sources.file must be an absolute path")
 
-        return str(path)
+        if is_native_absolute:
+            return str(native_path)
+
+        return PurePosixPath(expanded_path).as_posix()
 
 
 ### Git Configuration
@@ -215,15 +223,24 @@ class GitConfig(BaseModel):
     @field_validator("local_path", mode="before")
     @classmethod
     def validate_local_path(cls, local_path: str) -> str:
-        """Ensure git.local_path is configured and absolute."""
+        """Ensure git.local_path is configured and absolute (Windows or POSIX)."""
         if local_path is None or not str(local_path).strip():
             raise ValueError("git.local_path must be a non-empty path")
 
-        path = Path(str(local_path).strip()).expanduser()
-        if not path.is_absolute():
+        raw_path = str(local_path).strip()
+        expanded_path = os.path.expanduser(raw_path)
+
+        native_path = Path(expanded_path)
+        is_native_absolute = native_path.is_absolute()
+        is_posix_absolute = PurePosixPath(expanded_path).is_absolute()
+
+        if not is_native_absolute and not is_posix_absolute:
             raise ValueError("git.local_path must be an absolute path")
 
-        return str(path)
+        if is_native_absolute:
+            return str(native_path)
+
+        return PurePosixPath(expanded_path).as_posix()
 
 
 class ApplicationDatabaseConfig(BaseModel):
