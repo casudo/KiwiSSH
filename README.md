@@ -24,12 +24,17 @@ PLACEHOLDER
   - [Docker](#docker)
 - [Configuration](#configuration)
   - [Environment Variables](#environment-variables)
-  - [Main YAML Config File](#main-yaml-config-file)
-    - [Sources](#sources)
+  - [kiwissh.yaml](#kiwisshyaml)
+    - [app](#app)
+    - [application\_database](#application_database)
+    - [sources](#sources)
       - [File](#file)
       - [PostgreSQL](#postgresql)
-    - [Remote Git Locations](#remote-git-locations)
-      - [Remote Repository Setup](#remote-repository-setup)
+    - [git](#git)
+    - [groups](#groups)
+    - [nodes](#nodes)
+- [FAQ](#faq)
+  - [How do I setup a remote git location?](#how-do-i-setup-a-remote-git-location)
   - [Vendor folder](#vendor-folder)
   - [SSH Profiles YAML file](#ssh-profiles-yaml-file)
 - [Future Goals](#future-goals)
@@ -81,70 +86,110 @@ See the example [`backend/.env.example`](backend/.env.example) file. Either rena
 
 | Variable Name | Description | Required | Default Value |
 | ------------- | ----------- | -------- | ------------- |
-| `KIWISSH_LOCAL_TEST_MODE` | If set to true, the application will run in local test mode, which enforces certain config values for easier local testing and development. | **No** | false |
-| `TZ` | Timezone for the application. This is used for timestamps in backup job logs and Git commit messages. | **No** | UTC |
+| `KIWISSH_LOCAL_TEST_MODE` | If set to true, the application will run in local test mode, which enforces certain config values for easier local testing and development. | **No** | `false` |
+| `TZ` | Timezone for the application. This is used for timestamps in backup job logs and Git commit messages. | **No** | `UTC` |
 
-## Main YAML Config File
+## kiwissh.yaml
 
-> /config/kiwissh.yaml
+> [/config/kiwissh.yaml](config/kiwissh.yaml)
 
-The main configuration file [kiwissh.yaml](config/kiwissh.yaml) should explain itself with the comments. For a more detailed understanding of what each segment does, see the headings below.
+The file should be self-explanatory. For a more detailed understanding of what each segment does, see the headings below.
 
 > [IMPORTANT]
 > Changes to the `kiwissh.yaml` file will require a restart of the backend application to take effect.
 
-### Sources
+### app
 
-> Where to load the devices to backup from.
+Full available options:
 
-Whether you've configured the device source as file or PostgreSQL, the expected format for the device entries should be:
+| Key | Description | Required | Default Value |
+| --- | ----------- | -------- | ------------- |
+| `app.debug` | If set to true, the application will run in debug mode, which enables more verbose logging | No | `false` |
+| `app.threads` | The maximum number of concurrent SSH sessions for backups. | No | `20` |
+| `app.timeout` | The global SSH timeout in seconds. This can be overridden for specific groups or nodes. | No | `30` |
+| `app.retry` | The global SSH retry count, which defines how many additional attempts should be made after the first failed attempt. This can also be overridden for specific groups or nodes. | No | `3` |
+| `app.api.host` | The host on which the API server will run. | No | `127.0.0.1` |
+| `app.api.port` | The port on which the API server will run. | No | `8000` |
+| `app.api.cors_origins` | A list of allowed CORS origins for the API server. | No | `["http://localhost:5173", "http://127.0.0.1:5173"]` |
+| `app.schedule.cron` | The cron expression for the global backup schedule. | No | `0 2 * * *` |
+| `app.schedule.TZ` | The timezone for the backup schedule. | No | `TZ environment variable or UTC` |
 
-| group  | device_name | ip_address  | enabled |
-| ------ | ----------- | ----------- | ------- |
-| string | string      | string (IP) | boolean |
+### application_database
+
+The `application_database` segment is used to configure the connection to the PostgreSQL database where KiwiSSH will store its application data (e.g. backup job logs, favorite devices, etc.). This database is required for KiwiSSH to function properly.
+
+> [!IMPORTANT]
+> Make sure that the database exists and that the provided user has the necessary permissions to create tables and perform operations on the database. KiwiSSH will automatically create the required tables on startup.
+
+| Key | Description | Required | Default Value |
+| --- | ----------- | -------- | ------------- |
+| `application_database.host` | The host of the PostgreSQL database. | **Yes** | - |
+| `application_database.port` | The port of the PostgreSQL database. | **Yes** | - |
+| `application_database.database` | The name of the PostgreSQL database. | **Yes** | - |
+| `application_database.username` | The username for the PostgreSQL database. | **Yes** | - |
+| `application_database.password` | The password for the PostgreSQL database. | **Yes** | - |
+
+### sources
+
+Configure where KiwiSSH load the devices to backup from. You can choose between loading the devices from a CSV file or from a PostgreSQL database.
+
+> [!IMPORTANT]
+> At least one source must be configured. The following columns are required in the device source: `group`, `device_name`, `ip_address`, `enabled`.
 
 #### File
 
-```yaml
-sources:
-  file: "/config/sources/devices.csv"
-```
-
-`sources.file` must be an absolute path.
+| Key | Description | Required | Default Value |
+| --- | ----------- | -------- | ------------- |
+| `sources.file` | The absolute path to the CSV file containing the device entries. | **Yes** | - |
 
 The devices will be loaded from the specified CSV file. The headers must be seperated by commas like this:
 
 ```csv
 group,device_name,ip_address,enabled
-customer-aaa,router-core-01,10.30.54.1,true
-customer-aaa,router-core-02,10.30.54.2,,true
-abc-company,switch-dist-01,172.16.28.50,true
-abc-company,switch-access-01,172.17.2.34,true
-it-department,firewall-01,192.168.1.254,true
+prod-firewalls,firewall-prod-01,10.50.240.100,true
+prod-firewalls,firewall-prod-02,10.50.240.101,true
+test-firewalls,firewall-test-01,10.60.194.10,true
+test-firewalls,firewall-test-02,10.60.194.11,true
+spine-switches,dc-spine-01,172.16.37.2,true
+spine-switches,dc-spine-02,172.16.37.3,true
+leaf-switches,dc-leaf-01,172.16.37.4,true
+leaf-switches,dc-leaf-02,172.16.37.5,true
+leaf-switches,dc-leaf-03,172.16.37.5,true
+leaf-switches,dc-leaf-04,172.16.37.6,true
+dev-rack,test-c8200-1n-4t,192.168.5.1,true
+dev-rack,marketing-catalyst-24p,192.168.5.2,true
+dev-rack,sales-catalyst-24p,192.168.5.3,false
 ```
 
 #### PostgreSQL
 
-```yaml
-postgres:
-    host: "10.11.12.13"
-    port: 5432
-    database: "existing_db"
-    table: "prod_devices"
-    username: "user_readonly"
-    password: "supersecret"
-```
-
-Make sure that the specified PostgreSQL database and table exist and that the provided user has read access to it.
-
-### Remote Git Locations
-
-> [!NOTE]
-> Local git storage is always active to keep track of configuration changes and enable the configuration diff feature.
-
-KiwiSSH creates one git repository per device group in the directory configured via `git.local_path`. To push these commits to a remote repository, you can configure a remote repository via the `git.remote` block. You can also set per-group overrides for the remote repository URL and branch if different groups should push to different repositories or branches.
+| Key | Description | Required | Default Value |
+| --- | ----------- | -------- | ------------- |
+| `sources.postgres.host` | The host of the PostgreSQL database containing the device entries. | **Yes** | - |
+| `sources.postgres.port` | The port of the PostgreSQL database containing the device entries. | No | `5432` |
+| `sources.postgres.database` | The name of the PostgreSQL database containing the device entries. | **Yes** | - |
+| `sources.postgres.table` | The name of the PostgreSQL table containing the device entries. | **Yes** | - |
+| `sources.postgres.username` | The username for the PostgreSQL database containing the device entries. | **Yes** | - |
+| `sources.postgres.password` | The password for the PostgreSQL database containing the device entries. | **Yes** | - |
 
 > [!IMPORTANT]
+> Make sure that the database exists and that the provided user has the necessary permissions to read from the database.
+
+### git
+
+KiwiSSH will always store the device configurations in local git repositories to provide diff view, history and download options. You can optionally set a remote git location to push the commits (the device config) to.
+
+> [!CRITICAL]
+> DO NOT delete the "backups" folder ever unless you want to lose all your local git repositories and their history.
+
+| Key | Description | Required | Default Value |
+| --- | ----------- | -------- | ------------- |
+| `git.local_path` | The local path where the git repositories for the device groups will be stored. | No | `/config/backups` |
+| `git.commit_message_template` | The template for the git commit messages. Available placeholders: `{group}`, `{device_name}`, `{timestamp}`. | No | `"Backup: {group}/{device_name} at {timestamp}"` |
+| `git.remote.url` | The global remote git repository URL. Available placeholders: `{group}`. This can be overridden for specific groups. | No | - |
+| `git.remote.branch` | The global remote git branch to push to. This can be overridden for specific groups. | No | `main` |
+
+> [!TIP]
 > > When do I choose the global `git.remote` vs per-group overrides (`groups.<group>.git.remote`)?
 >
 > **Global:** You should use the global `git.remote` configuration if all your groups should push to the same remote organization/repository structure (for example one repository per group **under the same** organization on GitHub). In this case, you can use the `{group}` placeholder in the global `git.remote.url` to dynamically generate the remote URL for each group based on its name.
@@ -157,31 +202,58 @@ In the next example, the global `git.remote.url` is configured with a placeholde
 
 ```yaml
 git:
-  local_path: "/config/backups"
-  commit_message_template: "Backup: {group}/{device_name} at {timestamp}"
+  local_path: "/config/prod/kiwissh/backups"
   remote:
-    url: "git@github.com:<YOUR_ORGANIZATION_HERE>/kiwissh-{group}.git"
+    url: "ssh://git@github.com:<YOUR_ORGANIZATION_HERE>/kiwissh-{group}.git"
 
 groups:
-  customer-development-firewalls:
+  development-firewalls:
     username: "admin"
     password: "password"
-    vendor: "forti_os"
+    vendor: "fortinet_fortigate"
     ssh_profile: "modern"
     git:
       remote:
-        url: "git@github.com:dev_orga/development-firewalls.git"
+        url: "ssh://git@github.com:dev_orga/development-firewalls.git"
         branch: "dev"
 ```
 
-Available placeholders:
+### groups
 
-- `commit_message_template`: `{group}`, `{device_name}`, `{timestamp}`
-- `git.remote.url`: `{group}`
+| Key | Description | Required | Default Value |
+| --- | ----------- | -------- | ------------- |
+| `groups.<group>.username` | The username for SSH authentication for devices in this group. | **Yes** | - |
+| `groups.<group>.password` | The password for SSH authentication for devices in this group. | **Yes** | - |
+| `groups.<group>.ssh_profile` | The SSH profile to use for devices in this group. This is used to determine the SSH options to use when connecting to the devices. | **Yes** | - |
+| `groups.<group>.vendor` | The vendor of the devices in this group. This is used to determine the CLI commands to run for fetching the configuration. | **Yes** | - |
+| `groups.<group>.timeout` | The SSH timeout in seconds for devices in this group. This overrides the global SSH timeout. | No | Global `app.timeout` |
+| `groups.<group>.retry` | The SSH retry count for devices in this group. This overrides the global SSH retry count. | No | Global `app.retry` |
+| `groups.<group>.schedule.cron` | The cron expression for the backup schedule for devices in this group. This overrides the global backup schedule. | No | Global `app.schedule.cron` |
+| `groups.<group>.git.remote.url` | The remote git repository URL for this group. This overrides the global `git.remote.url`. | No | Global `git.remote.url` or if set globally |
+| `groups.<group>.git.remote.branch` | The remote git branch to push to for this group. This overrides the global `git.remote.branch`. | No | Global `git.remote.branch` if set globally |
 
-#### Remote Repository Setup
+### nodes
 
-KiwiSSH uses pushed git commits via SSH to their remote repository. To set up the remote repositories (in general), follow these steps: 
+> [!IMPORTANT]
+> Group cannot be overridden on node level.
+
+| Key | Description | Required | Default Value |
+| --- | ----------- | -------- | ------------- |
+| `nodes.<device_name>.username` | The username for SSH authentication for this device. | No | `groups.<group>.username` |
+| `nodes.<device_name>.password` | The password for SSH authentication for this device. | No | `groups.<group>.password` |
+| `nodes.<device_name>.ssh_profile` | The SSH profile to use for this device. This is used to determine the SSH options to use when connecting to the device. | No | `groups.<group>.ssh_profile` |
+| `nodes.<device_name>.vendor` | The vendor of this device. This is used to determine the CLI commands to run for fetching the configuration. | No | `groups.<group>.vendor` |
+| `nodes.<device_name>.timeout` | The SSH timeout in seconds for this device. This overrides the group and global SSH timeout. | No | `groups.<group>.timeout` or Global `app.timeout` |
+| `nodes.<device_name>.retry` | The SSH retry count for this device. This overrides the group and global SSH retry count. | No | `groups.<group>.retry` or Global `app.retry` |
+| `nodes.<device_name>.schedule.cron` | The cron expression for the backup schedule for this device. This overrides the group and global backup schedule. | No | `groups.<group>.schedule.cron` or Global `app.schedule.cron` |
+
+# FAQ
+
+Frequently Asked Questions about the configuration of KiwiSSH.
+
+## How do I setup a remote git location?
+
+KiwiSSH can push local git commits via SSH to their remote repository. To set up the remote repositories (in general), follow these steps:
 
 1. Create one remote repository per group.
    - If all groups live under one org, use one global template in `git.remote.url` with `{group}`.
@@ -193,6 +265,16 @@ KiwiSSH uses pushed git commits via SSH to their remote repository. To set up th
 
 > [!TIP]
 > Since KiwiSSH will use the local OpenSSH client to push commits to the remote repository, the SSH config file (`~/.ssh/config` or `C:\Users\user\.ssh\config`) can be used to manage SSH connection details for the Git provider (e.g. GitHub, GitLab, etc.) and set up things like SSH key usage, custom ports, etc.
+>
+> Example: `groups.<group>.git.remote.url: "ssh://git@gitea/customer-aaa/prod-firewalls.git"`
+> Config in `~/.ssh/config`:
+> ```
+> Host gitea
+>    HostName 192.168.24.4
+>    Port 222
+>    User git
+>    IdentityFile ~/.ssh/kiwissh-client
+> ```
 
 ## Vendor folder
 
