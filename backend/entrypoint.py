@@ -84,7 +84,7 @@ def validate_configuration() -> None:
             errors.append("application_database.port must be between 1 and 65535")
         if not str(app_db.database).strip():
             errors.append("application_database.database is required")
-        if not str(app_db.user).strip():
+        if not str(app_db.username).strip():
             errors.append("application_database.user is required")
         if not str(app_db.password).strip():
             errors.append("application_database.password is required")

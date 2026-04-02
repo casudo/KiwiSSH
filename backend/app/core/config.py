@@ -217,7 +217,7 @@ class GitRemoteConfig(BaseModel):
 class GitConfig(BaseModel):
     """Git repository settings."""
     local_path: str = "/config/backups"
-    commit_message_template: str = "Backup: {device_name} at {timestamp}"
+    commit_message_template: str = "Backup: {group}/{device_name} at {timestamp}"
     remote: GitRemoteConfig | None = None
 
     @field_validator("local_path", mode="before")
@@ -249,7 +249,7 @@ class ApplicationDatabaseConfig(BaseModel):
     host: str
     port: int
     database: str
-    user: str
+    username: str
     password: str
 
 
@@ -406,7 +406,7 @@ class Settings(BaseSettings):
             host=self.application_database.host,
             port=self.application_database.port,
             database=self.application_database.database,
-            user=self.application_database.user,
+            user=self.application_database.username,
             password=self.application_database.password,
         )
 

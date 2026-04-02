@@ -26,7 +26,7 @@ def init_database(settings: Settings) -> None:
         app_db.database,
         app_db.host,
         app_db.port,
-        app_db.user,
+        app_db.username,
     )
 
     engine = create_engine(
