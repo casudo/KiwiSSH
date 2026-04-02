@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, computed, ref } from "vue"
 import { useDevicesStore } from "@/stores/devices"
-import { groupApi } from "@/api/groups"
+import { groupApi, type GroupWithConfig } from "@/api/groups"
 import LoadingSpinner from "@/components/LoadingSpinner.vue"
 
 type LayoutType = "card" | "list" | "table"
@@ -20,18 +20,20 @@ interface GroupInfo {
   name: string
   count: number
   devices: string[]
+  remoteUrl: string | null
 }
 
-const configuredGroups = ref<string[]>([])
+const configuredGroups = ref<GroupWithConfig[]>([])
 
 const allGroups = computed((): GroupInfo[] => {
   // If we have configured groups from API, use only those
   if (configuredGroups.value.length > 0) {
     return configuredGroups.value
       .map(group => ({
-        name: group,
-        count: (devicesStore.devicesByGroup[group] || []).length,
-        devices: (devicesStore.devicesByGroup[group] || []).map(d => d.device_name),
+        name: group.name,
+        count: (devicesStore.devicesByGroup[group.name] || []).length,
+        devices: (devicesStore.devicesByGroup[group.name] || []).map(d => d.device_name),
+        remoteUrl: group.git_remote_url,
       }))
       .sort((a, b) => b.count - a.count)
   }
@@ -41,8 +43,16 @@ const allGroups = computed((): GroupInfo[] => {
     name: group,
     count: (devicesStore.devicesByGroup[group] || []).length,
     devices: (devicesStore.devicesByGroup[group] || []).map(d => d.device_name),
+    remoteUrl: null,
   }))
   return groups.sort((a, b) => b.count - a.count)
+})
+
+const selectedGroupInfo = computed((): GroupInfo | null => {
+  if (!selectedGroup.value) {
+    return null
+  }
+  return allGroups.value.find(group => group.name === selectedGroup.value) || null
 })
 
 const filteredGroups = computed((): GroupInfo[] => {
@@ -88,7 +98,7 @@ onMounted(async () => {
     }
 
     // Fetch configured groups from API
-    configuredGroups.value = await groupApi.getAll()
+    configuredGroups.value = await groupApi.getAllWithConfig()
 
     // Load layout preference from localStorage
     const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY) as LayoutType | null
@@ -209,7 +219,18 @@ onMounted(async () => {
           </div>
 
           <div class="mt-4">
-            <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mb-2">Git Repository:</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mb-2">Remote Git Repository:</p>
+            <p
+              v-if="group.remoteUrl"
+              class="text-sm font-mono text-gray-600 dark:text-gray-400 break-all"
+            >
+              {{ group.remoteUrl }}
+            </p>
+            <p v-else class="text-sm text-gray-500 dark:text-gray-400">Not configured</p>
+          </div>
+
+          <div class="mt-3">
+            <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mb-2">Local Repository:</p>
             <p class="text-sm font-mono text-gray-600 dark:text-gray-400">backups/{{ group.name }}/</p>
           </div>
 
@@ -257,7 +278,7 @@ onMounted(async () => {
           <div class="w-full grid grid-cols-[2fr_1fr_2fr] gap-4 px-6 py-3 text-sm">
             <div class="font-semibold text-gray-700 dark:text-gray-300">Group</div>
             <div class="font-semibold text-gray-700 dark:text-gray-300 text-center">Device Count</div>
-            <div class="font-semibold text-gray-700 dark:text-gray-300">Repository</div>
+            <div class="font-semibold text-gray-700 dark:text-gray-300">Remote Repository</div>
           </div>
         </div>
         <!-- Group rows -->
@@ -270,7 +291,9 @@ onMounted(async () => {
           <div class="w-full grid grid-cols-[2fr_1fr_2fr] gap-4 px-6 py-3 text-sm">
             <div class="font-medium text-gray-900 dark:text-white truncate">{{ group.name }}</div>
             <div class="text-center text-gray-600 dark:text-gray-400">{{ group.count }}</div>
-            <div class="text-gray-600 dark:text-gray-400 text-xs font-mono">backups/{{ group.name }}/</div>
+            <div class="text-gray-600 dark:text-gray-400 text-xs font-mono truncate">
+              {{ group.remoteUrl || "Not configured" }}
+            </div>
           </div>
         </div>
       </div>
@@ -323,7 +346,17 @@ onMounted(async () => {
             <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Group Info</h3>
             <div class="space-y-2 text-sm">
               <div>
-                <span class="text-gray-600 dark:text-gray-400">Repository:</span>
+                <span class="text-gray-600 dark:text-gray-400">Remote Repository:</span>
+                <p
+                  v-if="selectedGroupInfo?.remoteUrl"
+                  class="font-mono text-gray-900 dark:text-gray-100 text-xs mt-1 break-all"
+                >
+                  {{ selectedGroupInfo.remoteUrl }}
+                </p>
+                <p v-else class="text-gray-500 dark:text-gray-400 text-xs mt-1">Not configured</p>
+              </div>
+              <div>
+                <span class="text-gray-600 dark:text-gray-400">Local Repository:</span>
                 <p class="font-mono text-gray-900 dark:text-gray-100 text-xs mt-1">backups/{{ selectedGroup }}/</p>
               </div>
               <div>
