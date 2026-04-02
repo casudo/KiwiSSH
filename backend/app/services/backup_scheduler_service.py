@@ -68,6 +68,9 @@ class BackupSchedulerService:
         Returns:
             True if the device has a schedule with a cron expression, False otherwise
         """
+        if not device.enabled:
+            return False
+
         schedule = self.get_device_schedule(device)
         return schedule is not None and schedule.cron is not None
 
@@ -118,6 +121,13 @@ class BackupSchedulerService:
             ### Schedule backups for all devices with enabled schedules
             scheduled_count = 0
             for device in devices:
+                if not device.enabled:
+                    logger.debug(
+                        "Skipping scheduler for disabled device: %s",
+                        device.device_name,
+                    )
+                    continue
+
                 schedule = self.get_device_schedule(device)
                 if schedule and schedule.cron:
                     try:
