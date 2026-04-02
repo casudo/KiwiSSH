@@ -118,7 +118,32 @@ class GroupGitRemoteConfig(BaseModel):
 
 class GroupGitConfig(BaseModel):
     """Optional per-group git configuration overrides."""
+    commit_message_template: str | None = None
     remote: GroupGitRemoteConfig | None = None
+
+    @field_validator("commit_message_template", mode="before")
+    @classmethod
+    def normalize_commit_message_template(cls, template: str | None) -> str | None:
+        """Normalize optional commit message template value by trimming whitespace."""
+        if template is None:
+            return None
+        text = str(template).strip()
+        return text or None
+
+
+class NodeGitConfig(BaseModel):
+    """Optional per-node git configuration overrides."""
+    commit_message_template: str | None = None
+    # TODO: Maybe add remote URL override in the future?
+
+    @field_validator("commit_message_template", mode="before")
+    @classmethod
+    def normalize_commit_message_template(cls, template: str | None) -> str | None:
+        """Normalize optional commit message template value by trimming whitespace."""
+        if template is None:
+            return None
+        text = str(template).strip()
+        return text or None
 
 
 class GroupConfig(BaseModel):
@@ -142,6 +167,7 @@ class NodeConfig(BaseModel):
     timeout: int | None = Field(default=None, ge=1)
     retry: int | None = Field(default=None, ge=0)
     schedule: ScheduleConfig | None = None
+    git: NodeGitConfig | None = None
 
 
 class PostgresSourceConfig(BaseModel):

@@ -55,7 +55,7 @@ groups:
     vendor: "cisco_ios"
 
 ### Per-node overrides
-## Nodes can override: ssh_profile, vendor, timeout, retry, username, password, schedule
+## Nodes can override: ssh_profile, vendor, timeout, retry, username, password, schedule, git.commit_message_template
 ## Group CANNOT be overridden - change it in the source instead
 ## Remove this section if no overrides needed
 nodes:

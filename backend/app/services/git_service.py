@@ -40,7 +40,7 @@ class GitService:
     def _render_commit_message(self, device_name: str, group: str) -> str:
         """Render commit message from configured template with fallback."""
         timestamp = get_utc_now().isoformat()
-        template = self.settings.git.commit_message_template
+        template = self._resolve_commit_message_template(device_name=device_name, group=group)
 
         try:
             ### Fill in template placeholders
@@ -56,6 +56,26 @@ class GitService:
                 ex,
             )
             return f"Backup: {device_name} at {timestamp}"
+
+    def _resolve_commit_message_template(self, device_name: str, group: str) -> str:
+        """Resolve commit message template with priority: global < group < node."""
+        template = self.settings.git.commit_message_template
+
+        ### Check for group overrde
+        group_config = self.settings.groups.get(group)
+        if group_config is not None and group_config.git is not None:
+            group_template = group_config.git.commit_message_template
+            if group_template is not None:
+                template = group_template
+
+        ### Check for node override
+        node_config = self.settings.nodes.get(device_name)
+        if node_config is not None and node_config.git is not None:
+            node_template = node_config.git.commit_message_template
+            if node_template is not None:
+                template = node_template
+
+        return template
 
     def _resolve_remote_target(self, group: str) -> tuple[str, str]:
         """Resolve remote URL and branch with optional per-group overrides."""

@@ -185,7 +185,7 @@ KiwiSSH will always store the device configurations in local git repositories to
 | Key | Description | Required | Default Value |
 | --- | ----------- | -------- | ------------- |
 | `git.local_path` | The local path where the git repositories for the device groups will be stored. | No | `/config/backups` |
-| `git.commit_message_template` | The template for the git commit messages. Available placeholders: `{group}`, `{device_name}`, `{timestamp}`. | No | `"Backup: {group}/{device_name} at {timestamp}"` |
+| `git.commit_message_template` | The global template for the git commit messages. Available placeholders: `{group}`, `{device_name}`, `{timestamp}`. | No | `"Backup: {group}/{device_name} at {timestamp}"` |
 | `git.remote.url` | The global remote git repository URL. Available placeholders: `{group}`. This can be overridden for specific groups. | No | - |
 | `git.remote.branch` | The global remote git branch to push to. This can be overridden for specific groups. | No | `main` |
 
@@ -229,6 +229,7 @@ groups:
 | `groups.<group>.timeout` | The SSH timeout in seconds for devices in this group. This overrides the global SSH timeout. | No | Global `app.timeout` |
 | `groups.<group>.retry` | The SSH retry count for devices in this group. This overrides the global SSH retry count. | No | Global `app.retry` |
 | `groups.<group>.schedule.cron` | The cron expression for the backup schedule for devices in this group. This overrides the global backup schedule. | No | Global `app.schedule.cron` |
+| `groups.<group>.git.commit_message_template` | The git commit message template for this group. This overrides global `git.commit_message_template`. | No | Global `git.commit_message_template` |
 | `groups.<group>.git.remote.url` | The remote git repository URL for this group. This overrides the global `git.remote.url`. | No | Global `git.remote.url` or if set globally |
 | `groups.<group>.git.remote.branch` | The remote git branch to push to for this group. This overrides the global `git.remote.branch`. | No | Global `git.remote.branch` if set globally |
 
@@ -246,6 +247,7 @@ groups:
 | `nodes.<device_name>.timeout` | The SSH timeout in seconds for this device. This overrides the group and global SSH timeout. | No | `groups.<group>.timeout` or Global `app.timeout` |
 | `nodes.<device_name>.retry` | The SSH retry count for this device. This overrides the group and global SSH retry count. | No | `groups.<group>.retry` or Global `app.retry` |
 | `nodes.<device_name>.schedule.cron` | The cron expression for the backup schedule for this device. This overrides the group and global backup schedule. | No | `groups.<group>.schedule.cron` or Global `app.schedule.cron` |
+| `nodes.<device_name>.git.commit_message_template` | The git commit message template for this device. This overrides group and global git commit templates. | No | `groups.<group>.git.commit_message_template` or global `git.commit_message_template` |
 
 # FAQ
 
