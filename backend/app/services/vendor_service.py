@@ -49,6 +49,22 @@ class VendorService:
             "post_backup": commands.get("post_backup", []),
         }
 
+    def get_session_parameters(self, vendor_id: str) -> dict[str, Any]:
+        """
+        Get session parameters for a vendor.
+
+        Args:
+            vendor_id: Vendor identifier
+
+        Returns:
+            Session parameter dictionary
+        """
+        vendor = self.get_vendor(vendor_id)
+        if not vendor:
+            raise ValueError(f"Unknown vendor '{vendor_id}'")
+
+        return vendor.get("session", {})
+    
     def get_processing_rules(self, vendor_id: str) -> dict[str, Any]:
         """
         Get configuration processing rules for a vendor.
