@@ -118,6 +118,28 @@ class SSHService:
 
         ### Return only the cleaned command body for storage and post-processing.
         return "\n".join(lines).strip()
+
+    async def _execute_shell_command(
+        self,
+        process: asyncssh.SSHClientProcess,
+        command: str,
+        timeout: int,
+        wait_for_prompt: bool,
+    ) -> str:
+        """Execute a single command in an interactive shell session."""
+        ### Send the command to the shell
+        process.stdin.write(f"{command}\n")
+
+        if not wait_for_prompt:
+            await asyncio.sleep(0.1)
+            return ""
+
+        ### Wait until shell responds with a prompt again (shell is ready again)
+        raw = await self._read_until_patterns(process.stdout, GENERIC_PROMPT_PATTERNS, timeout)
+
+        ### Return normalized command output
+        return self._sanitize_command_output(raw, command)
+
     async def _run_command_phase(
         self,
         process: asyncssh.SSHClientProcess,
