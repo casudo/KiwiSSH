@@ -86,6 +86,38 @@ class SSHService:
 
             ### Append the new chunk to the buffer and continue checking for patterns
             buffer += chunk
+
+    @staticmethod
+    def _sanitize_command_output(
+        raw_output: str,
+        command: str,
+    ) -> str:
+        """Normalize interactive shell output and strip prompt/command echo."""
+        ### Strip terminal control sequences and normalize line endings/backspaces.
+        text = ANSI_ESCAPE_RE.sub("", raw_output)
+        text = text.replace("\r\n", "\n").replace("\r", "\n").replace("\x08", "")
+
+        ### Process text as lines so we can remove common shell noise deterministically.
+        lines = text.split("\n")
+
+        ### Drop leading blank lines before the command output starts.
+        while lines and not lines[0].strip():
+            lines.pop(0)
+
+        ### Remove echoed command if it matches that first line when present.
+        if lines and lines[0].strip() == command.strip():
+            lines.pop(0)
+
+        ### Trim trailing blank lines and shell prompt lines from the output tail.
+        while lines and not lines[-1].strip():
+            lines.pop()
+
+        ### Remove generic prompt lines from the end of the output.
+        while lines and GENERIC_PROMPT_RE.search(lines[-1]):
+            lines.pop()
+
+        ### Return only the cleaned command body for storage and post-processing.
+        return "\n".join(lines).strip()
     async def _run_command_phase(
         self,
         process: asyncssh.SSHClientProcess,
