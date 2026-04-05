@@ -382,7 +382,7 @@ You can create your own SSH profile by adding a new entry to the `ssh_profiles.y
 - Checks for device source: No duplicate hostnames, valid IPs, ... (What if multiple groups hold the same IP address range?)
 - SSH Key pair support instead of just passwords
 - Override SSH port (Probably better placed in groups/nodes than SSH profiles?)
-- Update "Configuration Diff" to not just highlight the affected line (green/red) but also the actual characters which were added/removed (brighter green/red) for better readability
+
 
 **Mid-term:**
 
@@ -395,7 +395,6 @@ You can create your own SSH profile by adding a new entry to the `ssh_profiles.y
 - Implement backup job log rotation and retention policies (e.g. delete logs if line >10000 or older than 90 days)
 - Add visual popup when opening JobView.vue for the first initial load takes longer than 3 seconds to inform the user that the page is still loading and to prevent them from thinking the UI is frozen
 - Move function-level imports to top-level imports to comply with PEP8
-- Configuration Diff should show the actual line number of the config file
 - Move config validation from `entrypoint.py` to `@field_validator` or `@model_validator` in the Pydantic models in `config.py`. These get directly called when the config is loaded via `get_settings()`. This is the first and fastest way to validate the config. Maybe the entrypoint file is obsolite after that or can be simplified to just validate environment variables. `entrypoint.py` is still useful to check for non-empty fields.
 - Pentests
 - Rework Pydantic models (required vs optional fields, default values, validators, etc.)
@@ -418,6 +417,8 @@ You can create your own SSH profile by adding a new entry to the `ssh_profiles.y
 - Visual diagram of the architecture and how the different components interact with each other (e.g., config loading, backup execution flow, etc.)
 - As part of renaming change the theme colors to green-ish
 - Swagger API documentation on GitHub Pages
+- Allow group passwords to bet set via TZ or other input
+- Remove "comment" mode for backup commands and just append the output (and commend used) of multiple backup commands to the same file? Involves removing the echoed command strip
 
 ---
 
