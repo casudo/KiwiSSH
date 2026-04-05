@@ -94,39 +94,48 @@ class SSHService:
         username: str,
         password: str,
     ) -> str:
-        """
-        Get configuration from device using vendor-specific commands.
+        """Get device configuration via local simulator or real SSH."""
+        ### Get device config
+        device_config = self.settings.get_device_config(device.group, device.device_name)
 
-        For testing/development, uses LocalSSHSimulator to read from local files.
-
-        Args:
-            device: Device to get config from
-            username: SSH username
-            password: SSH password
-
-        Returns:
-            Device configuration string
-
-        Raises:
-            FileNotFoundError: If test device not found
-            TimeoutError: If all configured fetch attempts timed out
-        """
-        timeout_seconds, retry_count = self._resolve_timeout_retry(device)
+        ### Filter for required SSH config values
+        timeout_seconds = int(device_config["timeout"])
+        retry_count = int(device_config["retry"])
+        vendor_id = str(device_config["vendor"]).strip()
+        ssh_profile = str(device_config["ssh_profile"]).strip()
         max_attempts = retry_count + 1
 
-        ### TODO: Replace simulator call with real SSH fetch once asyncssh integration is implemented.
-        from app.services.local_ssh_simulator import local_ssh_simulator
+        ### Use the local simulator if test mode is enabled
+        if self.settings.local_test_mode:
+            return await asyncio.wait_for(
+                local_ssh_simulator.get_config(device),
+                timeout=timeout_seconds,
+            )
 
+        ### Try to fetch config from device with commands defined in vendor YAML, apply retries on failure
         last_exception: Exception | None = None
         for attempt in range(1, max_attempts + 1):
+            connection: asyncssh.SSHClientConnection | None = None
             try:
-                ### TODO: Placeholder for get_config()
-
-                return await asyncio.wait_for(
-                    local_ssh_simulator.get_config(device),
+                ### Connect via SSH using SSH profile options
+                connection = await self.connect(
+                    device=device,
+                    username=username,
+                    password=password,
+                    ssh_profile=ssh_profile,
                     timeout=timeout_seconds,
                 )
-            except asyncio.TimeoutError:
+
+                ### Fun part: Run the configured command phases to capture device config
+                config = await self._collect_vendor_config(
+                    connection=connection,
+                    vendor_id=vendor_id,
+                    default_timeout=timeout_seconds,
+                    resolved_password=password,
+                )
+                return config
+            except asyncio.TimeoutError as ex:
+                ### Log timeout error if SSH connection times out or if waiting for command output exceeds timeout
                 last_exception = TimeoutError(
                     f"SSH config fetch timed out after {timeout_seconds}s "
                     f"(attempt {attempt}/{max_attempts})"
@@ -137,15 +146,26 @@ class SSHService:
                     attempt,
                     max_attempts,
                 )
-            except Exception as exc:
-                last_exception = exc
+                logger.debug("Timeout details: %s", ex)
+            except Exception as ex:
+                ### Log any other exceptions that occur during connection or command execution
+                ## TODO: Be more specific in exception handling. Log top 3 most common exception types?
+                last_exception = ex
                 logger.warning(
                     "Config fetch failed for device '%s' on attempt %d/%d: %s",
                     device.device_name,
                     attempt,
                     max_attempts,
-                    exc,
+                    ex,
                 )
+            finally:
+                ### Ensure connection is properly closed to avoid resource leaks, even on failure
+                if connection is not None:
+                    connection.close()
+                    try:
+                        await connection.wait_closed()
+                    except Exception:
+                        pass
 
             if attempt < max_attempts:
                 await asyncio.sleep(0.25)
