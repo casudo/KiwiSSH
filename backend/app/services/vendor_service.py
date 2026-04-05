@@ -38,6 +38,9 @@ class VendorService:
             Dictionary with pre_backup, backup, and post_backup command lists
         """
         vendor = self.get_vendor(vendor_id)
+        if not vendor:
+            raise ValueError(f"Unknown vendor '{vendor_id}'")
+
         commands = vendor.get("commands", {})
 
         return {
@@ -57,6 +60,9 @@ class VendorService:
             Dictionary of processing rules
         """
         vendor = self.get_vendor(vendor_id)
+        if not vendor:
+            raise ValueError(f"Unknown vendor '{vendor_id}'")
+
         return vendor.get("processing", {})
 
     def list_vendors(self) -> list[dict[str, str]]:
