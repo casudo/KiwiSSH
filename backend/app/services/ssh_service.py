@@ -53,6 +53,39 @@ class SSHService:
             "known_hosts": known_hosts,
         }
 
+    @staticmethod
+    def _build_comment_section(
+        captured_output: list[dict[str, Any]],
+        comment_prefix: str,
+    ) -> str:
+        """Render comment-marked command outputs for the top of the saved config."""
+        lines: list[str] = []
+
+        for chunk in captured_output:
+            ### Only chunks marked with comment=true are rendered in this section
+            if not bool(chunk.get("comment", False)):
+                continue
+
+            command = str(chunk.get("command", "")).strip()
+            output = str(chunk.get("output", "")).strip("\n")
+            ### Skip empty output blocks to avoid noisy placeholders
+            if not output:
+                continue
+
+            ### Create header line for the command, prefixed with the vendor's comment marker
+            lines.append(f"{comment_prefix}command: {command}")
+
+            ### Prefix each output line with the vendor comment marker
+            ### For blank lines, keep only the prefix without trailing spaces
+            for output_line in output.splitlines():
+                lines.append(f"{comment_prefix}{output_line}" if output_line else comment_prefix.rstrip())
+
+            ### Add a blank comment line between command blocks
+            lines.append(comment_prefix.rstrip())
+
+        ### Trim outer newlines but preserve internal block spacing
+        return "\n".join(lines).strip("\n")
+
     async def _read_until_patterns(
         self,
         stream: asyncssh.SSHReader,
