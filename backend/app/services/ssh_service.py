@@ -16,6 +16,14 @@ from app.models.device import DeviceBase
 
 logger = logging.getLogger(__name__)
 
+ANSI_ESCAPE_RE = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
+
+### Generic prompt detection used for all vendors.
+## Examples: "hostname#", "hostname>", "hostname(config)#", etc.
+GENERIC_PROMPT_RE = re.compile(r"[>#]\s*$", re.MULTILINE)
+
+GENERIC_PROMPT_PATTERNS = [GENERIC_PROMPT_RE]
+
 
 class SSHService:
     """Service for SSH connections to network devices."""
