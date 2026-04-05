@@ -151,11 +151,22 @@ class GroupConfig(BaseModel):
     username: str | None = None
     password: str | None = None
     ssh_profile: str | None = None
-    vendor: str | None = None
+    vendor: str
     timeout: int | None = Field(default=None, ge=1)
     retry: int | None = Field(default=None, ge=0)
     schedule: ScheduleConfig | None = None
     git: GroupGitConfig | None = None
+
+    @field_validator("vendor", mode="before")
+    @classmethod
+    def validate_vendor(cls, vendor: str | None) -> str:
+        """Require a non-empty vendor id per group."""
+        if vendor is None:
+            raise ValueError("Vendor is required")
+        text = str(vendor).strip()
+        if not text:
+            raise ValueError("Vendor must be a non-empty string")
+        return text
 
 
 class NodeConfig(BaseModel):
@@ -168,6 +179,17 @@ class NodeConfig(BaseModel):
     retry: int | None = Field(default=None, ge=0)
     schedule: ScheduleConfig | None = None
     git: NodeGitConfig | None = None
+
+    @field_validator("vendor", mode="before")
+    @classmethod
+    def validate_vendor(cls, vendor: str | None) -> str | None:
+        """Normalize optional node vendor and reject blank values."""
+        if vendor is None:
+            return None
+        text = str(vendor).strip()
+        if not text:
+            raise ValueError("Vendor must be a non-empty string when provided")
+        return text
 
 
 class PostgresSourceConfig(BaseModel):
