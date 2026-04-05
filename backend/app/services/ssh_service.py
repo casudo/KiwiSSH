@@ -58,25 +58,37 @@ class SSHService:
         self,
         device: DeviceBase,
         username: str,
-        password: str | None = None,
-        key_filename: str | None = None,
-    ) -> Any:
-        """
-        Establish SSH connection to device.
+        password: str,
+        *,
+        ssh_profile: str,
+        port: int = 22,
+        timeout: int | None = None,
+    ) -> asyncssh.SSHClientConnection:
+        """Establish SSH connection to a device using configured profile options."""
+        ssh_options = self._get_ssh_options(ssh_profile)
 
-        Args:
-            device: Device to connect to
-            username: SSH username
-            password: SSH password (optional if using key auth)
-            key_filename: Path to SSH private key (optional)
+        ### Build asyncssh.connect kwargs, filtering out any None values
+        connect_kwargs: dict[str, Any] = {
+            "host": str(device.ip_address),
+            "port": int(port),
+            "username": username,
+            "password": password,
+            "known_hosts": ssh_options.get("known_hosts"),
+            "kex_algs": ssh_options.get("kex_algs"),
+            "encryption_algs": ssh_options.get("encryption_algs"),
+            "server_host_key_algs": ssh_options.get("server_host_key_algs"),
+            "connect_timeout": max(1, int(timeout)) if timeout is not None else None,
+        }
+        connect_kwargs = {key: value for key, value in connect_kwargs.items() if value is not None}
 
-        Returns:
-            SSH connection object
-
-        Raises:
-            NotImplementedError: SSH connection not yet implemented
-        """
-        raise NotImplementedError("SSH connection not yet implemented")
+        logger.debug(
+            "Opening SSH connection to %s (%s:%d) with profile '%s'",
+            device.device_name,
+            device.ip_address,
+            int(port),
+            ssh_profile,
+        )
+        return await asyncssh.connect(**connect_kwargs)
 
     async def execute_command(
         self,
