@@ -1,0 +1,51 @@
+### Fortinet FortiGate Vendor Configuration
+## Instructions for backing up FortiGate FortiOS firewalls
+
+vendor:
+  id: "fortinet_fortios"
+  name: "Fortinet FortiOS"
+  description: "Fortinet FortiOS firewalls"
+
+### Session-level output behavior.
+session:
+  comment_prefix: "# "
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command (default): sends command text
+## - send_input: sends arbitrary input (defaults to resolved device password when input is omitted)
+commands:
+  ### Pre-backup commands (prepare the session) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  pre_backup:
+    - command: "config system console"
+    - command: "set output standard"
+    - command: "end"
+
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "show full-configuration"
+      description: "Get full configuration"
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup: []
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  strip_patterns:
+    - "^% Invalid input detected at '\\^' marker\\.$"
+    - "^\\s+\\^$"
+    - "^#config-version="
+  config_start: "^config "
+  config_end: "^end$"
+
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      - search: "^(\\s*set (?:passwd|password|psksecret)\\s+).+$"
+        replacement: "\\1<secret hidden>"
+        ignore_case: true
