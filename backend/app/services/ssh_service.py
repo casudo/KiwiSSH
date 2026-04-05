@@ -32,14 +32,26 @@ class SSHService:
         return timeout, retry
 
     def _get_ssh_options(self, profile_name: str) -> dict[str, Any]:
-        """Get SSH options from profile."""
+        """Get SSH options from profile and map known_hosts policy."""
         profile = self.settings.get_ssh_profile(profile_name)
 
+        policy = str(profile.get("known_hosts_policy", "ignore")).lower().strip()
+        if policy == "strict":
+            known_hosts: str | None = str(Path.home() / ".ssh" / "known_hosts")
+        else:
+            if policy == "auto_add":
+                logger.warning(
+                    "known_hosts_policy 'auto_add' is not implemented; falling back to 'ignore'"
+                )
+                ### TODO: Implement auto_add
+            known_hosts = None
+
+        ### Map configured SSH profile options to asyncssh.connect kwargs
         return {
             "kex_algs": profile.get("kex_algorithms"),
             "encryption_algs": profile.get("ciphers"),
             "server_host_key_algs": profile.get("host_key_algorithms"),
-            "known_hosts": profile.get("known_hosts_policy", "ignore").lower(),
+            "known_hosts": known_hosts,
         }
 
     async def connect(
