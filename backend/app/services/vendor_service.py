@@ -46,19 +46,6 @@ class VendorService:
             "post_backup": commands.get("post_backup", []),
         }
 
-    def get_prompt_patterns(self, vendor_id: str) -> dict[str, str]:
-        """
-        Get prompt patterns for a vendor.
-
-        Args:
-            vendor_id: Vendor identifier
-
-        Returns:
-            Dictionary of prompt type to regex pattern
-        """
-        vendor = self.get_vendor(vendor_id)
-        return vendor.get("prompts", {})
-
     def get_processing_rules(self, vendor_id: str) -> dict[str, Any]:
         """
         Get configuration processing rules for a vendor.
