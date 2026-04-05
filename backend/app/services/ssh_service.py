@@ -54,6 +54,38 @@ class SSHService:
             "known_hosts": known_hosts,
         }
 
+    async def _read_until_patterns(
+        self,
+        stream: asyncssh.SSHReader,
+        patterns: list[re.Pattern[str]],
+        timeout: int,
+    ) -> str:
+        """Read stream until one of the patterns appears or timeout is reached."""
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + max(1, int(timeout))
+        buffer = ""
+
+        ### Read in a loop until we see a prompt pattern or hit the timeout
+        while True:
+            ### Check if any of the patterns match the current buffer content
+            if patterns:
+                ### Only check the last 4096 characters to avoid performance issues with large outputs
+                tail = buffer[-4096:]
+                if any(pattern.search(tail) for pattern in patterns):
+                    return buffer
+
+            ### If no pattern matched, read more data with a short timeout to allow for checking the deadline
+            remaining = deadline - loop.time()
+            if remaining <= 0:
+                raise asyncio.TimeoutError("Timed out waiting for prompt")
+
+            ### Read the next chunk of output with a short timeout to allow for prompt detection
+            chunk = await asyncio.wait_for(stream.read(256), timeout=min(remaining, 1.0))
+            if chunk == "":
+                return buffer
+
+            ### Append the new chunk to the buffer and continue checking for patterns
+            buffer += chunk
     async def connect(
         self,
         device: DeviceBase,
