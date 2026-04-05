@@ -44,7 +44,6 @@ PLACEHOLDER
   - [SSH Profiles YAML file](#ssh-profiles-yaml-file)
 - [Future Goals](#future-goals)
 - [Technical Documentation](#technical-documentation)
-  - [PostgreSQL](#postgresql-1)
 - [Development](#development)
 - [Legal Disclaimer](#legal-disclaimer)
 - [License](#license)
@@ -168,6 +167,9 @@ dev-rack,sales-catalyst-24p,192.168.5.3,false
 
 #### PostgreSQL
 
+> [!IMPORTANT]
+> Make sure that the database exists and that the provided user has the necessary permissions to read from the database.
+
 | Key | Description | Required | Default Value |
 | --- | ----------- | -------- | ------------- |
 | `sources.postgres.host` | The host of the PostgreSQL database containing the device entries. | **Yes** | - |
@@ -177,8 +179,10 @@ dev-rack,sales-catalyst-24p,192.168.5.3,false
 | `sources.postgres.username` | The username for the PostgreSQL database containing the device entries. | **Yes** | - |
 | `sources.postgres.password` | The password for the PostgreSQL database containing the device entries. | **Yes** | - |
 
-> [!IMPORTANT]
-> Make sure that the database exists and that the provided user has the necessary permissions to read from the database.
+The `backup_jobs` table can grow quite large over time depending on the number of devices and backup frequency. To prevent the database from growing indefinitely, it's recommended to set up a regular maintenance job to clean up old backup job logs that are no longer needed. This can be done using a simple SQL query to delete old records based on a retention policy (e.g., delete logs older than 90 days). **We might implement this as a built-in feature in the future, but for now it's up to the user to set this up.**
+
+> [TIP]
+> Consider backing up your PostgreSQL database(s) regularly, independently of KiwiSSH. We recommend [Databasus](https://github.com/databasus/databasus) for that.
 
 ### git
 
@@ -424,30 +428,7 @@ You can create your own SSH profile by adding a new entry to the `ssh_profiles.y
 
 # Technical Documentation
 
-Placeholder
-
-## PostgreSQL
-
-KiwiSSH will store it's application data in a PostgreSQL database. As of **v0.1.0** this includes backup job logs and favorite devices.
-
-You'll be asked to provide the connection details to your PostgreSQL database in the `kiwissh.yaml` configuration file. KiwiSSH will automatically create the necessary tables on startup.
-
-```yaml
-application_database:
-  host: "<IP_ADDRESS_OR_HOSTNAME>"
-  port: 5432
-  database: "your_db_name"
-  user: "db_user"
-  password: "db_user_password"
-```
-
-> [TIP]
-> It's recommended to create a separate database user with limited permissions for KiwiSSH to use instead of using a superuser account.
-
-The `backup_jobs` table can grow quite large over time depending on the number of devices and backup frequency. To prevent the database from growing indefinitely, it's recommended to set up a regular maintenance job to clean up old backup job logs that are no longer needed. This can be done using a simple SQL query to delete old records based on a retention policy (e.g., delete logs older than 90 days). **We might implement this as a built-in feature in the future, but for now it's up to the user to set this up.**
-
-> [TIP]
-> Consider backing up your PostgreSQL database(s) regularly, independently of KiwiSSH. We recommend [Databasus](https://github.com/databasus/databasus) for that.
+Placeholder -> Move to TECHNICAL.md?
 
 # Development
 
