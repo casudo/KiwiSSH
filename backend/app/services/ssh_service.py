@@ -412,21 +412,84 @@ class SSHService:
         command: str,
         timeout: int = 30,
     ) -> str:
-        """
-        Execute command on device and return output.
+    async def _collect_vendor_config(
+        self,
+        connection: asyncssh.SSHClientConnection,
+        vendor_id: str,
+        default_timeout: int,
+        password: str,
+    ) -> str:
+        """Collect and render configuration from device via vendor-defined command phases."""
+        ### Get command sets for the vendor (pre_backup, backup, post_backup)
+        command_sets = vendor_service.get_backup_commands(vendor_id)
+        backup_commands = command_sets.get("backup")
+        if not backup_commands:
+            raise ValueError(f"Vendor '{vendor_id}' has no backup commands configured")
 
-        Args:
-            connection: Active SSH connection
-            command: Command to execute
-            timeout: Command timeout in seconds
+        ### Get session parameters for the vendor
+        session_config = vendor_service.get_session_parameters(vendor_id)
+        prefix = str(session_config.get("comment_prefix", "! ")).strip()
+        comment_prefix = "! " if not prefix else (prefix if prefix.endswith(" ") else f"{prefix} ")
 
-        Returns:
-            Command output string
+        ### Get processing rules for the vendor
+        processing_rules = vendor_service.get_processing_rules(vendor_id)
 
-        Raises:
-            NotImplementedError: Command execution not yet implemented
-        """
-        raise NotImplementedError("Command execution not yet implemented")
+        ### Run command phases in interactive shell session and capture output
+        async with connection.create_process(term_type="vt100", encoding="utf-8") as process:
+            ### Write an initial newline to ensure we get a prompt before starting commands
+            process.stdin.write("\n")
+
+            ### Wait for the initial prompt to ensure the shell is ready before sending commands
+            await self._read_until_patterns(process.stdout, GENERIC_PROMPT_PATTERNS, default_timeout)
+
+            ### Run pre_backup commands (required for session setup consistency)
+            await self._run_command_phase(
+                process=process,
+                commands=command_sets.get("pre_backup", []),
+                default_timeout=default_timeout,
+                password=password,
+                capture_output=False,
+            )
+
+            captured_output = await self._run_command_phase(
+                process=process,
+                commands=backup_commands,
+                default_timeout=default_timeout,
+                password=password,
+                capture_output=True,
+            )
+
+            await self._run_command_phase(
+                process=process,
+                commands=command_sets.get("post_backup", []),
+                default_timeout=default_timeout,
+                password=password,
+                capture_output=False,
+            )
+
+            ### Exit shell
+            process.stdin.write("exit\n")
+
+        non_comment_outputs = [
+            str(chunk.get("output", "")).strip()
+            for chunk in captured_output
+            if not bool(chunk.get("comment", False))
+        ]
+
+        ### Fill raw_config with non_comment_outputs while preserving their order and seperating the chunks with 2 newlines
+        raw_config = "\n\n".join(output for output in non_comment_outputs if output)
+        if not raw_config:
+            raise RuntimeError("Backup commands completed but returned empty non-comment config output")
+
+        ### Apply vendor-defined processing rules
+        processed_config = self._apply_processing_rules(raw_config, processing_rules)
+
+        ### Build comment section from captured output marked as comment=true
+        comment_section = self._build_comment_section(captured_output, comment_prefix)
+
+        if comment_section and processed_config:
+            return f"{comment_section}\n\n{processed_config}"
+        return processed_config
 
     async def get_config(
         self,
@@ -471,7 +534,7 @@ class SSHService:
                     connection=connection,
                     vendor_id=vendor_id,
                     default_timeout=timeout_seconds,
-                    resolved_password=password,
+                    password=password,
                 )
                 return config
             except asyncio.TimeoutError as ex:
