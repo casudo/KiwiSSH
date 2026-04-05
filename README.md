@@ -358,7 +358,19 @@ Each segment is explained in detail below.
 
 ## SSH Profiles YAML file
 
-> /config/ssh_profiles.yaml
+> Found at `/config/ssh_profiles.yaml`
+
+SSH profiles define reusable options for SSH connections. Assign a profile via `groups.<group>.ssh_profile` and optionally override it per device with `nodes.<device_name>.ssh_profile`.
+
+> [!NOTE]
+> **Notes for the usage of** `known_hosts_policy`:
+> `strict` validates against `~/.ssh/known_hosts`
+> `ignore` skips known-host validation
+> `auto_add` currently falls back to `ignore` and logs a warning
+> Device backup authentication uses username/password from group/node config
+> SSH port and timeout are configured in group/node/app settings, not in SSH profiles
+
+You can create your own SSH profile by adding a new entry to the `ssh_profiles.yaml` file. Each profile should have a unique name.
 
 ---
 
