@@ -30,14 +30,6 @@ class SSHService:
     def __init__(self) -> None:
         self.settings = get_settings()
 
-    def _resolve_timeout_retry(self, device: DeviceBase) -> tuple[int, int]:
-        """Resolve timeout/retry with priority: app < group < node."""
-        device_config = self.settings.get_device_config(device.group, device.device_name)
-
-        timeout = int(device_config.get("timeout"))
-        retry = int(device_config.get("retry"))
-        return timeout, retry
-
     def _get_ssh_options(self, profile_name: str) -> dict[str, Any]:
         """Get SSH options from profile and map known_hosts policy."""
         profile = self.settings.get_ssh_profile(profile_name)
