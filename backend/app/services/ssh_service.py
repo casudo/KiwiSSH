@@ -1,11 +1,4 @@
-"""SSH connection service using asyncssh.
-
-This service handles SSH connections to network devices with support for
-legacy ciphers and key exchange algorithms.
-
-TODO: Implement actual SSH connection logic using asyncssh, including
-handling of different SSH profiles and vendor-specific quirks.
-"""
+"""SSH connection service using asyncssh."""
 
 import asyncio
 import logging
