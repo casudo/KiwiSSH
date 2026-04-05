@@ -86,6 +86,88 @@ class SSHService:
 
             ### Append the new chunk to the buffer and continue checking for patterns
             buffer += chunk
+    async def _run_command_phase(
+        self,
+        process: asyncssh.SSHClientProcess,
+        commands: list[dict[str, Any]],
+        default_timeout: int,
+        password: str,
+        capture_output: bool,
+        required: bool = True,
+    ) -> list[dict[str, Any]]:
+        """Run one command phase and return captured output chunks.
+
+        Supported step types:
+        - command (default): send `command` and optionally wait for prompt
+        - send_input: send `input` text and optionally wait for prompt
+                    (if `input` is omitted, device password is sent)
+
+        A chunk contains:
+        - command: command string
+        - output: captured output text
+        - comment: whether this output should be rendered as top comment block
+        """
+        captured_outputs: list[dict[str, Any]] = []
+
+        for command_def in commands:
+            ### Get type of the step
+            step_type = str(command_def.get("type") or "command")
+            step_type = step_type.strip().lower()
+
+            comment = bool(command_def.get("comment", False))
+            wait_for_prompt = bool(command_def.get("wait_for_prompt", True))
+
+            ### Fire send input steps
+            if step_type == "send_input":
+                try:
+                    ### Get input text and send it
+                    input_text = password if command_def.get("input") is None else str(command_def.get("input"))
+                    process.stdin.write(f"{input_text}\n")
+
+                    ### Optionally wait for the prompt after sending input to ensure the device is ready for the next command
+                    if wait_for_prompt:
+                        await self._read_until_patterns(
+                            process.stdout,
+                            GENERIC_PROMPT_PATTERNS,
+                            default_timeout,
+                        )
+                    else:
+                        await asyncio.sleep(0.1)
+                except Exception as ex:
+                    if required:
+                        raise RuntimeError("Step failed: send_input") from ex
+                    logger.warning("Optional step failed 'send_input': %s", ex)
+                continue
+
+            ### Raise error for unsupported step types
+            if step_type != "command":
+                ex = ValueError(f"Unsupported command step type '{step_type}'")
+                raise RuntimeError(str(ex)) from ex
+
+            ### Fire command steps
+            command = str(command_def.get("command") or "").strip()
+            if not command:
+                raise RuntimeError("Step failed: command is empty")
+
+            try:
+                output = await self._execute_shell_command(
+                    process=process,
+                    command=command,
+                    timeout=default_timeout,
+                    wait_for_prompt=wait_for_prompt,
+                )
+                if capture_output and output:
+                    captured_outputs.append({
+                        "command": command,
+                        "output": output,
+                        "comment": comment,
+                    })
+            except Exception as ex:
+                if required:
+                    raise RuntimeError(f"Command failed: {command}") from ex
+                logger.warning("Optional command failed '%s': %s", command, ex)
+
+        return captured_outputs
     async def connect(
         self,
         device: DeviceBase,
