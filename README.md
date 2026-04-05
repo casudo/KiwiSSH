@@ -36,6 +36,11 @@ PLACEHOLDER
 - [FAQ](#faq)
   - [How do I setup a remote git location?](#how-do-i-setup-a-remote-git-location)
   - [Vendor folder](#vendor-folder)
+    - [Vendor YAML file](#vendor-yaml-file)
+      - [vendor](#vendor)
+      - [session](#session)
+      - [commands](#commands)
+      - [processing](#processing)
   - [SSH Profiles YAML file](#ssh-profiles-yaml-file)
 - [Future Goals](#future-goals)
 - [Technical Documentation](#technical-documentation)
@@ -280,17 +285,76 @@ KiwiSSH can push local git commits via SSH to their remote repository. To set up
 
 ## Vendor folder
 
-> /config/vendors
+> Found at `/config/vendors`
 
-Instructions on how to interact with the vendors CLI are configured inside the `vendors` folder as YAML files. This allows you to easily add support for new vendors by simply adding a new YAML file with the necessary instructions or update the existing ones if the CLI changes without needing to update the backend code.
+Vendor YAML files define how KiwiSSH interacts with each device CLI and how captured output is processed before it is saved.
 
-> [NOTE]
-> If you notice changes in the CLI output of your devices after a firmware update, please create an [Issue]() or open a [Pull Request]() with the updated CLI output so we can update the corresponding vendor YAML file and ensure continued compatibility.
+> [!TIP]
+> You can create your own vendor YAML file by copying one of the existing ones and modifying it according to the CLI output of your devices. If you want to contribute your vendor file to the project, please create a Pull Request with the new vendor YAML file in the `config/vendors` folder.
 
-WIP explain in more detail what every segment does
+### Vendor YAML file
+
+Each vendor file contains these top-level sections:
+
+- `vendor`: metadata (`id`, `name`, `description`)
+- `session`: session-level output settings (currently `comment_prefix`)
+- `commands`: command phases (`pre_backup`, `backup`, `post_backup`)
+- `processing`: optional output cleanup/redaction rules
+
+Each segment is explained in detail below.
 
 > [TIP]
-> You can override the vendor of a specific device in the [main YAML config file](#main-yaml-config-file) by adding the device to the `nodes:` segment and adding the `vendor` key.
+> You can override the vendor for a specific device in [kiwissh.yaml](#kiwisshyaml) under `nodes.<device_name>.vendor`.
+
+#### vendor
+
+| Key | Description | Required | Default Value |
+| --- | ----------- | -------- | ------------- |
+| `vendor.id` | A unique identifier for the vendor. | **Yes** | - |
+| `vendor.name` | The name of the vendor. | **Yes** | - |
+| `vendor.description` | A brief description of the vendor. | No | - |
+
+#### session
+
+| Key | Description | Required | Default Value |
+| --- | ----------- | -------- | ------------- |
+| `session.comment_prefix` | If set, command outputs will be prefixed with this string and rendered as comments in the saved config file. This is useful for adding metadata like command descriptions or timestamps directly in the config file. | No | `! ` |
+
+#### commands
+
+| Key | Description | Required | Default Value |
+| --- | ----------- | -------- | ------------- |
+| `commands.<phase>` | A list of commands to run in the specified phase. Supported phases are `pre_backup`, `backup`, and `post_backup`. | **Yes** | - |
+
+**Command phase behavior:**
+
+- Steps run in a single interactive shell session in this order: `pre_backup` -> `backup` -> `post_backup`
+- Supported step types are `command` and `send_input`
+  - For `send_input`, omit `input` to send the resolved device password
+- `wait_for_prompt` is optional per step and defaults to `true`
+- `comment: true` on backup commands renders output as comment-prefixed metadata at the top of the saved file
+- Configured steps are treated as required; a failing step aborts backup collection
+
+#### processing
+
+| Key | Description | Required | Default Value |
+| --- | ----------- | -------- | ------------- |
+| `processing.strip_patterns` | A list of regex patterns. Lines matching any of these patterns will be removed from the captured config before saving. | No | - |
+| `processing.config_start` | A regex pattern that marks the start of the actual configuration in the CLI output. Lines before the matched line will be removed. | No | - |
+| `processing.config_end` | A regex pattern that marks the end of the actual configuration in the CLI output. Lines after the matched line will be removed. | No | - |
+| `processing.redaction.enabled` | If set to true, the patterns defined in `processing.redaction.patterns` will be applied to the captured config to redact sensitive information. | No | `false` |
+| `processing.redaction.patterns` | A list of redaction rules. Each rule should contain a `search` regex pattern, a `replacement` string, and an optional `ignore_case` boolean. | No | - |
+
+> [!IMPORTANT]
+> If `ignore_case` is set to true for a redaction rule (default is false), the search pattern will be applied in a case-insensitive manner. Make sure to set this according to the expected CLI output of your devices to ensure effective redaction.
+
+**Processing behavior:**
+
+- `processing` is optional; if no processing options are configured, config output is left unchanged
+- `strip_patterns`: remove matching lines
+- `config_start` / `config_end`: crop output to boundaries; if one side is missing, file edge is used
+- `redaction.enabled` + `redaction.patterns`: apply replacements
+- Each redaction rule uses `search`, `replacement`, and optional `ignore_case`
 
 ## SSH Profiles YAML file
 
