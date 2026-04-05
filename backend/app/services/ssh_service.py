@@ -406,12 +406,6 @@ class SSHService:
         )
         return await asyncssh.connect(**connect_kwargs)
 
-    async def execute_command(
-        self,
-        connection: Any,
-        command: str,
-        timeout: int = 30,
-    ) -> str:
     async def _collect_vendor_config(
         self,
         connection: asyncssh.SSHClientConnection,
