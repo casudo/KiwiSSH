@@ -175,6 +175,7 @@ async def get_backup_jobs(
                     "timestamp": job.timestamp.isoformat() if job.timestamp else None,
                     "error_message": job.error_message,
                     "config_size_bytes": job.config_size_bytes,
+                    "metadata_output": job.metadata_output,
                 }
                 for job in jobs
             ],

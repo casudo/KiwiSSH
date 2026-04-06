@@ -33,14 +33,14 @@ commands:
   ## Commands whose output becomes the stored configuration
   backup:
     - command: "show version"
-      description: "Collect platform metadata as comments"
-      comment: true
+      description: "Collect platform as metadata"
+      metadata: true
     - command: "show inventory"
-      description: "Collect inventory metadata as comments"
-      comment: true
+      description: "Collect inventory as metadata"
+      metadata: true
     - command: "show vtp status"
-      description: "Collect VTP metadata as comments"
-      comment: true
+      description: "Collect VTP as metadata"
+      metadata: true
     - command: "show running-config"
       description: "Get running configuration"
 

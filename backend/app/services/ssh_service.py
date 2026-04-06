@@ -60,16 +60,16 @@ class SSHService:
         }
 
     @staticmethod
-    def _build_comment_section(
+    def _build_metadata_section(
         captured_output: list[dict[str, Any]],
         comment_prefix: str,
     ) -> str:
-        """Render comment-marked command outputs for the top of the saved config."""
+        """Render metadata-marked command outputs."""
         lines: list[str] = []
 
         for chunk in captured_output:
-            ### Only chunks marked with comment=true are rendered in this section
-            if not bool(chunk.get("comment", False)):
+            ### Only chunks marked with metadata=true are rendered in this section
+            if not bool(chunk.get("metadata", False)):
                 continue
 
             command = str(chunk.get("command", "")).strip()
@@ -199,7 +199,7 @@ class SSHService:
         A chunk contains:
         - command: command string
         - output: captured output text
-        - comment: whether this output should be rendered as top comment block
+        - metadata: whether this output should be rendered as metadata
         - show_command_in_config: whether command header is embedded before output in config body
         """
         captured_outputs: list[dict[str, Any]] = []
@@ -209,14 +209,14 @@ class SSHService:
             step_type = str(command_def.get("type") or "command")
             step_type = step_type.strip().lower()
 
-            comment = bool(command_def.get("comment", False))
+            metadata = bool(command_def.get("metadata", False))
             wait_for_prompt = bool(command_def.get("wait_for_prompt", True))
             show_command_in_config = bool(command_def.get("show_command_in_config", False))
 
-            if comment and show_command_in_config:
+            if metadata and show_command_in_config:
                 raise RuntimeError(
                     "Invalid backup command options: 'show_command_in_config: true' "
-                    "cannot be used together with 'comment: true'"
+                    "cannot be used together with 'metadata: true'"
                 )
 
             ### Fire send input steps
@@ -262,7 +262,7 @@ class SSHService:
                     captured_outputs.append({
                         "command": command,
                         "output": output,
-                        "comment": comment,
+                        "metadata": metadata,
                         "show_command_in_config": show_command_in_config,
                     })
             except Exception as ex:
@@ -436,8 +436,8 @@ class SSHService:
         vendor_id: str,
         default_timeout: int,
         password: str,
-    ) -> str:
-        """Collect and render configuration from device via vendor-defined command phases."""
+    ) -> tuple[str, str | None]:
+        """Collect configuration and metadata from device via vendor-defined command phases."""
         ### Get command sets for the vendor (pre_backup, backup, post_backup)
         command_sets = vendor_service.get_backup_commands(vendor_id)
         backup_commands = command_sets.get("backup")
@@ -448,6 +448,7 @@ class SSHService:
         session_config = vendor_service.get_session_parameters(vendor_id)
         prefix = str(session_config.get("comment_prefix", "! ")).strip()
         comment_prefix = "! " if not prefix else (prefix if prefix.endswith(" ") else f"{prefix} ")
+        include_metadata_in_config = bool(session_config.get("include_metadata_in_config", False))
 
         ### Get processing rules for the vendor
         processing_rules = vendor_service.get_processing_rules(vendor_id)
@@ -488,9 +489,9 @@ class SSHService:
             ### Exit shell
             process.stdin.write("exit\n")
 
-        non_comment_outputs: list[str] = []
+        non_metadata_outputs: list[str] = []
         for chunk in captured_output:
-            if bool(chunk.get("comment", False)):
+            if bool(chunk.get("metadata", False)):
                 continue
 
             output = str(chunk.get("output", "")).strip()
@@ -502,29 +503,31 @@ class SSHService:
                 if command:
                     output = f"{comment_prefix}Command used: {command}\n{output}"
 
-            non_comment_outputs.append(output)
+            non_metadata_outputs.append(output)
 
-        ### Fill raw_config with non_comment_outputs while preserving their order and seperating the chunks with 2 newlines
-        raw_config = "\n\n".join(output for output in non_comment_outputs if output)
+        ### Fill raw_config with non_metadata_outputs while preserving their order and seperating the chunks with 2 newlines
+        raw_config = "\n\n".join(output for output in non_metadata_outputs if output)
         if not raw_config:
-            raise RuntimeError("Backup commands completed but returned empty non-comment config output")
+            raise RuntimeError("Backup commands completed but returned empty non-metadata config output")
 
         ### Apply vendor-defined processing rules
         processed_config = self._apply_processing_rules(raw_config, processing_rules)
 
-        ### Build comment section from captured output marked as comment=true
-        comment_section = self._build_comment_section(captured_output, comment_prefix)
+        ### Build metadata section from captured output marked as metadata=true
+        metadata_section = self._build_metadata_section(captured_output, comment_prefix)
 
-        if comment_section and processed_config:
-            return f"{comment_section}\n\n{processed_config}"
-        return processed_config
+        metadata_output = metadata_section if metadata_section else None
+
+        if include_metadata_in_config and metadata_section and processed_config:
+            return f"{metadata_section}\n\n{processed_config}", metadata_output
+        return processed_config, metadata_output
 
     async def _collect_local_vendor_config(
         self,
         device: DeviceBase,
         vendor_id: str,
         timeout_seconds: int,
-    ) -> str:
+    ) -> tuple[str, str | None]:
         """Collect config in local test mode while reusing vendor processing rules."""
         ### Keep vendor command validation parity with real SSH path.
         command_sets = vendor_service.get_backup_commands(vendor_id)
@@ -540,15 +543,15 @@ class SSHService:
             raise RuntimeError("Local simulator returned empty config output")
 
         processing_rules = vendor_service.get_processing_rules(vendor_id)
-        return self._apply_processing_rules(raw_config, processing_rules)
+        return self._apply_processing_rules(raw_config, processing_rules), None
 
     async def get_config(
         self,
         device: DeviceBase,
         username: str,
         password: str,
-    ) -> str:
-        """Get device configuration via local simulator or real SSH."""
+    ) -> tuple[str, str | None]:
+        """Get device configuration plus optional metadata via local simulator or real SSH."""
         ### Get device config
         device_config = self.settings.get_device_config(device.group, device.device_name)
 
@@ -582,13 +585,13 @@ class SSHService:
                 )
 
                 ### Fun part: Run the configured command phases to capture device config
-                config = await self._collect_vendor_config(
+                config, metadata_output = await self._collect_vendor_config(
                     connection=connection,
                     vendor_id=vendor_id,
                     default_timeout=timeout_seconds,
                     password=password,
                 )
-                return config
+                return config, metadata_output
             except asyncio.TimeoutError as ex:
                 ### Log timeout error if SSH connection times out or if waiting for command output exceeds timeout
                 last_exception = TimeoutError(

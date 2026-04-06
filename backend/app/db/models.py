@@ -19,6 +19,7 @@ class BackupJob(Base):
     timestamp = Column(DateTime(timezone=True), nullable=False, index=True, default=lambda: get_utc_now())
     error_message = Column(Text, nullable=True)
     config_size_bytes = Column(Integer, nullable=True)
+    metadata_output = Column(Text, nullable=True)
 
     def __repr__(self):
         return f"<BackupJob {self.device_name} {self.status} {self.timestamp}>"

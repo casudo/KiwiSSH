@@ -77,6 +77,7 @@ class BackupService:
                     status="in_progress",
                     error_message=None,
                     config_size_bytes=None,
+                    metadata_output=None,
                 )
                 logger.debug(f"Created in_progress job {job_id} for {device.device_name}")
                 return job_id
@@ -106,6 +107,7 @@ class BackupService:
                     status=job_status,
                     error_message=result.error_message,
                     config_size_bytes=result.config_size_bytes,
+                    metadata_output=result.metadata_output,
                 )
                 logger.debug(f"Updated job {job_id} with final status: {job_status}")
             finally:
@@ -128,6 +130,7 @@ class BackupService:
         """
         ### Create in_progress job so UI can show backup status immediately
         job_id = self._create_in_progress_job(device)
+        metadata_output: str | None = None
         
         try:
             logger.info(f"Backing up device: {device.device_name} (group: {device.group})")
@@ -135,7 +138,7 @@ class BackupService:
             ssh_fetch_semaphore = self._get_ssh_fetch_semaphore()
             async with ssh_fetch_semaphore:
                 device_config = get_settings().get_device_config(device.group, device.device_name)
-                config = await ssh_service.get_config(
+                config, metadata_output = await ssh_service.get_config(
                     device,
                     username=device_config["username"],
                     password=device_config["password"],
@@ -161,6 +164,7 @@ class BackupService:
                     status=BackupStatus.NO_CHANGES,
                     job_id=job_id,
                     config_size_bytes=config_size,
+                    metadata_output=metadata_output,
                 )
                 self._update_job_final_status(job_id, result)
                 return result
@@ -174,6 +178,7 @@ class BackupService:
                 job_id=job_id,
                 git_commit=commit_hash,
                 config_size_bytes=config_size,
+                metadata_output=metadata_output,
             )
             self._update_job_final_status(job_id, result)
             return result
@@ -187,6 +192,7 @@ class BackupService:
                 status=BackupStatus.FAILED,
                 job_id=job_id,
                 error_message=str(e),
+                metadata_output=metadata_output,
             )
             self._update_job_final_status(job_id, result)
             return result

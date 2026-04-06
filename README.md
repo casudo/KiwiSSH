@@ -316,6 +316,7 @@ Each segment is explained in detail below.
 | Key | Description | Required | Default Value |
 | --- | ----------- | -------- | ------------- |
 | `session.comment_prefix` | If set, command outputs will be prefixed with this string and rendered as comments in the saved config file. This is useful for adding metadata like command descriptions or timestamps directly in the config file. | No | `! ` |
+| `session.include_metadata_in_config` | Controls whether outputs from `metadata: true` commands are prepended as a block in the saved config. Metadata is always present in the backup job log. | No | `false` |
 
 #### commands
 
@@ -346,9 +347,9 @@ You can use the following keys for each command step:
 | `type` | Run the command in specified in this item and send the input (`input`) afterwards. If `input` is omitted, the resolved device password will be sent as input. | **Either `command` or `type`** | Must be `send_input` |
 | `input` (for `type: "send_input"` only!) | The input to send after the command. This is only used for `send_input` type steps. If omitted, the resolved device password will be sent as input. | No | Resolved device password |
 | `description` | A brief description of the command. | No | - |
-| `comment` | If set to true, the output of this command will be rendered as comment-prefixed metadata at the top of the saved config file. This is useful for adding important information like command descriptions or timestamps directly in the config file. | No | `false` |
+| `metadata` | If set to true, the output of this command will be saved as comment-prefixed metadata block in the backup job log. This is useful for adding important information to the backup job log. | No | `false` |
 | `wait_for_prompt` | If set to false, KiwiSSH will not wait for the command prompt to return after running this command before proceeding to the next step. Use with caution. | No | `true` |
-| `show_command_in_config` | If set to true, the command will be included directly in the main config body above its output, prefixed with the comment prefix. This provides better context for the captured output when viewing the saved config file. `show_command_in_config: true` and `comment: true` cannot be used together and will fail validation. | No | `false` |
+| `show_command_in_config` | If set to true, the command will be included directly in the main config body above its output, prefixed with the comment prefix. This provides better context for the captured output when viewing the saved config file. `show_command_in_config: true` and `metadata: true` cannot be used together and will fail validation. | No | `false` |
 
 #### processing
 
@@ -489,8 +490,7 @@ groups:
 - Visual diagram of the architecture and how the different components interact with each other (e.g., config loading, backup execution flow, etc.)
 - As part of renaming change the theme colors to green-ish
 - Swagger API documentation on GitHub Pages
-- Allow group passwords to bet set via TZ or other input
-- Remove "comment" mode for backup commands and just append the output (and commend used) of multiple backup commands to the same file? Involves removing the echoed command strip
+- Allow group passwords to bet set via env vars or other input
 - Better device simulation: Add a small script for user to run against actual hardware to create realistic CLI output samples for the vendor YAML file creation. Secrets and sensitive info should be redacted
 
 ---

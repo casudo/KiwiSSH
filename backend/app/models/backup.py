@@ -28,6 +28,7 @@ class BackupRecord(BaseModel):
     git_commit: Optional[str] = None
     error_message: Optional[str] = None
     config_size_bytes: Optional[int] = None
+    metadata_output: Optional[str] = None
 
 
 class BackupDiff(BaseModel):
