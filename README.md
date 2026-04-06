@@ -463,7 +463,6 @@ groups:
 - Docker Image + GitHub Action to build and push image
 - Login Screen, User management and RBAC
 - Jumphost support (configurable in YAML config as global, group or node level)
-- For real SSH backups: Include time -> We can then display the avg. time as statistic somewhere and seconds needed for backup to the backup list view
 - Implement backup job log rotation and retention policies (e.g. delete logs if line >10000 or older than 90 days)
 - Add visual popup when opening JobView.vue for the first initial load takes longer than 3 seconds to inform the user that the page is still loading and to prevent them from thinking the UI is frozen
 - Move function-level imports to top-level imports to comply with PEP8

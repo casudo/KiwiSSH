@@ -44,6 +44,7 @@ class BackupJobService:
         status: str,
         error_message: str | None = None,
         config_size_bytes: int | None = None,
+        duration_seconds: float | None = None,
         metadata_output: str | None = None,
     ) -> BackupJob:
         """Create and store a backup job record.
@@ -56,6 +57,7 @@ class BackupJobService:
             status: Job status (success or failed)
             error_message: Error message if failed
             config_size_bytes: Size of backed up config
+            duration_seconds: Time spent in backup operation in seconds
             metadata_output: Optional metadata output captured from comment commands
 
         Returns:
@@ -69,6 +71,7 @@ class BackupJobService:
             timestamp=get_utc_now(),
             error_message=error_message,
             config_size_bytes=config_size_bytes,
+            duration_seconds=duration_seconds,
             metadata_output=metadata_output,
         )
         db.add(job)
@@ -83,6 +86,7 @@ class BackupJobService:
         status: str,
         error_message: str | None = None,
         config_size_bytes: int | None = None,
+        duration_seconds: float | None = None,
         metadata_output: str | None = None,
     ) -> BackupJob | None:
         """Update an existing backup job record by job ID.
@@ -93,6 +97,7 @@ class BackupJobService:
             status: New job status
             error_message: Error details for failed jobs
             config_size_bytes: Size of backed up config
+            duration_seconds: Time spent in backup operation in seconds
             metadata_output: Optional metadata output captured from comment commands
 
         Returns:
@@ -107,6 +112,7 @@ class BackupJobService:
         job.timestamp = get_utc_now()
         job.error_message = error_message
         job.config_size_bytes = config_size_bytes
+        job.duration_seconds = duration_seconds
         job.metadata_output = metadata_output
         db.commit()
         db.refresh(job)

@@ -1,6 +1,6 @@
 """SQLAlchemy database models for backup jobs."""
 
-from sqlalchemy import Column, String, DateTime, Text, Integer
+from sqlalchemy import Column, String, DateTime, Text, Integer, Float
 from sqlalchemy.ext.declarative import declarative_base
 from app.utils.timezone import get_utc_now
 
@@ -19,6 +19,7 @@ class BackupJob(Base):
     timestamp = Column(DateTime(timezone=True), nullable=False, index=True, default=lambda: get_utc_now())
     error_message = Column(Text, nullable=True)
     config_size_bytes = Column(Integer, nullable=True)
+    duration_seconds = Column(Float, nullable=True)
     metadata_output = Column(Text, nullable=True)
 
     def __repr__(self):

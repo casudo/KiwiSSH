@@ -6,6 +6,7 @@ to backup device configurations.
 
 import asyncio
 import logging
+import time
 import uuid
 
 from app.core import get_settings
@@ -77,6 +78,7 @@ class BackupService:
                     status="in_progress",
                     error_message=None,
                     config_size_bytes=None,
+                    duration_seconds=None,
                     metadata_output=None,
                 )
                 logger.debug(f"Created in_progress job {job_id} for {device.device_name}")
@@ -107,6 +109,7 @@ class BackupService:
                     status=job_status,
                     error_message=result.error_message,
                     config_size_bytes=result.config_size_bytes,
+                    duration_seconds=result.duration_seconds,
                     metadata_output=result.metadata_output,
                 )
                 logger.debug(f"Updated job {job_id} with final status: {job_status}")
@@ -130,6 +133,7 @@ class BackupService:
         """
         ### Create in_progress job so UI can show backup status immediately
         job_id = self._create_in_progress_job(device)
+        started_at = time.perf_counter()
         metadata_output: str | None = None
         
         try:
@@ -153,6 +157,7 @@ class BackupService:
             )
 
             config_size = len(config.encode("utf-8"))
+            duration_seconds = max(0.0, time.perf_counter() - started_at)
 
             ### If no changes detected, return NO_CHANGES status
             if not has_changes:
@@ -164,12 +169,18 @@ class BackupService:
                     status=BackupStatus.NO_CHANGES,
                     job_id=job_id,
                     config_size_bytes=config_size,
+                    duration_seconds=duration_seconds,
                     metadata_output=metadata_output,
                 )
                 self._update_job_final_status(job_id, result)
                 return result
 
-            logger.info(f"Saved configuration to git for {device.device_name}: {commit_hash}")
+            logger.info(
+                "Saved configuration to git for %s: %s (%.2fs)",
+                device.device_name,
+                commit_hash,
+                duration_seconds,
+            )
             result = BackupRecord(
                 id=commit_hash,
                 device_name=device.device_name,
@@ -178,6 +189,7 @@ class BackupService:
                 job_id=job_id,
                 git_commit=commit_hash,
                 config_size_bytes=config_size,
+                duration_seconds=duration_seconds,
                 metadata_output=metadata_output,
             )
             self._update_job_final_status(job_id, result)
@@ -192,6 +204,7 @@ class BackupService:
                 status=BackupStatus.FAILED,
                 job_id=job_id,
                 error_message=str(e),
+                duration_seconds=max(0.0, time.perf_counter() - started_at),
                 metadata_output=metadata_output,
             )
             self._update_job_final_status(job_id, result)

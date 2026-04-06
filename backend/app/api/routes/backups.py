@@ -158,6 +158,9 @@ async def get_backup_jobs(
             query = query.filter(BackupJob.status == status)
 
         total_count = query.count()
+        avg_duration_value = query.filter(BackupJob.duration_seconds.isnot(None)).with_entities(
+            func.avg(BackupJob.duration_seconds)
+        ).scalar()
         jobs = query.order_by(desc(BackupJob.timestamp)).offset(offset).limit(limit).all()
 
         return {
@@ -165,6 +168,7 @@ async def get_backup_jobs(
             "total_count": total_count,
             "limit": limit,
             "offset": offset,
+            "avg_duration_seconds": float(avg_duration_value) if avg_duration_value is not None else None,
             "status_totals": status_totals,
             "jobs": [
                 {
@@ -175,6 +179,7 @@ async def get_backup_jobs(
                     "timestamp": job.timestamp.isoformat() if job.timestamp else None,
                     "error_message": job.error_message,
                     "config_size_bytes": job.config_size_bytes,
+                    "duration_seconds": job.duration_seconds,
                     "metadata_output": job.metadata_output,
                 }
                 for job in jobs

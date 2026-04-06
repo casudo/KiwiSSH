@@ -12,6 +12,8 @@ export interface BackupRecord {
   git_commit?: string | null
   error_message?: string | null
   config_size_bytes?: number | null
+  duration_seconds?: number | null
+  metadata_output?: string | null
 }
 
 export interface BackupDiff {
@@ -42,6 +44,9 @@ export interface BackupJobStatus {
   status: string
   timestamp: number
   message: string
+  duration_seconds?: number | null
+  metadata_output?: string | null
+  config_size_bytes?: number | null
 }
 
 export interface BackupJobRecord {
@@ -52,6 +57,8 @@ export interface BackupJobRecord {
   timestamp: string
   error_message?: string | null
   config_size_bytes?: number | null
+  duration_seconds?: number | null
+  metadata_output?: string | null
 }
 
 export interface BackupJobsResponse {
@@ -59,6 +66,7 @@ export interface BackupJobsResponse {
   total_count: number
   limit: number
   offset: number
+  avg_duration_seconds?: number | null
   status_totals?: {
     pending: number
     in_progress: number

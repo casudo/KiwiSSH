@@ -24,6 +24,7 @@ export const useJobsStore = defineStore("jobs", () => {
   const totalFailedJobs = ref(0)
   const totalInProgressJobs = ref(0)
   const totalNoChangesJobs = ref(0)
+  const avgDurationSeconds = ref<number | null>(null)
   const lastQuery = ref<JobsQueryState>({
     limit: 5000,
     offset: 0,
@@ -78,6 +79,9 @@ export const useJobsStore = defineStore("jobs", () => {
       const response = await backupApi.getJobs(deviceName, status, limit, offset, jobId)
       const rawJobs = response.jobs || []
       totalJobs.value = typeof response.total_count === "number" ? response.total_count : rawJobs.length
+      avgDurationSeconds.value = typeof response.avg_duration_seconds === "number"
+        ? response.avg_duration_seconds
+        : null
       const statusTotals = response.status_totals
       if (statusTotals) {
         totalSuccessJobs.value = statusTotals.success || 0
@@ -99,6 +103,9 @@ export const useJobsStore = defineStore("jobs", () => {
         status: job.status, // "success", "failed", or "no_changes"
         timestamp: new Date(job.timestamp).getTime(),
         message: job.error_message || getJobMessage(job.status, job.device_name),
+        duration_seconds: job.duration_seconds ?? null,
+        metadata_output: job.metadata_output ?? null,
+        config_size_bytes: job.config_size_bytes ?? null,
       }))
     } catch (e) {
       error.value = e instanceof Error ? e.message : "Failed to load jobs"
@@ -200,6 +207,8 @@ export const useJobsStore = defineStore("jobs", () => {
     totalSuccessJobs.value = 0
     totalFailedJobs.value = 0
     totalInProgressJobs.value = 0
+    totalNoChangesJobs.value = 0
+    avgDurationSeconds.value = null
   }
 
   function setSelectedJob(job: BackupJobStatus | null) {
@@ -223,6 +232,7 @@ export const useJobsStore = defineStore("jobs", () => {
     totalFailedJobs,
     totalInProgressJobs,
     totalNoChangesJobs,
+    avgDurationSeconds,
     // Getters
     inProgressJobs,
     inProgressCount,

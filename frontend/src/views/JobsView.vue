@@ -178,6 +178,39 @@ function formatStatus(status: string): string {
   }
 }
 
+function formatDuration(seconds?: number | null): string {
+  if (seconds === null || seconds === undefined || Number.isNaN(seconds)) {
+    return "N/A"
+  }
+
+  if (seconds < 1) {
+    return `${seconds.toFixed(2)}s`
+  }
+
+  if (seconds < 60) {
+    return `${seconds.toFixed(1)}s`
+  }
+
+  const minutes = Math.floor(seconds / 60)
+  const remainderSeconds = Math.round(seconds % 60)
+  return `${minutes}m ${remainderSeconds}s`
+}
+
+function formatSize(bytes?: number | null): string {
+  if (bytes === null || bytes === undefined) {
+    return "N/A"
+  }
+  if (bytes === 0) {
+    return "0 B"
+  }
+
+  const units = ["B", "KB", "MB", "GB", "TB"]
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  const value = bytes / 1024 ** exponent
+  const precision = value >= 10 || exponent === 0 ? 0 : 1
+  return `${value.toFixed(precision)} ${units[exponent]}`
+}
+
 async function handleFlushDatabase() {
   const confirmText = "Yes I am aware of all danger"
   if (flushConfirmation.value.toLowerCase() === confirmText.toLowerCase()) {
@@ -212,7 +245,7 @@ async function handleFlushDatabase() {
     </div>
 
     <!-- Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
       <div class="card">
         <div class="flex items-center justify-between">
           <div>
@@ -220,6 +253,15 @@ async function handleFlushDatabase() {
             <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ jobsStore.totalJobs }}</p>
           </div>
           <div class="text-3xl text-gray-300 dark:text-gray-500">📊</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Avg Backup Time</p>
+            <p class="text-2xl font-bold text-indigo-600">{{ formatDuration(jobsStore.avgDurationSeconds) }}</p>
+          </div>
+          <div class="text-3xl text-indigo-300 dark:text-indigo-500">🕒</div>
         </div>
       </div>
       <div class="card">
@@ -432,7 +474,7 @@ async function handleFlushDatabase() {
               </div>
 
               <!-- Details -->
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                 <div>
                   <p class="text-gray-500 dark:text-gray-400 text-xs">Status</p>
                   <p class="font-medium text-gray-900 dark:text-gray-100">{{ job.status }}</p>
@@ -444,6 +486,10 @@ async function handleFlushDatabase() {
                 <div>
                   <p class="text-gray-500 dark:text-gray-400 text-xs">Device Name</p>
                   <p class="font-medium text-gray-900 dark:text-gray-100">{{ job.device_name }}</p>
+                </div>
+                <div>
+                  <p class="text-gray-500 dark:text-gray-400 text-xs">Duration</p>
+                  <p class="font-medium text-gray-900 dark:text-gray-100">{{ formatDuration(job.duration_seconds) }}</p>
                 </div>
                 <div>
                   <p class="text-gray-500 dark:text-gray-400 text-xs">Device IP</p>
@@ -498,7 +544,7 @@ async function handleFlushDatabase() {
     >
       <div
         @click.stop
-        class="bg-white dark:bg-slate-800 rounded-lg shadow-xl dark:shadow-black/50 max-w-md w-full max-h-screen overflow-y-auto"
+        class="bg-white dark:bg-slate-800 rounded-lg shadow-xl dark:shadow-black/50 max-w-5xl w-full max-h-[85vh] overflow-y-auto"
       >
         <div class="sticky top-0 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between">
           <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Job Details</h2>
@@ -510,41 +556,58 @@ async function handleFlushDatabase() {
           </button>
         </div>
 
-        <div class="px-6 py-4 space-y-4">
-          <div>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Job ID</p>
-            <p class="font-mono text-sm text-gray-900 dark:text-gray-100 break-all">{{ jobsStore.selectedJob.job_id }}</p>
-          </div>
+        <div class="px-6 py-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="rounded border border-gray-200 dark:border-slate-700 p-3">
+              <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Job ID</p>
+              <p class="font-mono text-sm text-gray-900 dark:text-gray-100 break-all">{{ jobsStore.selectedJob.job_id }}</p>
+            </div>
 
-          <div>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Status</p>
-            <p class="font-medium text-gray-900 dark:text-gray-100">{{ jobsStore.selectedJob.status }}</p>
-          </div>
+            <div class="rounded border border-gray-200 dark:border-slate-700 p-3">
+              <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Status</p>
+              <p class="font-medium text-gray-900 dark:text-gray-100">{{ jobsStore.selectedJob.status }}</p>
+            </div>
 
-          <div>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Group</p>
-            <p class="font-medium text-gray-900 dark:text-gray-100">{{ jobsStore.selectedJob.group }}</p>
-          </div>
+            <div class="rounded border border-gray-200 dark:border-slate-700 p-3">
+              <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Group</p>
+              <p class="font-medium text-gray-900 dark:text-gray-100">{{ jobsStore.selectedJob.group }}</p>
+            </div>
 
-          <div>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Device Name</p>
-            <p class="font-medium text-gray-900 dark:text-gray-100">{{ jobsStore.selectedJob.device_name }}</p>
-          </div>
+            <div class="rounded border border-gray-200 dark:border-slate-700 p-3">
+              <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Device Name</p>
+              <p class="font-medium text-gray-900 dark:text-gray-100">{{ jobsStore.selectedJob.device_name }}</p>
+            </div>
 
-          <div>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Device IP</p>
-            <p class="font-medium text-gray-900 dark:text-gray-100">{{ getDeviceInfo(jobsStore.selectedJob.device_name)?.ip_address || 'N/A' }}</p>
-          </div>
+            <div class="rounded border border-gray-200 dark:border-slate-700 p-3">
+              <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Device IP</p>
+              <p class="font-medium text-gray-900 dark:text-gray-100">{{ getDeviceInfo(jobsStore.selectedJob.device_name)?.ip_address || 'N/A' }}</p>
+            </div>
 
-          <div>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Timestamp</p>
-            <p class="font-medium text-gray-900 dark:text-gray-100">{{ new Date(jobsStore.selectedJob.timestamp).toLocaleString() }}</p>
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">ⓘ Timezone converted for your local region</p>
-          </div>
+            <div class="rounded border border-gray-200 dark:border-slate-700 p-3">
+              <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Duration</p>
+              <p class="font-medium text-gray-900 dark:text-gray-100">{{ formatDuration(jobsStore.selectedJob.duration_seconds) }}</p>
+            </div>
 
-          <div v-if="jobsStore.selectedJob.message">
-            <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Message</p>
-            <p class="text-sm text-gray-900 dark:text-gray-100">{{ jobsStore.selectedJob.message }}</p>
+            <div class="rounded border border-gray-200 dark:border-slate-700 p-3">
+              <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Config Size</p>
+              <p class="font-medium text-gray-900 dark:text-gray-100">{{ formatSize(jobsStore.selectedJob.config_size_bytes) }}</p>
+            </div>
+
+            <div class="rounded border border-gray-200 dark:border-slate-700 p-3">
+              <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Timestamp</p>
+              <p class="font-medium text-gray-900 dark:text-gray-100">{{ new Date(jobsStore.selectedJob.timestamp).toLocaleString() }}</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Timezone converted for your local region</p>
+            </div>
+
+            <div v-if="jobsStore.selectedJob.message" class="rounded border border-gray-200 dark:border-slate-700 p-3 md:col-span-2">
+              <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Message</p>
+              <p class="text-sm text-gray-900 dark:text-gray-100">{{ jobsStore.selectedJob.message }}</p>
+            </div>
+
+            <div v-if="jobsStore.selectedJob.metadata_output" class="rounded border border-gray-200 dark:border-slate-700 p-3 md:col-span-2">
+              <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Metadata Output</p>
+              <pre class="text-xs whitespace-pre-wrap wrap-break-word bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded p-3 text-gray-800 dark:text-gray-200 max-h-72 overflow-auto">{{ jobsStore.selectedJob.metadata_output }}</pre>
+            </div>
           </div>
         </div>
       </div>
