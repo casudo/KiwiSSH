@@ -31,7 +31,7 @@ class GitService:
     @property
     def backups_base_dir(self) -> Path:
         """Get the base backup directory."""
-        return self.settings.backups_dir
+        return Path(self.settings.git.local_path).resolve()
 
     def _get_repo_path(self, group: str) -> Path:
         """Get repo path for a specific group."""
