@@ -311,8 +311,8 @@ class Settings(BaseSettings):
     )
 
     ### Paths
-    config_dir: Path = Field(default=Path("../config"))
-    backups_dir: Path = Field(default=Path("../backups"))
+    config_dir: Path = Field(default=Path("/config"))
+    backups_dir: Path = Field(default=Path("/backups"))
 
     ### Testing
     local_test_mode: bool = Field(default=False, description="Use tests/config and tests/sources for local testing")
