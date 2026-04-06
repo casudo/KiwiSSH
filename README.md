@@ -2,7 +2,7 @@
   <img alt="Logo" src="readme_images/kiwissh_logo.png"></a>
   <br>
   <h1>KiwiSSH</h1>
-  Very cool placeholder text
+  Backup your network device configurations with ease and keep track of changes.
 
   ---
 
@@ -12,7 +12,12 @@
 
 # About KiwiSSH <!-- omit from toc -->
 
-PLACEHOLDER
+KiwiSSH is a network device configuration backup tool that connects to your devices via SSH, fetches their configurations, and stores them in git repositories for easy version control and change tracking. It also provides a user-friendly web interface to manage your devices, view backup logs, and see configuration changes over time.
+
+It was created as better alternative to RANCID and Oxidized, with a focus on simplicity, ease of use, and modern technologies.
+
+> [!WARNING]
+> KiwiSSH is still in early development and may contain bugs and support for only a limited number of vendors. If you want to collaborate, contribute or just have questions, please open an issue or PR.
 
 # Table of Contents <!-- omit from toc -->
 
@@ -33,8 +38,6 @@ PLACEHOLDER
     - [git](#git)
     - [groups](#groups)
     - [nodes](#nodes)
-- [FAQ](#faq)
-  - [How do I setup a remote git location?](#how-do-i-setup-a-remote-git-location)
   - [Vendor folder](#vendor-folder)
     - [Vendor YAML file](#vendor-yaml-file)
       - [vendor](#vendor)
@@ -42,6 +45,9 @@ PLACEHOLDER
       - [commands](#commands)
       - [processing](#processing)
   - [SSH Profiles YAML file](#ssh-profiles-yaml-file)
+- [FAQ](#faq)
+  - [How do I setup a remote git location?](#how-do-i-setup-a-remote-git-location)
+  - [When do I choose the global `git.remote` vs per-group overrides (`groups.<group>.git.remote`)?](#when-do-i-choose-the-global-gitremote-vs-per-group-overrides-groupsgroupgitremote)
 - [Future Goals](#future-goals)
 - [Technical Documentation](#technical-documentation)
 - [Development](#development)
@@ -50,11 +56,32 @@ PLACEHOLDER
 
 # Features
 
-PLACEHOLDER
+The frontend offers:
+
+- Dashboard (statistics, favorite devices, overview of KiwiSSH)
+- Information-rich device List with filtering, search and favorite option, backup contribution calender, group and vendor belonging , status badge, config diff view and more
+- Overview of configured SSH profiles, vendors and groups for easy management and device tracking
+- Detailed backup job logs with timestamps, status and error messages for each backup attempt
+- Swagger API documentation
+
+The backend provides:
+
+- SSH connectivity to network devices for configuration backup
+- Configurable backup schedules with cron expressions on global, group and device level
+- Local git repositories for each device group to store configuration history and provide diff view
+- Optional remote git repository support to push configuration changes to a central Git server (e.g. GitHub, GitLab, Gitea, etc.)
+- Support for loading device lists from CSV files or PostgreSQL databases
+- Configurable SSH options and backup commands per vendor, group and device
+- Configurable processing rules for captured configurations, including line stripping, cropping and regex-based redaction of sensitive information
+- The ability to easily add support for new vendors by creating YAML configuration files that define how to interact with the device CLI and process the output
+- RESTful API endpoints for device management, backup job logs and configuration retrieval to enable integration with other tools and automation
 
 # Supported OS
 
-PLACEHOLDER
+| Vendor | OS/Device Type | YAML file | Notes |
+| --- | --- | --- | --- |
+| Cisco | IOS | [cisco_ios.yaml](/config/vendors/cisco_ios.yaml) | |
+| Fortinet | FortiOS | [fortinet_fortios.yaml](/config/vendors/fortinet_fortios.yaml) | |
 
 # Screenshots
 
@@ -70,7 +97,7 @@ To run KiwiSSH on your local machine without Docker, follow these steps:
 
 1. Clone the repository
 2. Navigate to the backend directory and install the required Python dependencies from `requirements.txt`
-3. Set up the `kiwissh.yaml` configuration file in the `config` directory
+3. Set up the `kiwissh.yaml` configuration file in the `config/` directory
 4. Run the backend using `python entrypoint.py`
 5. Navigate to the frontend directory and install the dependencies with `npm install`
 6. Start the frontend with `npm run dev`
@@ -110,11 +137,11 @@ See the example [`backend/.env.example`](backend/.env.example) file. Either rena
 
 ## kiwissh.yaml
 
-> [/config/kiwissh.yaml](config/kiwissh.yaml)
+> Found at [/config/kiwissh.yaml](config/kiwissh.yaml)
 
-The file should be self-explanatory. For a more detailed understanding of what each segment does, see the headings below.
+Below you'll find a detailed overview of all available configuration options in the `kiwissh.yaml` file. This file is the main configuration file for KiwiSSH and contains settings for the application, database connection, device sources, git integration, groups and nodes.
 
-> [IMPORTANT]
+> [!IMPORTANT]
 > Changes to the `kiwissh.yaml` file will require a restart of the backend application to take effect.
 
 ### app
@@ -127,7 +154,7 @@ Full available options:
 | `app.threads` | The maximum number of concurrent SSH sessions for backups. | No | `20` |
 | `app.timeout` | The global SSH timeout in seconds. This can be overridden for specific groups or nodes. | No | `30` |
 | `app.retry` | The global SSH retry count, which defines how many additional attempts should be made after the first failed attempt. This can also be overridden for specific groups or nodes. | No | `3` |
-| `app.api.host` | The host on which the API server will run. | No | `127.0.0.1` |
+| `app.api.host` | The host on which the API server will run. Should be set to 0.0.0.0 when running in Docker. | No | `127.0.0.1` |
 | `app.api.port` | The port on which the API server will run. | No | `8000` |
 | `app.api.cors_origins` | A list of allowed CORS origins for the API server. | No | `["http://localhost:5173", "http://127.0.0.1:5173"]` |
 | `app.schedule.cron` | The cron expression for the global backup schedule. | No | `0 2 * * *` |
@@ -196,14 +223,14 @@ dev-rack,sales-catalyst-24p,192.168.5.3,false
 
 The `backup_jobs` table can grow quite large over time depending on the number of devices and backup frequency. To prevent the database from growing indefinitely, it's recommended to set up a regular maintenance job to clean up old backup job logs that are no longer needed. This can be done using a simple SQL query to delete old records based on a retention policy (e.g., delete logs older than 90 days). **We might implement this as a built-in feature in the future, but for now it's up to the user to set this up.**
 
-> [TIP]
+> [!TIP]
 > Consider backing up your PostgreSQL database(s) regularly, independently of KiwiSSH. We recommend [Databasus](https://github.com/databasus/databasus) for that.
 
 ### git
 
 KiwiSSH will always store the device configurations in local git repositories to provide diff view, history and download options. You can optionally set a remote git location to push the commits (the device config) to.
 
-> [!CRITICAL]
+> [!CAUTION]
 > DO NOT delete the "backups" folder ever unless you want to lose all your local git repositories and their history.
 
 | Key | Description | Required | Default Value |
@@ -212,35 +239,6 @@ KiwiSSH will always store the device configurations in local git repositories to
 | `git.commit_message_template` | The global template for the git commit messages. Available placeholders: `{group}`, `{device_name}`, `{timestamp}`. | No | `"Backup: {group}/{device_name} at {timestamp}"` |
 | `git.remote.url` | The global remote git repository URL. Available placeholders: `{group}`. This can be overridden for specific groups. | No | - |
 | `git.remote.branch` | The global remote git branch to push to. This can be overridden for specific groups. | No | `main` |
-
-> [!TIP]
-> > When do I choose the global `git.remote` vs per-group overrides (`groups.<group>.git.remote`)?
->
-> **Global:** You should use the global `git.remote` configuration if all your groups should push to the same remote organization/repository structure (for example one repository per group **under the same** organization on GitHub). In this case, you can use the `{group}` placeholder in the global `git.remote.url` to dynamically generate the remote URL for each group based on its name.
-> -> Example:`git.remote.url: git@github.com:<YOUR_ORGANIZATION_HERE>/{group}.git` will result in repositories like `<YOUR_ORGANIZATION_HERE>/customer-aaa.git`, `<YOUR_ORGANIZATION_HERE>/abc-company.git`, etc.
->
-> **Group overrides:** If your groups belong to different organizations or if you need more granular control over the remote URL each group, setup per-group overrides. In this case, you would leave the global `git.remote` configuration empty (aka remove it) and set the `git.remote.url` and optionally `git.remote.branch` for each group under `groups.<group>.git.remote`.
-> -> Example: Group 1 `groups.datacenter-firewalls.git.remote.url: ssh://git@192.168.45.25:222/company-abc/datacenter-firewalls.git`, Group 2 `groups.office-switches.git.remote.url: ssh://git@192.168.45.25:222/company-xyz/office-switches.git`
-
-In the next example, the global `git.remote.url` is configured with a placeholder `{group}` which will be replaced by the actual group name for each group. All groups will use the global template except for `development-firewalls` which has a per-group override for the remote URL, so it will push to the specified SSH URL instead of the global template.
-
-```yaml
-git:
-  local_path: "/config/prod/kiwissh/backups"
-  remote:
-    url: "ssh://git@github.com:<YOUR_ORGANIZATION_HERE>/kiwissh-{group}.git"
-
-groups:
-  development-firewalls:
-    username: "admin"
-    password: "password"
-    vendor: "fortinet_fortigate"
-    ssh_profile: "modern"
-    git:
-      remote:
-        url: "ssh://git@github.com:dev_orga/development-firewalls.git"
-        branch: "dev"
-```
 
 ### groups
 
@@ -272,35 +270,6 @@ groups:
 | `nodes.<device_name>.retry` | The SSH retry count for this device. This overrides the group and global SSH retry count. | No | `groups.<group>.retry` or Global `app.retry` |
 | `nodes.<device_name>.schedule.cron` | The cron expression for the backup schedule for this device. This overrides the group and global backup schedule. | No | `groups.<group>.schedule.cron` or Global `app.schedule.cron` |
 | `nodes.<device_name>.git.commit_message_template` | The git commit message template for this device. This overrides group and global git commit templates. | No | `groups.<group>.git.commit_message_template` or global `git.commit_message_template` |
-
-# FAQ
-
-Frequently Asked Questions about the configuration of KiwiSSH.
-
-## How do I setup a remote git location?
-
-KiwiSSH can push local git commits via SSH to their remote repository. To set up the remote repositories (in general), follow these steps:
-
-1. Create one remote repository per group.
-   - If all groups live under one org, use one global template in `git.remote.url` with `{group}`.
-   - If groups are spread across multiple organizations, set per-group overrides under `groups.<group>.git.remote.url`.
-2. Ensure the branch from `git.remote.branch` (or per-group branch override) exists or can be created by the push user. Default is `main`.
-3. Create an SSH keypair for KiwiSSH if you haven't already and add the public key to your Git provider.
-4. Make sure the remote Git user has write access to the repositories
-5. Run backup and confirm commits are present locally and remotely.
-
-> [!TIP]
-> Since KiwiSSH will use the local OpenSSH client to push commits to the remote repository, the SSH config file (`~/.ssh/config` or `C:\Users\user\.ssh\config`) can be used to manage SSH connection details for the Git provider (e.g. GitHub, GitLab, etc.) and set up things like SSH key usage, custom ports, etc.
->
-> Example: `groups.<group>.git.remote.url: "ssh://git@gitea/customer-aaa/prod-firewalls.git"`
-> Config in `~/.ssh/config`:
-> ```
-> Host gitea
->    HostName 192.168.24.4
->    Port 222
->    User git
->    IdentityFile ~/.ssh/kiwissh-client
-> ```
 
 ## Vendor folder
 
@@ -391,6 +360,63 @@ SSH profiles define reusable options for SSH connections. Assign a profile via `
 
 You can create your own SSH profile by adding a new entry to the `ssh_profiles.yaml` file. Each profile should have a unique name.
 
+# FAQ
+
+Frequently Asked Questions about the configuration of KiwiSSH.
+
+## How do I setup a remote git location?
+
+KiwiSSH can push local git commits via SSH to their remote repository. To set up the remote repositories (in general), follow these steps:
+
+1. Create one remote repository per group.
+   - If all groups live under one org, use one global template in `git.remote.url` with `{group}`.
+   - If groups are spread across multiple organizations, set per-group overrides under `groups.<group>.git.remote.url`.
+2. Ensure the branch from `git.remote.branch` (or per-group branch override) exists or can be created by the push user. Default is `main`.
+3. Create an SSH keypair for KiwiSSH if you haven't already and add the public key to your Git provider.
+4. Make sure the remote Git user has write access to the repositories
+5. Run backup and confirm commits are present locally and remotely.
+
+> [!TIP]
+> Since KiwiSSH will use the local OpenSSH client to push commits to the remote repository, the SSH config file (`~/.ssh/config` or `C:\Users\user\.ssh\config`) can be used to manage SSH connection details for the Git provider (e.g. GitHub, GitLab, etc.) and set up things like SSH key usage, custom ports, etc.
+>
+> Example: `groups.<group>.git.remote.url: "ssh://git@gitea/customer-aaa/prod-firewalls.git"`
+> Config in `~/.ssh/config`:
+> ```
+> Host gitea
+>    HostName 192.168.24.4
+>    Port 222
+>    User git
+>    IdentityFile ~/.ssh/kiwissh-client
+> ```
+
+## When do I choose the global `git.remote` vs per-group overrides (`groups.<group>.git.remote`)?
+
+**Global:** You should use the global `git.remote` configuration if all your groups should push to the same remote organization/repository structure (for example one repository per group **under the same** organization on GitHub). In this case, you can use the `{group}` placeholder in the global `git.remote.url` to dynamically generate the remote URL for each group based on its name.
+-> Example:`git.remote.url: git@github.com:<YOUR_ORGANIZATION_HERE>/{group}.git` will result in repositories like `<YOUR_ORGANIZATION_HERE>/customer-aaa.git`, `<YOUR_ORGANIZATION_HERE>/abc-company.git`, etc.
+
+**Group overrides:** If your groups belong to different organizations or if you need more granular control over the remote URL each group, setup per-group overrides. In this case, you would leave the global `git.remote` configuration empty (aka remove it) and set the `git.remote.url` and optionally `git.remote.branch` for each group under `groups.<group>.git.remote`.
+-> Example: Group 1 `groups.datacenter-firewalls.git.remote.url: ssh://git@192.168.45.25:222/company-abc/datacenter-firewalls.git`, Group 2 `groups.office-switches.git.remote.url: ssh://git@192.168.45.25:222/company-xyz/office-switches.git`
+
+In the next example, the global `git.remote.url` is configured with a placeholder `{group}` which will be replaced by the actual group name for each group. All groups will use the global template except for `development-firewalls` which has a per-group override for the remote URL, so it will push to the specified SSH URL instead of the global template.
+
+```yaml
+git:
+  local_path: "/config/prod/kiwissh/backups"
+  remote:
+    url: "ssh://git@github.com:<YOUR_ORGANIZATION_HERE>/kiwissh-{group}.git"
+
+groups:
+  development-firewalls:
+    username: "admin"
+    password: "password"
+    vendor: "fortinet_fortigate"
+    ssh_profile: "modern"
+    git:
+      remote:
+        url: "ssh://git@github.com:dev_orga/development-firewalls.git"
+        branch: "dev"
+```
+
 ---
 
 # Future Goals
@@ -416,6 +442,7 @@ You can create your own SSH profile by adding a new entry to the `ssh_profiles.y
 - Move config validation from `entrypoint.py` to `@field_validator` or `@model_validator` in the Pydantic models in `config.py`. These get directly called when the config is loaded via `get_settings()`. This is the first and fastest way to validate the config. Maybe the entrypoint file is obsolite after that or can be simplified to just validate environment variables. `entrypoint.py` is still useful to check for non-empty fields.
 - Pentests
 - Rework Pydantic models (required vs optional fields, default values, validators, etc.)
+- Rework `tests/`. Include real mock device CLI outputs and uniform sources CSV. Exclude `tests/backups` in .gitignoore. These files can be then freely used by any maintainer to test things out
 
 **Long Term:**
 
@@ -443,14 +470,11 @@ You can create your own SSH profile by adding a new entry to the `ssh_profiles.y
 
 # Technical Documentation
 
-Placeholder -> Move to TECHNICAL.md?
+Please visit [TECHNICAL.md](TECHNICAL.md) for detailed technical documentation about the architecture and design decisions of KiwiSSH.
 
 # Development
 
-Backend: cd backend, python entrypoint.py
-Frontend: cd frontend, npm run dev
-
-> [IMPORTANT]
+> [!IMPORTANT]
 > If you would like to contribute to the project, please to a look at the [CONTRIBUTING.md](CONTRIBUTING.md) file for guidelines on how to contribute and the code of conduct.
 
 # License
