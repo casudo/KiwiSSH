@@ -328,7 +328,7 @@ onMounted(async () => {
     </div>
 
     <!-- Detail panel -->
-    <div v-if="selectedGroup" @click="selectedGroup = null" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div v-if="selectedGroup" @click="selectedGroup = null" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <div @click.stop class="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-900 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
         <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
           <h2 class="text-xl font-semibold text-gray-900 dark:text-white">{{ selectedGroup }}</h2>

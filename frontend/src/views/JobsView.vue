@@ -494,7 +494,7 @@ async function handleFlushDatabase() {
     <div
       v-if="jobsStore.selectedJob"
       @click="jobsStore.setSelectedJob(null)"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
     >
       <div
         @click.stop
@@ -554,7 +554,7 @@ async function handleFlushDatabase() {
     <div
       v-if="showFlushDialog"
       @click="showFlushDialog = false"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
     >
       <div
         @click.stop
