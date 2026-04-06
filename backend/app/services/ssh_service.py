@@ -17,9 +17,15 @@ logger = logging.getLogger(__name__)
 
 ANSI_ESCAPE_RE = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
 
-### Generic prompt detection used for all vendors.
-## Examples: "hostname#", "hostname>", "hostname(config)#", etc.
-GENERIC_PROMPT_RE = re.compile(r"[>#]\s*$", re.MULTILINE)
+### Generic prompt detection used for all vendors
+## Matches common prompt shapes like:
+## - hostname#
+## - hostname>
+## - hostname(config)#
+## - [user@host ~]#
+## Notes:
+## - Excludes '=' to avoid matching config assignment lines
+GENERIC_PROMPT_RE = re.compile(r"[^\r\n=]*[A-Za-z0-9][^\r\n=]*[>#]\s*$")
 
 GENERIC_PROMPT_PATTERNS = [GENERIC_PROMPT_RE]
 
@@ -99,11 +105,13 @@ class SSHService:
 
         ### Read in a loop until we see a prompt pattern or hit the timeout
         while True:
-            ### Check if any of the patterns match the current buffer content
+            ### Check if any prompt pattern matches the current output line
+            ## Evaluating only the last line avoids false positives from earlier content..
+            ## ..and from random chunk boundaries inside large command outputs
             if patterns:
-                ### Only check the last 4096 characters to avoid performance issues with large outputs
                 tail = buffer[-4096:]
-                if any(pattern.search(tail) for pattern in patterns):
+                last_line = tail.split("\n")[-1].replace("\r", "")
+                if any(pattern.fullmatch(last_line) for pattern in patterns):
                     return buffer
 
             ### If no pattern matched, read more data with a short timeout to allow for checking the deadline
