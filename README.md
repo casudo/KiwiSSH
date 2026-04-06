@@ -327,14 +327,32 @@ Each segment is explained in detail below.
 | --- | ----------- | -------- | ------------- |
 | `commands.<phase>` | A list of commands to run in the specified phase. Supported phases are `pre_backup`, `backup`, and `post_backup`. | **Yes** | - |
 
-**Command phase behavior:**
+Steps run in a single interactive shell session in this order: `pre_backup` -> `backup` -> `post_backup`
 
-- Steps run in a single interactive shell session in this order: `pre_backup` -> `backup` -> `post_backup`
-- Supported step types are `command` and `send_input`
-  - For `send_input`, omit `input` to send the resolved device password
-- `wait_for_prompt` is optional per step and defaults to `true`
-- `comment: true` on backup commands renders output as comment-prefixed metadata at the top of the saved file
-- Configured steps are treated as required; a failing step aborts backup collection
+Each item in the `commands.<phase>` list follows this structure:
+
+```yaml
+commands:
+  backups:
+    - command: "show running-config"
+      description: "Get running configuration"
+    - command: "another command here"
+    - type: "send_input"
+      command: "some command that requires input"
+      input: "the input to send after the command"
+```
+
+You can use the following keys for each command step:
+
+| Key | Description | Required | Default Value |
+| --- | ----------- | -------- | ------------- |
+| `command` | Directly run the command on the device. | **Either `command` or `type`** | - |
+| `type` | Run the command in specified in this item and send the input (`input`) afterwards. If `input` is omitted, the resolved device password will be sent as input. | **Either `command` or `type`** | Must be `send_input` |
+| `input` (for `type: "send_input"` only!) | The input to send after the command. This is only used for `send_input` type steps. If omitted, the resolved device password will be sent as input. | No | Resolved device password |
+| `description` | A brief description of the command. | No | - |
+| `comment` | If set to true, the output of this command will be rendered as comment-prefixed metadata at the top of the saved config file. This is useful for adding important information like command descriptions or timestamps directly in the config file. | No | `false` |
+| `wait_for_prompt` | If set to false, KiwiSSH will not wait for the command prompt to return after running this command before proceeding to the next step. Use with caution. | No | `true` |
+| `show_command_in_config` | If set to true, the command will be included directly in the main config body above its output, prefixed with the comment prefix. This provides better context for the captured output when viewing the saved config file. `show_command_in_config: true` and `comment: true` cannot be used together and will fail validation. | No | `false` |
 
 #### processing
 

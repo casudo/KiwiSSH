@@ -200,6 +200,7 @@ class SSHService:
         - command: command string
         - output: captured output text
         - comment: whether this output should be rendered as top comment block
+        - show_command_in_config: whether command header is embedded before output in config body
         """
         captured_outputs: list[dict[str, Any]] = []
 
@@ -210,6 +211,13 @@ class SSHService:
 
             comment = bool(command_def.get("comment", False))
             wait_for_prompt = bool(command_def.get("wait_for_prompt", True))
+            show_command_in_config = bool(command_def.get("show_command_in_config", False))
+
+            if comment and show_command_in_config:
+                raise RuntimeError(
+                    "Invalid backup command options: 'show_command_in_config: true' "
+                    "cannot be used together with 'comment: true'"
+                )
 
             ### Fire send input steps
             if step_type == "send_input":
@@ -255,6 +263,7 @@ class SSHService:
                         "command": command,
                         "output": output,
                         "comment": comment,
+                        "show_command_in_config": show_command_in_config,
                     })
             except Exception as ex:
                 if required:
@@ -472,11 +481,21 @@ class SSHService:
             ### Exit shell
             process.stdin.write("exit\n")
 
-        non_comment_outputs = [
-            str(chunk.get("output", "")).strip()
-            for chunk in captured_output
-            if not bool(chunk.get("comment", False))
-        ]
+        non_comment_outputs: list[str] = []
+        for chunk in captured_output:
+            if bool(chunk.get("comment", False)):
+                continue
+
+            output = str(chunk.get("output", "")).strip()
+            if not output:
+                continue
+
+            if bool(chunk.get("show_command_in_config", False)):
+                command = str(chunk.get("command", "")).strip()
+                if command:
+                    output = f"{comment_prefix}Command used: {command}\n{output}"
+
+            non_comment_outputs.append(output)
 
         ### Fill raw_config with non_comment_outputs while preserving their order and seperating the chunks with 2 newlines
         raw_config = "\n\n".join(output for output in non_comment_outputs if output)
