@@ -145,7 +145,6 @@ See the example [`backend/.env.example`](backend/.env.example) file. Either rena
 | ------------- | ----------- | -------- | ------------- |
 | `KIWISSH_LOCAL_TEST_MODE` | If set to true, the application will run in local test mode, which enforces certain config values for easier local testing and development. | No | `false` |
 | `KIWISSH_CONFIG_DIR` | The directory where the `kiwissh.yaml` configuration file is located. This is used to load the main configuration for the application. | No | `/config` |
-| `KIWISSH_BACKUPS_DIR` | The directory where the backup files and local git repositories will be stored. This is used to save the captured device configurations and git history. | No | `/backups` |
 | `TZ` | Timezone for the application. This is used for timestamps in backup job logs and Git commit messages. | **No** | `UTC` |
 
 ## kiwissh.yaml
@@ -384,7 +383,7 @@ SSH profiles define reusable options for SSH connections. Assign a profile via `
 > [!NOTE]
 > **Notes for the usage of** `known_hosts_policy`:
 > `strict` validates against `~/.ssh/known_hosts`
-> `ignore` skips known-host validation
+> `ignore` skips known-host validation (mapped to `known_hosts: None` in AsyncSSH)
 > `auto_add` currently falls back to `ignore` and logs a warning
 > Device backup authentication uses username/password from group/node config
 > SSH port and timeout are configured in group/node/app settings, not in SSH profiles

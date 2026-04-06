@@ -49,7 +49,7 @@ class SSHService:
                     "known_hosts_policy 'auto_add' is not implemented; falling back to 'ignore'"
                 )
                 ### TODO: Implement auto_add
-            known_hosts = None
+            known_hosts = None # None is AsyncSSH's way of disabling host key checks aka ignore mode
 
         ### Map configured SSH profile options to asyncssh.connect kwargs
         return {
@@ -400,19 +400,26 @@ class SSHService:
         """Establish SSH connection to a device using configured profile options."""
         ssh_options = self._get_ssh_options(ssh_profile)
 
-        ### Build asyncssh.connect kwargs, filtering out any None values
+        ### Build asyncssh.connect kwargs.
+        ## IMPORTANT: keep known_hosts=None for ignore mode. If omitted, AsyncSSH falls back..
+        ## ..to strict host-key checks against ~/.ssh/known_hosts.
         connect_kwargs: dict[str, Any] = {
             "host": str(device.ip_address),
             "port": int(port),
             "username": username,
             "password": password,
             "known_hosts": ssh_options.get("known_hosts"),
+        }
+
+        optional_kwargs: dict[str, Any] = {
             "kex_algs": ssh_options.get("kex_algs"),
             "encryption_algs": ssh_options.get("encryption_algs"),
             "server_host_key_algs": ssh_options.get("server_host_key_algs"),
             "connect_timeout": max(1, int(timeout)) if timeout is not None else None,
         }
-        connect_kwargs = {key: value for key, value in connect_kwargs.items() if value is not None}
+        for key, value in optional_kwargs.items():
+            if value is not None:
+                connect_kwargs[key] = value
 
         logger.debug(
             "Opening SSH connection to %s (%s:%d) with profile '%s'",
