@@ -485,6 +485,29 @@ class SSHService:
             return f"{comment_section}\n\n{processed_config}"
         return processed_config
 
+    async def _collect_local_vendor_config(
+        self,
+        device: DeviceBase,
+        vendor_id: str,
+        timeout_seconds: int,
+    ) -> str:
+        """Collect config in local test mode while reusing vendor processing rules."""
+        ### Keep vendor command validation parity with real SSH path.
+        command_sets = vendor_service.get_backup_commands(vendor_id)
+        backup_commands = command_sets.get("backup")
+        if not backup_commands:
+            raise ValueError(f"Vendor '{vendor_id}' has no backup commands configured")
+
+        raw_config = await asyncio.wait_for(
+            local_ssh_simulator.get_config(device),
+            timeout=timeout_seconds,
+        )
+        if not raw_config.strip():
+            raise RuntimeError("Local simulator returned empty config output")
+
+        processing_rules = vendor_service.get_processing_rules(vendor_id)
+        return self._apply_processing_rules(raw_config, processing_rules)
+
     async def get_config(
         self,
         device: DeviceBase,
@@ -504,9 +527,10 @@ class SSHService:
 
         ### Use the local simulator if test mode is enabled
         if self.settings.local_test_mode:
-            return await asyncio.wait_for(
-                local_ssh_simulator.get_config(device),
-                timeout=timeout_seconds,
+            return await self._collect_local_vendor_config(
+                device=device,
+                vendor_id=vendor_id,
+                timeout_seconds=timeout_seconds,
             )
 
         ### Try to fetch config from device with commands defined in vendor YAML, apply retries on failure
