@@ -1,0 +1,19 @@
+services:
+  backend:
+    container_name: kiwissh_backend
+    image: casudo/kiwissh-backend:<tag>
+    restart: unless-stopped
+    ### Uncomment ports if you want to access the API docs via http://<IP>:8000/docs
+    # ports:
+    #   - 8000:8000
+    volumes:
+      - PATH_TO_CONFIG/config:/config
+
+  frontend:
+    container_name: kiwissh_frontend
+    image: casudo/kiwissh-frontend:<tag>
+    restart: unless-stopped
+    ports:
+      - 8123:8080
+    depends_on:
+      - backend
