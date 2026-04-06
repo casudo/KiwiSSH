@@ -38,6 +38,9 @@ def configure_logging(debug: bool = False) -> None:
             "apscheduler": {
                 "level": "WARNING",  # Suppress all verbose + INFO APScheduler job store logs
             },
+            "asyncssh": {
+                "level": "WARNING",  # Suppress verbose AsyncSSH connection/session DEBUG + INFO logs
+            },
         },
         "root": {
             "level": level,
