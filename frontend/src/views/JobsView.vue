@@ -21,10 +21,35 @@ const currentPage = ref<number>(1)
 const pageSizeOptions = [25, 50, 100, 200]
 let jobIdSearchTimer: ReturnType<typeof setTimeout> | null = null
 let deviceSearchTimer: ReturnType<typeof setTimeout> | null = null
+let slowLoadTimer: ReturnType<typeof setTimeout> | null = null
+const showSlowLoadNotice = ref(false)
+
+function startSlowLoadTimer() {
+  if (slowLoadTimer) {
+    clearTimeout(slowLoadTimer)
+  }
+
+  slowLoadTimer = setTimeout(() => {
+    if (jobsStore.loading && jobsStore.jobs.length === 0) {
+      showSlowLoadNotice.value = true
+    }
+  }, 2000)
+}
+
+function clearSlowLoadTimer() {
+  if (slowLoadTimer) {
+    clearTimeout(slowLoadTimer)
+    slowLoadTimer = null
+  }
+  showSlowLoadNotice.value = false
+}
 
 onMounted(async () => {
+  startSlowLoadTimer()
+
   // Load jobs from database
   await loadJobsPage()
+  clearSlowLoadTimer()
 
   // Load devices for IP lookup
   if (devicesStore.devices.length === 0) {
@@ -43,6 +68,7 @@ onBeforeUnmount(() => {
     clearTimeout(deviceSearchTimer)
     deviceSearchTimer = null
   }
+  clearSlowLoadTimer()
 })
 
 watch(filterJobId, (value) => {
@@ -610,6 +636,25 @@ async function handleFlushDatabase() {
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div
+      v-if="showSlowLoadNotice"
+      class="fixed bottom-5 right-5 z-50 max-w-sm rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/90 p-4 shadow-lg"
+    >
+      <div class="flex items-start gap-3">
+        <LoadingSpinner size="sm" class="pt-0.5" />
+        <div class="flex-1">
+          <p class="text-sm font-semibold text-amber-900 dark:text-amber-200">Loading jobs is taking longer than usual</p>
+          <p class="text-xs text-amber-800 dark:text-amber-300 mt-1">Still fetching backup records. Large datasets can take a few extra seconds.</p>
+        </div>
+        <button
+          @click="showSlowLoadNotice = false"
+          class="text-xs text-amber-900 dark:text-amber-200 hover:underline"
+        >
+          Dismiss
+        </button>
       </div>
     </div>
 
