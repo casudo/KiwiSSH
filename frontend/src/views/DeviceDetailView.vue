@@ -51,6 +51,7 @@ const diffContent = ref<string>("")
 const diffStats = ref({ added: 0, removed: 0 })
 const diffLoading = ref(false)
 const diffError = ref<string | null>(null)
+const downloadingBackups = ref<Record<string, boolean>>({})
 
 onMounted(async () => {
   await devicesStore.fetchDevice(deviceName.value)
@@ -232,6 +233,12 @@ async function triggerBackup() {
 
 // Download config file
 async function downloadConfig(backup: BackupEntry) {
+  if (downloadingBackups.value[backup.hash]) {
+    return
+  }
+
+  downloadingBackups.value[backup.hash] = true
+
   try {
     const response = await backupApi.latestConfig(deviceName.value, backup.hash)
     const config = response.config || ""
@@ -248,7 +255,13 @@ async function downloadConfig(backup: BackupEntry) {
     window.URL.revokeObjectURL(url)
   } catch (e) {
     alert(`Download failed: ${e instanceof Error ? e.message : "Unknown error"}`)
+  } finally {
+    delete downloadingBackups.value[backup.hash]
   }
+}
+
+function isDownloading(backupHash: string): boolean {
+  return Boolean(downloadingBackups.value[backupHash])
 }
 
 // Format file size for display
@@ -442,9 +455,32 @@ function formatFileSize(bytes: number): string {
                 </div>
                 <button
                   @click="downloadConfig(backup)"
-                  class="flex-shrink-0 btn btn-secondary py-1 px-3 text-sm whitespace-nowrap"
+                  :disabled="isDownloading(backup.hash)"
+                  class="shrink-0 btn btn-secondary py-1 px-3 text-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <svg
+                    v-if="isDownloading(backup.hash)"
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-4 w-4 inline mr-1 animate-spin"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      class="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      stroke-width="4"
+                    />
+                    <path
+                      class="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
+                  </svg>
+                  <svg
+                    v-else
                     xmlns="http://www.w3.org/2000/svg"
                     class="h-4 w-4 inline mr-1"
                     fill="none"
@@ -458,7 +494,7 @@ function formatFileSize(bytes: number): string {
                       d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                     />
                   </svg>
-                  Download
+                  {{ isDownloading(backup.hash) ? "Downloading..." : "Download" }}
                 </button>
               </div>
             </div>
