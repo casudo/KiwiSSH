@@ -2,7 +2,7 @@
 import { RouterLink, useRoute } from "vue-router"
 import { useThemeStore } from "@/stores/theme"
 import { computed } from "vue"
-import { APP_VERSION } from "@/version"
+import { APP_VERSION, FRONTEND_VERSION } from "@/main"
 
 const route = useRoute()
 const themeStore = useThemeStore()
@@ -42,7 +42,7 @@ const isDarkMode = computed(() => themeStore.isDarkMode())
             </svg>
           </div>
           <span class="text-xl font-bold">KiwiSSH</span>
-          <span class="text-sm text-kiwissh-200/90 dark:text-gray-400">v{{ APP_VERSION }}</span>
+          <span class="text-sm text-kiwissh-200/90 dark:text-gray-400">v{{ APP_VERSION }} + TEST Frontend v{{ FRONTEND_VERSION }}</span>
         </RouterLink>
 
         <!-- Navigation and Theme Toggle -->
