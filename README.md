@@ -90,7 +90,9 @@ See the example [`backend/.env.example`](backend/.env.example) file. Either rena
 
 | Variable Name | Description | Required | Default Value |
 | ------------- | ----------- | -------- | ------------- |
-| `KIWISSH_LOCAL_TEST_MODE` | If set to true, the application will run in local test mode, which enforces certain config values for easier local testing and development. | **No** | `false` |
+| `KIWISSH_LOCAL_TEST_MODE` | If set to true, the application will run in local test mode, which enforces certain config values for easier local testing and development. | No | `false` |
+| `KIWISSH_CONFIG_DIR` | The directory where the `kiwissh.yaml` configuration file is located. This is used to load the main configuration for the application. | No | `/config` |
+| `KIWISSH_BACKUPS_DIR` | The directory where the backup files and local git repositories will be stored. This is used to save the captured device configurations and git history. | No | `/backups` |
 | `TZ` | Timezone for the application. This is used for timestamps in backup job logs and Git commit messages. | **No** | `UTC` |
 
 ## kiwissh.yaml
