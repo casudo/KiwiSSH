@@ -367,34 +367,36 @@ class Settings(BaseSettings):
         """Load YAML configuration files."""
         ### Load main config
         config_file = self.config_dir / "kiwissh.yaml"
-        if config_file.exists():
-            with open(config_file, encoding="utf-8") as f:
-                file_content = yaml.safe_load(f) or {}
+        if not config_file.exists():
+            raise ValueError(f"Main configuration file not found: {config_file}.")
 
-                ### TODO: Check for required sections and handle missing sections gracefully with defaults or warnings
+        with open(config_file, encoding="utf-8") as f:
+            file_content = yaml.safe_load(f) or {}
 
-                ### app
-                self.app = AppConfig(**file_content.get("app", {}))
+            ### TODO: Check for required sections and handle missing sections gracefully with defaults or warnings
 
-                ### groups
-                groups_data = file_content.get("groups", {})
-                self.groups = {name: GroupConfig(**cfg) for name, cfg in groups_data.items()}
+            ### app
+            self.app = AppConfig(**file_content.get("app", {}))
 
-                ### nodes
-                nodes_data = file_content.get("nodes", {})
-                self.nodes = {name: NodeConfig(**cfg) for name, cfg in nodes_data.items()}
+            ### groups
+            groups_data = file_content.get("groups", {})
+            self.groups = {name: GroupConfig(**cfg) for name, cfg in groups_data.items()}
 
-                ### sources
-                self.sources = SourcesConfig(**file_content.get("sources", {}))
+            ### nodes
+            nodes_data = file_content.get("nodes", {})
+            self.nodes = {name: NodeConfig(**cfg) for name, cfg in nodes_data.items()}
 
-                ### git
-                self.git = GitConfig(**file_content.get("git", {}))
+            ### sources
+            self.sources = SourcesConfig(**file_content.get("sources", {}))
 
-                ### Validate cross-section git remote requirements
-                self._validate_git_remote_configuration()
+            ### git
+            self.git = GitConfig(**file_content.get("git", {}))
 
-                ### application_database
-                self.application_database = ApplicationDatabaseConfig(**file_content.get("application_database", {}))
+            ### Validate cross-section git remote requirements
+            self._validate_git_remote_configuration()
+
+            ### application_database
+            self.application_database = ApplicationDatabaseConfig(**file_content.get("application_database", {}))
 
         ### Load SSH profiles
         ssh_profiles_file = self.config_dir / "ssh_profiles.yaml"
