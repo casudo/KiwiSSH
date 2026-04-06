@@ -22,7 +22,7 @@ It was created as better alternative to RANCID and Oxidized, with a focus on sim
 # Table of Contents <!-- omit from toc -->
 
 - [Features](#features)
-- [Supported OS](#supported-os)
+- [Supported OS/Device Types](#supported-osdevice-types)
 - [Screenshots](#screenshots)
 - [Installation](#installation)
   - [Bare Metal](#bare-metal)
@@ -76,12 +76,9 @@ The backend provides:
 - The ability to easily add support for new vendors by creating YAML configuration files that define how to interact with the device CLI and process the output
 - RESTful API endpoints for device management, backup job logs and configuration retrieval to enable integration with other tools and automation
 
-# Supported OS
+# Supported OS/Device Types
 
-| Vendor | OS/Device Type | YAML file | Notes |
-| --- | --- | --- | --- |
-| Cisco | IOS | [cisco_ios.yaml](/config/vendors/cisco_ios.yaml) | |
-| Fortinet | FortiOS | [fortinet_fortios.yaml](/config/vendors/fortinet_fortios.yaml) | |
+For a detailed overview of supported OS/Device types, please refer to the [OS_TYPES.md](OS_TYPES.md) file.
 
 # Screenshots
 
