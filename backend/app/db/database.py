@@ -41,7 +41,7 @@ def init_database(settings: Settings) -> None:
     Base.metadata.create_all(bind=engine)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-    logger.info("Application database initialized successfully (existing DB expected)")
+    logger.info("Application database initialized successfully")
 
 
 def get_db() -> Generator[Session, None, None]:
