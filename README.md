@@ -78,7 +78,21 @@ To run KiwiSSH on your local machine without Docker, follow these steps:
 
 ## Docker
 
-WIP
+KiwiSSH uses separate Docker images for backend and frontend.
+
+- Backend: FastAPI API service
+- Frontend: Nginx serving the built Vue app and proxying `/api/*` to backend
+
+1. Update the [`docker-compose.yaml.example`](docker-compose.yaml.example) with the correct image tags for backend and frontend and set your desired environment variables (optional) and volume mounts. You can find an overview of all available environment variables [here in the README](#environment-variables) or [in the example .env file](backend/.env.example).
+2. Run the [`docker-compose.yaml.example`](docker-compose.yaml.example) file
+3. Open the UI at `http://<IP>:8123`
+
+> [!IMPORTANT]
+> If you're using remote git storages, make sure the SSH keys for the remote git storages are correctly mounted to `/home/kiwissh/.ssh` and the permissions are correct (600 for private key and config file, owned by `kiwissh` running the container) to ensure successful SSH authentication when pushing.
+
+> [!NOTE]
+> - API calls are available through the frontend proxy: `http://<IP>:8123/api/v1/...`
+> - The mounted `/config` directory must contain `kiwissh.yaml`, `ssh_profiles.yaml`, and `vendors/`
 
 # Configuration
 
