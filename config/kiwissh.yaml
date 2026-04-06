@@ -11,6 +11,8 @@ app:
   retry: 2
   schedule:
     cron: "0 2 * * *" # Daily at 2 AM
+  api:
+    host: "0.0.0.0" # Should be set to 0.0.0.0 when running in Docker to be accessible from outside the container
 
 ### Application database (PostgreSQL only)
 ## This database stores KiwiSSH-owned data (backup job logs, favorites, etc.)
@@ -19,7 +21,7 @@ application_database:
   host: "192.168.15.25"
   port: 5432
   database: "kiwissh"
-  user: "kiwissh_user"
+  username: "kiwissh_user"
   password: "kiwissh-user-password"
 
 ### Device sources
