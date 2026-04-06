@@ -45,7 +45,6 @@ PLACEHOLDER
 - [Future Goals](#future-goals)
 - [Technical Documentation](#technical-documentation)
 - [Development](#development)
-- [Legal Disclaimer](#legal-disclaimer)
 - [License](#license)
 - [Support](#support)
 
@@ -403,7 +402,6 @@ You can create your own SSH profile by adding a new entry to the `ssh_profiles.y
 - SSH Key pair support instead of just passwords
 - Override SSH port (Probably better placed in groups/nodes than SSH profiles?)
 
-
 **Mid-term:**
 
 - Make Footer more distinct
@@ -439,6 +437,7 @@ You can create your own SSH profile by adding a new entry to the `ssh_profiles.y
 - Swagger API documentation on GitHub Pages
 - Allow group passwords to bet set via TZ or other input
 - Remove "comment" mode for backup commands and just append the output (and commend used) of multiple backup commands to the same file? Involves removing the echoed command strip
+- Better device simulation: Add a small script for user to run against actual hardware to create realistic CLI output samples for the vendor YAML file creation. Secrets and sensitive info should be redacted
 
 ---
 
@@ -454,16 +453,12 @@ Frontend: cd frontend, npm run dev
 > [IMPORTANT]
 > If you would like to contribute to the project, please to a look at the [CONTRIBUTING.md](CONTRIBUTING.md) file for guidelines on how to contribute and the code of conduct.
 
-# Legal Disclaimer
-
-Needed?
-
 # License
 
 WIP
 
 # Support
 
-I work on this project in my free time and unpaid. If you find it useful and would like to support its development, consider buying me a coffee:
+I work on KiwiSSH in my free time and unpaid. If you find it useful and would like to support its development, consider supporting me with a coffee:
 
 [![Buy Me a Coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/casudo)
