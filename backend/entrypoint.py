@@ -126,15 +126,15 @@ def main() -> int:
         settings = get_settings()
         
         uvicorn.run(
-            "app.fastapi_server:app", # Why :app here? 
+            "app.fastapi_server:app",
             host=settings.app.api.host,
             port=settings.app.api.port,
-            reload=settings.app.debug, # TODO: What is reload and why does it use the debug setting?
+            reload=settings.app.debug,  # Auto-reload debug/development mode
             log_level="debug" if settings.app.debug else "info",
-        ) # TODO: Do we need to set the app settings here? fastapi_server.py starts the app with the exact same settings
+        )
         return 0
         
-    # TODO: Add custom error (e.g. ConfigurationError) and catch it here to provide better error messages
+    ### TODO: Add custom error (e.g. ConfigurationError) and catch it here to provide better error messages
     except ValueError as e:
         logger.error(f"Configuration validation failed:\n{e}")
         return 1
