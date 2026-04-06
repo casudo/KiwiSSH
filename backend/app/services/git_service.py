@@ -250,7 +250,7 @@ class GitService:
         self,
         device_name: str,
         group: str,
-        limit: int = 10,
+        limit: int | None = None,
     ) -> list[dict[str, Any]]:
         """
         Get configuration history for a device.
@@ -258,7 +258,7 @@ class GitService:
         Args:
             device_name: Name of the device
             group: Device group (determines which repo)
-            limit: Maximum number of history entries to return
+            limit: Maximum number of history entries to return. None returns all entries.
 
         Returns:
             List of history entries with commit info, file sizes, and version numbers
@@ -267,9 +267,7 @@ class GitService:
         commits = []
         config_file = f"{device_name}.conf"
 
-        for i, commit in enumerate(repo.iter_commits()):
-            if i > 100:  # Check up to 100 commits max
-                break
+        for commit in repo.iter_commits():
 
             ### Check if this commit modified the device's config file
             modified = False
@@ -313,15 +311,12 @@ class GitService:
                 "version_number": 0,  # Will be set after we know total count
             })
 
-            if len(commits) >= limit:
-                break
-
-        ### Assign version numbers - oldest commit = 1, newest = N
+        ### Assign version numbers globally - oldest commit = 1, newest = N
         ### Commits are newest first, so reverse the numbering
         for idx, commit in enumerate(commits):
             commit["version_number"] = len(commits) - idx
 
-        return commits
+        return commits if limit is None else commits[:limit]
 
     async def get_config_at_commit(
         self,

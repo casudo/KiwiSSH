@@ -32,10 +32,9 @@ export const backupApi = {
     return response.data
   },
 
-  async getHistory(deviceName: string, limit: number = 10): Promise<Record<string, unknown>> {
-    const response = await api.get(`/backups/history/${deviceName}`, {
-      params: { limit }
-    })
+  async getHistory(deviceName: string, limit?: number): Promise<Record<string, unknown>> {
+    const params = limit === undefined ? undefined : { limit }
+    const response = await api.get(`/backups/history/${deviceName}`, { params })
     return response.data
   },
 

@@ -197,7 +197,7 @@ async def get_backup_job_status(job_id: str) -> dict:
 @router.get("/history/{device_name}")
 async def get_device_backup_history(
     device_name: str,
-    limit: int = 10,
+    limit: int | None = Query(None, ge=1, description="Maximum number of history entries to return. Omit for all."),
 ) -> dict:
     """Get backup history for a device."""
     device = await source_service.get_device(device_name)
@@ -267,7 +267,7 @@ async def get_latest_config(device_name: str, commit: str | None = None) -> dict
         if commit:
             config = await git_service.get_config_at_commit(device_name, commit, group=device.group)
             ### Get commit info from history
-            history = await git_service.get_config_history(device_name, group=device.group, limit=100)
+            history = await git_service.get_config_history(device_name, group=device.group, limit=None)
             commit_info = next((c for c in history if c["hash"] == commit), None)
 
             return {
