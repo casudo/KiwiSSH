@@ -312,7 +312,6 @@ class Settings(BaseSettings):
 
     ### Paths
     config_dir: Path = Field(default=Path("/config"))
-    backups_dir: Path = Field(default=Path("/backups"))
 
     ### Testing
     local_test_mode: bool = Field(default=False, description="Use tests/config and tests/sources for local testing")
@@ -334,7 +333,7 @@ class Settings(BaseSettings):
     ### Database URL (computed from application_database config)
     database_url: str = ""
 
-    @field_validator("config_dir", "backups_dir", mode="before")
+    @field_validator("config_dir", mode="before")
     @classmethod
     def resolve_path(cls, v: str | Path) -> Path:
         """Resolve paths to absolute paths relative to backend directory."""
@@ -342,7 +341,7 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def use_test_config_if_enabled(self) -> "Settings":
-        """If LOCAL_TEST_MODE=true, use tests/config and tests/backups for local testing."""
+        """If LOCAL_TEST_MODE=true, use tests/config for local testing."""
         if self.local_test_mode:
             project_root = Path(__file__).parent.parent.parent.parent
 
@@ -350,16 +349,6 @@ class Settings(BaseSettings):
             test_config_dir = project_root / "tests" / "config"
             if test_config_dir.exists():
                 self.config_dir = test_config_dir.resolve()
-
-            ### Use test backups directory
-            test_backups_dir = project_root / "tests" / "backups"
-            test_backups_dir.mkdir(parents=True, exist_ok=True)
-            self.backups_dir = test_backups_dir.resolve()
-        else:
-            ### Production mode: backups next to config in project root
-            project_root = Path(__file__).parent.parent.parent.parent
-            prod_backups_dir = project_root / "backups"
-            self.backups_dir = prod_backups_dir.resolve()
 
         return self
 
