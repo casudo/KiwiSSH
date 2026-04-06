@@ -1,6 +1,9 @@
 ### Custom entries
 # tests/
 tests_docker/
+docker-compose.yaml
+*.drawio
+*.bkp
 
 ### Node ###
 # Logs
