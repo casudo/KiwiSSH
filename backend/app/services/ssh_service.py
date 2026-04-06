@@ -79,7 +79,7 @@ class SSHService:
                 continue
 
             ### Create header line for the command, prefixed with the vendor's comment marker
-            lines.append(f"{comment_prefix}command: {command}")
+            lines.append(f"{comment_prefix}Command used: {command}")
 
             ### Prefix each output line with the vendor comment marker
             ### For blank lines, keep only the prefix without trailing spaces
