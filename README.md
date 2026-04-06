@@ -85,7 +85,26 @@ The backend provides:
 
 # Screenshots
 
-PLACEHolder
+> [!NOTE]
+> Screenshots as of pre-release version v0.1.0
+
+Dashboard:
+![Dashboard](/readme_images/dashboard.png)
+
+Device list:
+![Device List](/readme_images/devices.png)
+
+Vendors:
+![Vendors](/readme_images/vendors.png)
+
+Groups:
+![Groups](/readme_images/groups.png)
+
+SSH Profiles:
+![SSH Profiles](/readme_images/ssh_profiles.png)
+
+Backup Job Logs:
+![Backup Job Logs](/readme_images/backup_jobs.png)
 
 ---
 
