@@ -450,6 +450,9 @@ class Settings(BaseSettings):
         Returns:
             SQLAlchemy database URL string
         """
+        if self.application_database is None:
+            raise ValueError("Missing required 'application_database' section in kiwissh.yaml")
+
         return self._build_postgres_url(
             host=self.application_database.host,
             port=self.application_database.port,
