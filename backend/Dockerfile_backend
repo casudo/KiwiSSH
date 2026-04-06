@@ -1,0 +1,39 @@
+### Stage 1: build wheels
+FROM python:3.13-slim AS builder
+
+### Prevent Python from writing .pyc files to disc
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git openssh-client ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY backend/requirements.txt /app/backend/requirements.txt
+RUN pip install --no-cache-dir --prefix=/install -r /app/backend/requirements.txt
+
+### Stage 2: runtime
+FROM python:3.13-slim
+
+WORKDIR /app/backend
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git openssh-client ca-certificates nano \
+ && rm -rf /var/lib/apt/lists/*
+
+### Create a non-privileged user
+RUN groupadd -g 1000 kiwissh && \
+    useradd -u 1000 -g kiwissh -s /bin/sh -m kiwissh
+
+### Copy installed Python packages from builder
+COPY --from=builder /install /usr/local
+
+### Copy backend sources
+COPY backend/ /app/backend/
+
+### Switch to the non-root user
+USER kiwissh
+
+EXPOSE 8000
+
+### Run FastAPI with Uvicorn (bind on 0.0.0.0 for container)
+CMD ["python", "entrypoint.py"]
