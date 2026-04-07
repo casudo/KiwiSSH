@@ -18,16 +18,8 @@ commands:
   ### Pre-backup commands (prepare the session) (OPTIONAL)
   ## Command outputs aren't saved in stored configuration
   pre_backup:
-    - command: "enable"
-      description: "Enter privileged mode"
-    ## Uncomment when device prompts for enable password.
-    # - type: "send_input"
-    #   description: "Send enable password"
-    #   input: "text here" # For password sends, omit input entirely. Placeholder tokens are not supported.
     - command: "terminal length 0"
-      description: "Disable paging"
-    - command: "terminal width 512"
-      description: "Set terminal width"
+    - command: "terminal width 0"
 
   ### Main backup command(s)
   ## Commands whose output becomes the stored configuration
@@ -65,8 +57,8 @@ processing:
 
   ### Lines that mark config boundaries
   ## If either boundary is missing, keep from/to the file edge.
-  config_start: "^version \\d+\\.\\d+"
-  config_end: "^end$"
+  # config_start: "^version \\d+\\.\\d+"
+  # config_end: "^end$"
 
   ### Secret masking. When enabled=false, no redaction is applied.
   redaction:
