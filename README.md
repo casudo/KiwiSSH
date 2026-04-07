@@ -349,7 +349,7 @@ You can use the following keys for each command step:
 | `description` | A brief description of the command. | No | - |
 | `metadata` | If set to true, the output of this command will be saved as comment-prefixed metadata block in the backup job log. This is useful for adding important information to the backup job log. | No | `false` |
 | `wait_for_prompt` | If set to false, KiwiSSH will not wait for the command prompt to return after running this command before proceeding to the next step. Use with caution. | No | `true` |
-| `show_command_in_config` | If set to true, the command will be included directly in the main config body above its output, prefixed with the comment prefix. This provides better context for the captured output when viewing the saved config file. `show_command_in_config: true` and `metadata: true` cannot be used together and will fail validation. | No | `true` |
+| `show_command_in_config` | If set to true, the command will be included directly in the main config body above its output, prefixed with the comment prefix. This provides better context for the captured output when viewing the saved config file. `show_command_in_config: true` and `metadata: true` cannot be used together and will fail validation. | No | `false` |
 
 #### processing
 

@@ -211,7 +211,7 @@ class SSHService:
 
             metadata = bool(command_def.get("metadata", False))
             wait_for_prompt = bool(command_def.get("wait_for_prompt", True))
-            show_command_in_config = bool(command_def.get("show_command_in_config", True))
+            show_command_in_config = bool(command_def.get("show_command_in_config", False))
 
             if metadata and show_command_in_config:
                 raise RuntimeError(
@@ -498,7 +498,7 @@ class SSHService:
             if not output:
                 continue
 
-            if bool(chunk.get("show_command_in_config", True)):
+            if bool(chunk.get("show_command_in_config", False)):
                 command = str(chunk.get("command", "")).strip()
                 if command:
                     output = f"{comment_prefix}Command used: {command}\n{output}"
