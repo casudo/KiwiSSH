@@ -5,6 +5,7 @@ from datetime import datetime
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from app import __version__
 from app.core import get_settings
 from app.utils.timezone import get_utc_now
 
@@ -15,6 +16,7 @@ class HealthResponse(BaseModel):
 
     status: str
     timestamp: datetime
+    version: str
     config_loaded: bool
 
 
@@ -29,6 +31,7 @@ async def health_check() -> HealthResponse:
     return HealthResponse(
         status="healthy",
         timestamp=get_utc_now(),
+        version=__version__,
         config_loaded=bool(settings.app and settings.groups and settings.git),
     )
 
