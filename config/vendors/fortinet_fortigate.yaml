@@ -1,10 +1,10 @@
-### Fortinet FortiOS Vendor Configuration
-## Instructions for backing up FortiOS devices
+### Fortinet FortiGate Vendor Configuration
+## Instructions for backing up FortiGate firewalls
 
 vendor:
-  id: "fortinet_fortios"
-  name: "Fortinet FortiOS"
-  description: "Fortinet FortiOS devices"
+  id: "fortinet_fortigate"
+  name: "Fortinet FortiGate"
+  description: "Fortinet FortiGate firewalls"
 
 ### Session-level output behavior.
 session:
@@ -28,7 +28,13 @@ commands:
   ## Commands whose output becomes the stored configuration
   backup:
     - command: "get system status"
-    - command: "show"
+    - command: "config global"
+    - command: "get system ha status"
+    - command: "get hardware status"
+    - command: "diagnose hardware deviceinfo psu"
+    - command: "get system interface transceiver"
+    - command: "diagnose autoupdate version"
+    - command: "show full-configuration"
 
   ### Post-backup commands (cleanup) (OPTIONAL)
   ## Command outputs aren't saved in stored configuration
@@ -42,7 +48,7 @@ processing:
   #   - "^\\s+\\^$"
   #   - "^#config-version="
 
-  # config_start: "^config"
+  # config_start: "^config "
   # config_end: "^end$"
 
   ### Secret masking. When enabled=false, no redaction is applied.
