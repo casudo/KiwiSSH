@@ -5,7 +5,7 @@
 | Cisco    | IOS            | [cisco_ios.yaml](/config/vendors/cisco_ios.yaml)                   |                                     |
 | Fortinet | FortiGate      | [fortinet_fortigate.yaml](/config/vendors/fortinet_fortigate.yaml) | [FortiGate](#fortinet-device-types) |
 | Fortinet | FortiOS        | [fortinet_fortios.yaml](/config/vendors/fortinet_fortios.yaml)     | [FortiOS](#fortinet-device-types)   |
-| Ubiquiti | UniFi       | [ubiquiti_unifi.yaml](/config/vendors/ubiquiti_unifi.yaml)     | [Ubiquiti](#ubiquiti)               |
+| Ubiquiti | UniFi          | [ubiquiti_unifi.yaml](/config/vendors/ubiquiti_unifi.yaml)         | [Ubiquiti](#ubiquiti)               |
 
 ---
 
