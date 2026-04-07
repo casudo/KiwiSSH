@@ -42,10 +42,29 @@
           <span>Buy Me a Coffee</span>
         </a>
       </div>
+
+      <div class="mt-4 flex flex-wrap justify-center items-center gap-2 text-[10px] leading-none font-mono tracking-wider text-white">
+        <span>Frontend v{{ frontendVersion }}</span>
+        <span class="text-white/70">|</span>
+        <span>Backend v{{ backendVersion }}</span>
+      </div>
     </div>
   </footer>
 </template>
 
 <script setup lang="ts">
-// Footer component with placeholder links
+import { inject, onMounted, ref } from "vue"
+import { healthApi } from "@/api/health"
+
+const frontendVersion = inject<string>("frontendVersion", "unknown")
+const backendVersion = ref("loading...")
+
+onMounted(async () => {
+  try {
+    const health = await healthApi.check()
+    backendVersion.value = health.version || "unknown"
+  } catch {
+    backendVersion.value = "unavailable"
+  }
+})
 </script>

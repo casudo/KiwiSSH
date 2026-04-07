@@ -31,6 +31,7 @@ applyInitialTheme()
 
 const app = createApp(App)
 
+app.provide("frontendVersion", FRONTEND_VERSION)
 app.use(createPinia())
 app.use(router)
 
