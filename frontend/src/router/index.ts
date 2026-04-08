@@ -44,12 +44,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import("@/views/JobsView.vue"),
     meta: { title: "Backup Jobs" }
   },
-  {
-    path: "/settings",
-    name: "settings",
-    component: () => import("@/views/SettingsView.vue"),
-    meta: { title: "Settings" }
-  },
 ]
 
 const router = createRouter({

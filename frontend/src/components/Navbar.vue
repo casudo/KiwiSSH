@@ -19,7 +19,6 @@ const navItems: NavItem[] = [
   { name: "Groups", path: "/groups" },
   { name: "SSH Profiles", path: "/ssh-profiles" },
   { name: "Jobs", path: "/jobs" },
-  { name: "Settings", path: "/settings" },
 ]
 
 const isActive = (path: string): boolean => {
