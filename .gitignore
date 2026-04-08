@@ -1,5 +1,5 @@
 ### Custom entries
-# tests/
+tests/
 tests_docker/
 docker-compose.yaml
 *.drawio
