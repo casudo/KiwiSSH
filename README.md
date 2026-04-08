@@ -319,6 +319,7 @@ Each segment is explained in detail below.
 | Key | Description | Required | Default Value |
 | --- | ----------- | -------- | ------------- |
 | `session.comment_prefix` | If set, command outputs will be prefixed with this string and rendered as comments in the saved config file. This is useful for adding metadata like command descriptions or timestamps directly in the config file. | No | `! ` |
+| `session.prompt` | Optional prompt regex (or list of regexes) used to detect command completion in interactive shells. Match should cover the full prompt line. If omitted or invalid, KiwiSSH falls back to the built-in generic prompt pattern. | No | `[^\r\n=]*[A-Za-z0-9][^\r\n=]*[>#]\s*$` |
 | `session.include_metadata_in_config` | Controls whether outputs from `metadata: true` commands are prepended as a block in the saved config. Metadata is always present in the backup job log. | No | `false` |
 
 #### commands

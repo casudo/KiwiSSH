@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 ANSI_ESCAPE_RE = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
 
-### Generic prompt detection used for all vendors
+### Generic prompt detection used for all vendors as default
 ## Matches common prompt shapes like:
 ## - hostname#
 ## - hostname>
@@ -35,6 +35,59 @@ class SSHService:
 
     def __init__(self) -> None:
         self.settings = get_settings()
+
+    @staticmethod
+    def _line_matches_prompt(
+        line: str,
+        patterns: list[re.Pattern[str]],
+    ) -> bool:
+        """Check whether a line matches any configured prompt pattern."""
+        normalized_line = ANSI_ESCAPE_RE.sub("", line).replace("\r", "")
+        return any(pattern.fullmatch(normalized_line) for pattern in patterns)
+
+    def _get_prompt_patterns(self, vendor_id: str) -> list[re.Pattern[str]]:
+        """Get prompt patterns from vendor session config with generic fallback."""
+        session_config = vendor_service.get_session_parameters(vendor_id)
+        prompt_config = session_config.get("prompt")
+
+        ### Use default if not explicitly set
+        if prompt_config is None:
+            return GENERIC_PROMPT_PATTERNS
+
+        ### Read from session.prompt
+        prompt_values: list[str]
+        if isinstance(prompt_config, str):
+            prompt_values = [prompt_config]
+        elif isinstance(prompt_config, list):
+            prompt_values = [str(value) for value in prompt_config if str(value).strip()]
+        else:
+            logger.warning(
+                "Invalid session.prompt for vendor '%s': expected string or list; using generic prompt pattern",
+                vendor_id,
+            )
+            return GENERIC_PROMPT_PATTERNS
+
+        ### Check if the given regex is valid
+        compiled_patterns: list[re.Pattern[str]] = []
+        for prompt_value in prompt_values:
+            try:
+                compiled_patterns.append(re.compile(prompt_value))
+            except re.error as ex:
+                logger.warning(
+                    "Invalid session.prompt regex '%s' for vendor '%s': %s",
+                    prompt_value,
+                    vendor_id,
+                    ex,
+                )
+
+        if compiled_patterns:
+            return compiled_patterns
+
+        logger.warning(
+            "No valid session.prompt patterns for vendor '%s'; using generic prompt pattern",
+            vendor_id,
+        )
+        return GENERIC_PROMPT_PATTERNS
 
     def _get_ssh_options(self, profile_name: str) -> dict[str, Any]:
         """Get SSH options from profile and map known_hosts policy."""
@@ -110,8 +163,8 @@ class SSHService:
             ## ..and from random chunk boundaries inside large command outputs
             if patterns:
                 tail = buffer[-4096:]
-                last_line = tail.split("\n")[-1].replace("\r", "")
-                if any(pattern.fullmatch(last_line) for pattern in patterns):
+                last_line = tail.split("\n")[-1]
+                if self._line_matches_prompt(last_line, patterns):
                     return buffer
 
             ### If no pattern matched, read more data with a short timeout to allow for checking the deadline
@@ -131,6 +184,7 @@ class SSHService:
     def _sanitize_command_output(
         raw_output: str,
         command: str,
+        prompt_patterns: list[re.Pattern[str]],
     ) -> str:
         """Normalize interactive shell output and strip prompt/command echo."""
         ### Strip terminal control sequences and normalize line endings/backspaces.
@@ -147,13 +201,16 @@ class SSHService:
         ### Remove echoed command if it matches that first line when present.
         if lines and lines[0].strip() == command.strip():
             lines.pop(0)
+        elif lines and re.search(rf"[>#]\s*{re.escape(command.strip())}\s*$", lines[0].strip()):
+            ### Some devices echo commands as '<prompt><command>' in the first line.
+            lines.pop(0)
 
         ### Trim trailing blank lines and shell prompt lines from the output tail.
         while lines and not lines[-1].strip():
             lines.pop()
 
         ### Remove generic prompt lines from the end of the output.
-        while lines and GENERIC_PROMPT_RE.search(lines[-1]):
+        while lines and SSHService._line_matches_prompt(lines[-1], prompt_patterns):
             lines.pop()
 
         ### Return only the cleaned command body for storage and post-processing.
@@ -165,6 +222,7 @@ class SSHService:
         command: str,
         timeout: int,
         wait_for_prompt: bool,
+        prompt_patterns: list[re.Pattern[str]],
     ) -> str:
         """Execute a single command in an interactive shell session."""
         ### Send the command to the shell
@@ -175,10 +233,10 @@ class SSHService:
             return ""
 
         ### Wait until shell responds with a prompt again (shell is ready again)
-        raw = await self._read_until_patterns(process.stdout, GENERIC_PROMPT_PATTERNS, timeout)
+        raw = await self._read_until_patterns(process.stdout, prompt_patterns, timeout)
 
         ### Return normalized command output
-        return self._sanitize_command_output(raw, command)
+        return self._sanitize_command_output(raw, command, prompt_patterns)
 
     async def _run_command_phase(
         self,
@@ -186,6 +244,7 @@ class SSHService:
         commands: list[dict[str, Any]],
         default_timeout: int,
         password: str,
+        prompt_patterns: list[re.Pattern[str]],
         capture_output: bool,
         required: bool = True,
     ) -> list[dict[str, Any]]:
@@ -230,7 +289,7 @@ class SSHService:
                     if wait_for_prompt:
                         await self._read_until_patterns(
                             process.stdout,
-                            GENERIC_PROMPT_PATTERNS,
+                            prompt_patterns,
                             default_timeout,
                         )
                     else:
@@ -257,6 +316,7 @@ class SSHService:
                     command=command,
                     timeout=default_timeout,
                     wait_for_prompt=wait_for_prompt,
+                    prompt_patterns=prompt_patterns,
                 )
                 if capture_output and output:
                     captured_outputs.append({
@@ -449,6 +509,7 @@ class SSHService:
         prefix = str(session_config.get("comment_prefix", "! ")).strip()
         comment_prefix = "! " if not prefix else (prefix if prefix.endswith(" ") else f"{prefix} ")
         include_metadata_in_config = bool(session_config.get("include_metadata_in_config", False))
+        prompt_patterns = self._get_prompt_patterns(vendor_id)
 
         ### Get processing rules for the vendor
         processing_rules = vendor_service.get_processing_rules(vendor_id)
@@ -459,7 +520,7 @@ class SSHService:
             process.stdin.write("\n")
 
             ### Wait for the initial prompt to ensure the shell is ready before sending commands
-            await self._read_until_patterns(process.stdout, GENERIC_PROMPT_PATTERNS, default_timeout)
+            await self._read_until_patterns(process.stdout, prompt_patterns, default_timeout)
 
             ### Run pre_backup commands (required for session setup consistency)
             await self._run_command_phase(
@@ -467,6 +528,7 @@ class SSHService:
                 commands=command_sets.get("pre_backup", []),
                 default_timeout=default_timeout,
                 password=password,
+                prompt_patterns=prompt_patterns,
                 capture_output=False,
             )
 
@@ -475,6 +537,7 @@ class SSHService:
                 commands=backup_commands,
                 default_timeout=default_timeout,
                 password=password,
+                prompt_patterns=prompt_patterns,
                 capture_output=True,
             )
 
@@ -483,6 +546,7 @@ class SSHService:
                 commands=command_sets.get("post_backup", []),
                 default_timeout=default_timeout,
                 password=password,
+                prompt_patterns=prompt_patterns,
                 capture_output=False,
             )
 

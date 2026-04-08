@@ -9,6 +9,7 @@ vendor:
 ### Session-level output behavior.
 session:
   comment_prefix: "# "
+  prompt: '^(\(\w\) )?([-\w.~]+(\s[(\w\-.)]+)?~?\s?[#>$]\s?)$'
 
 ### Commands to execute for backup
 ## Supported step types in command phases:

@@ -9,6 +9,7 @@ vendor:
 ### Session-level behavior
 session:
   comment_prefix: "### "
+  prompt: "^[A-Za-z0-9][A-Za-z0-9._\\-]*(?:\\([^\\)]+\\))?[>#][ \\t]*\\Z"
 
 ### Commands to execute for backup
 ## Supported step types in command phases:
