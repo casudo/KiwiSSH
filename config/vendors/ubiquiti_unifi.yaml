@@ -53,7 +53,7 @@ processing:
 
   ### Secret masking. When enabled=false, no redaction is applied.
   redaction:
-    enabled: true
+    enabled: false
     patterns:
       - search: "^(unifi\\.anonymous_(controller|site)_id=).*$"
         replacement: "\\1<ID redacted>"

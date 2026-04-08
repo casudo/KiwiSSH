@@ -1,0 +1,69 @@
+### A10 Networks ACOS Vendor Configuration
+## Instructions for backing up A10 Networks ACOS devices
+
+vendor:
+  id: "a10_acos"
+  name: "A10 Networks ACOS"
+  description: "A10 Networks ACOS devices"
+
+### Session-level behavior
+session:
+  comment_prefix: "! "
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command (default): sends command text
+## - send_input: sends arbitrary input (defaults to resolved device password when input is omitted)
+commands:
+  ### Pre-backup commands (prepare the session) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  pre_backup: 
+    - command: "terminal length 0"
+    - command: "terminal width 0"
+
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "show version"
+    - command: "show bootimage"
+    - command: "show license"
+    - command: "show partition-config all"
+    - command: "show running-config all-partitions"
+    - command: "show aflex all-partitions"
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup: []
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  ### Lines to strip from captured config (regex patterns)
+  # strip_patterns:
+  #   - "^\\s*RX packets:.*$"
+  #   - "^\\s*TX packets:.*$"
+  #   - "^\\s*RX bytes:.*$"
+
+  ### Lines that mark config boundaries
+  ## If either boundary is missing, keep from/to the file edge.
+  # config_start: "^# unifi$"
+  # config_end: "^# misc$"
+
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    # patterns:
+    #   - search: "^(snmp-server community).*$"
+    #     replacement: "\\1<secret redacted>"
+    #   - search: "^(snmp-server user (\\S+) (\\S+) auth (\\S+)) (\\S+) (priv) (\\S+).*$"
+    #     replacement: "\\1<secret redacted>"
+    #   - search: "^(snmp-server host.*? )\\S+( udp-port \\d+)?$"
+    #     replacement: "\\1<secret redacted>"
+    #   - search: "^(snmp-server mib community-map) \\S+ ?(.*)$"
+    #     replacement: "\\1<secret redacted>"
+    #   - search: "^(password \\d+) (\\S+)$"
+    #     replacement: "\\1<secret redacted>"
+    #   - search: "^(radius-server .*key(?: \\d+)?) \\S+$"
+    #     replacement: "\\1<secret redacted>"
+    #   - search: "^(tacacs-server .*key(?: \\d+)?) \\S+$"
+    #     replacement: "\\1<secret redacted>"
