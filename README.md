@@ -84,7 +84,7 @@ For a detailed overview of supported OS/Device types, please refer to the [OS_TY
 # Screenshots
 
 > [!NOTE]
-> Screenshots as of pre-release version v0.1.0
+> Screenshots as of version v1.0.0
 
 ![Dashboard](/readme_images/dashboard.png)
 
