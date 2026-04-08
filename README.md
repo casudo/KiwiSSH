@@ -289,6 +289,9 @@ Vendor YAML files define how KiwiSSH interacts with each device CLI and how capt
 > [!TIP]
 > You can create your own vendor YAML file by copying one of the existing ones and modifying it according to the CLI output of your devices. If you want to contribute your vendor file to the project, please create a Pull Request with the new vendor YAML file in the `config/vendors` folder.
 
+> [!IMPORTANT]
+> You should read the contents of the vendor YAML files for the device types you want to backup to understand which CLI commands are used to fetch the configuration and how the output is processed. You can always add your own `processing.strip_patterns` or `redaction.patterns` to further customize the output processing for your specific devices if needed.
+
 ### Vendor YAML file
 
 Each vendor file contains these top-level sections:
