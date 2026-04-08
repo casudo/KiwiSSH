@@ -48,6 +48,7 @@ It was created as better alternative to RANCID and Oxidized, with a focus on sim
 - [FAQ](#faq)
   - [How do I setup a remote git location?](#how-do-i-setup-a-remote-git-location)
   - [When do I choose the global `git.remote` vs per-group overrides (`groups.<group>.git.remote`)?](#when-do-i-choose-the-global-gitremote-vs-per-group-overrides-groupsgroupgitremote)
+  - [fatal: Could not read from remote repository](#fatal-could-not-read-from-remote-repository)
 - [Future Goals](#future-goals)
 - [Technical Documentation](#technical-documentation)
 - [Development](#development)
@@ -448,6 +449,18 @@ groups:
         url: "ssh://git@github.com:dev_orga/development-firewalls.git"
         branch: "dev"
 ```
+
+## fatal: Could not read from remote repository
+
+If you encounter the error message ..
+
+```bash
+ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit code(128)
+  cmdline: git push --porcelain -- origin main:main
+  stderr: 'fatal: Could not read from remote repository.'
+```
+
+.. you should do `ssh git@<domain>` manual first to add the host to `~/.ssh/known_hosts`.
 
 ---
 
