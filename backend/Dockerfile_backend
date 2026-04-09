@@ -22,7 +22,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ### Create a non-privileged user
 RUN groupadd -g 1000 kiwissh && \
-    useradd -u 1000 -g kiwissh -s /bin/sh -m kiwissh
+    useradd -u 1000 -g kiwissh -s /bin/sh -m kiwissh && \
+    mkdir /home/kiwissh/.ssh && chown -R kiwissh:kiwissh /home/kiwissh/.ssh
 
 ### Copy installed Python packages from builder
 COPY --from=builder /install /usr/local
