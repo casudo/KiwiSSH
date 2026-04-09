@@ -33,6 +33,19 @@ pip-delete-this-directory.txt
 .dmypy.json
 *.egg-info/
 
+# Node.js
+node_modules/
+.npm/
+.yarn/
+.pnp.*
+dist/
+build/
+.next/
+.nuxt/
+.cache/
+.turbo/
+out/
+
 # Version control
 .git/
 .gitignore
