@@ -46,6 +46,12 @@ build/
 .turbo/
 out/
 
+# Build outputs
+dist/
+build/
+out/
+bin/
+
 # Version control
 .git/
 .gitignore
