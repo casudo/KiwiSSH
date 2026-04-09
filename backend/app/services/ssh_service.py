@@ -165,6 +165,9 @@ class SSHService:
                 tail = buffer[-4096:]
                 last_line = tail.split("\n")[-1]
                 if self._line_matches_prompt(last_line, patterns):
+                    ### Collect any trailing bytes that arrive immediately after prompt detection
+                    ### This reduces output bleed into the next command on some devices
+                    buffer += await self._read_trailing_output(stream)
                     return buffer
 
             ### If no pattern matched, read more data with a short timeout to allow for checking the deadline
@@ -179,6 +182,27 @@ class SSHService:
 
             ### Append the new chunk to the buffer and continue checking for patterns
             buffer += chunk
+
+    @staticmethod
+    async def _read_trailing_output(
+        stream: asyncssh.SSHReader,
+        idle_timeout: float = 0.05,
+        max_chunks: int = 16,
+    ) -> str:
+        """Read immediately available trailing output after prompt detection."""
+        trailing = ""
+        for _ in range(max_chunks):
+            try:
+                chunk = await asyncio.wait_for(stream.read(256), timeout=idle_timeout)
+            except asyncio.TimeoutError:
+                break
+
+            if chunk == "":
+                break
+
+            trailing += chunk
+
+        return trailing
 
     @staticmethod
     def _sanitize_command_output(
@@ -198,11 +222,25 @@ class SSHService:
         while lines and not lines[0].strip():
             lines.pop(0)
 
-        ### Remove echoed command if it matches that first line when present.
-        if lines and lines[0].strip() == command.strip():
-            lines.pop(0)
-        elif lines and re.search(rf"[>#]\s*{re.escape(command.strip())}\s*$", lines[0].strip()):
-            ### Some devices echo commands as '<prompt><command>' in the first line.
+        ### Remove command echo and any stale lines before it in early output.
+        command_text = command.strip()
+        command_echo_index: int | None = None
+        for index, line in enumerate(lines[:8]):
+            stripped_line = line.strip()
+            if not stripped_line:
+                continue
+            if stripped_line == command_text:
+                command_echo_index = index
+                break
+            if re.search(rf"[>#]\s*{re.escape(command_text)}\s*$", stripped_line):
+                ### Some devices echo commands as '<prompt><command>' in the output.
+                command_echo_index = index
+                break
+
+        if command_echo_index is not None:
+            lines = lines[command_echo_index + 1 :]
+
+        while lines and not lines[0].strip():
             lines.pop(0)
 
         ### Trim trailing blank lines and shell prompt lines from the output tail.
