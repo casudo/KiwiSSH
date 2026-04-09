@@ -196,7 +196,7 @@ class BackupService:
             return result
 
         except Exception as e:
-            logger.error(f"Backup failed for {device.device_name}") # No exception msg to log here since its already logged in ssh_service or git_service
+            logger.error("Backup failed for %s: %s", device.device_name, e)
             result = BackupRecord(
                 id=str(uuid.uuid4()),
                 device_name=device.device_name,
