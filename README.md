@@ -125,7 +125,7 @@ KiwiSSH uses separate Docker images for backend and frontend.
 3. Open the UI at `http://<IP>:8123`
 
 > [!IMPORTANT]
-> If you're using remote git storages, make sure the SSH keys for the remote git storages are correctly mounted to `/home/kiwissh/.ssh` and the permissions are correct (600 for private key and config file, owned by `kiwissh` running the container) to ensure successful SSH authentication when pushing.
+> If you're using remote git storages, make sure the SSH keys for the remote git storages are correctly mounted to `/home/kiwissh/.ssh` and the permissions are correct (600 for private key, config file and known_hosts, owned by `kiwissh` (uid:gid 1000:1000) running the container) to ensure successful SSH authentication when pushing.
 
 > [!NOTE]
 > - API calls are available through the frontend proxy: `http://<IP>:8123/api/v1/...`
@@ -152,7 +152,7 @@ See the example [`backend/.env.example`](backend/.env.example) file. Either rena
 Below you'll find a detailed overview of all available configuration options in the `kiwissh.yaml` file. This file is the main configuration file for KiwiSSH and contains settings for the application, database connection, device sources, git integration, groups and nodes.
 
 > [!IMPORTANT]
-> Changes to the `kiwissh.yaml` file will require a restart of the backend application to take effect.
+> Changes to the `kiwissh.yaml` file will require a restart of the backend and frontend applications to take effect.
 
 ### app
 
@@ -523,7 +523,7 @@ Please visit [TECHNICAL.md](TECHNICAL.md) for detailed technical documentation a
 
 # License
 
-WIP
+See [LICENSE](LICENSE) file for license information.
 
 # Support
 
