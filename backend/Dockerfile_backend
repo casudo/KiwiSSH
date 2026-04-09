@@ -8,11 +8,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git openssh-client ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
-COPY backend/requirements.txt /app/backend/requirements.txt
+COPY requirements.txt /app/backend/requirements.txt
 RUN pip install --no-cache-dir --prefix=/install -r /app/backend/requirements.txt
 
 ### Stage 2: runtime
 FROM python:3.13-slim
+
+### Prevent Python from creating __pycache__ in the runtime container
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 
 WORKDIR /app/backend
 
@@ -29,7 +32,7 @@ RUN groupadd -g 1000 kiwissh && \
 COPY --from=builder /install /usr/local
 
 ### Copy backend sources
-COPY backend/ /app/backend/
+COPY . /app/backend/
 
 ### Switch to the non-root user
 USER kiwissh
