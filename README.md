@@ -125,7 +125,7 @@ KiwiSSH uses separate Docker images for backend and frontend.
 3. Open the UI at `http://<IP>:8123`
 
 > [!IMPORTANT]
-> If you're using remote git storages, make sure the SSH keys for the remote git storages are correctly mounted to `/home/kiwissh/.ssh` and the permissions are correct (600 for private key, config file and known_hosts, owned by `kiwissh` (uid:gid 1000:1000) running the container) to ensure successful SSH authentication when pushing.
+> If you're using SSH key authentication (remote git push, device backup auth, or jumphost auth), mount your SSH material into `/home/kiwissh/.ssh` and ensure permissions are correct (typically `600` for private keys/config/known_hosts, owned by `kiwissh` uid:gid 1000:1000).
 
 > [!NOTE]
 > - API calls are available through the frontend proxy: `http://<IP>:8123/api/v1/...`
@@ -362,7 +362,7 @@ You can use the following keys for each command step:
 | --- | ----------- | -------- | ------------- |
 | `command` | Directly run the command on the device. | **Either `command` or `type`** | - |
 | `type` | Run the command in specified in this item and send the input (`input`) afterwards. If `input` is omitted, the resolved device password will be sent as input. | **Either `command` or `type`** | Must be `send_input` |
-| `input` (for `type: "send_input"` only!) | The input to send after the command. This is only used for `send_input` type steps. If omitted, the resolved device password will be sent as input. | No | Resolved device password |
+| `input` (for `type: "send_input"` only!) | The input to send after the command. This is only used for `send_input` type steps. If omitted, the resolved device password will be sent as input. If no device password is configured, this must be explicitly set. | No | Resolved device password |
 | `description` | A brief description of the command. | No | - |
 | `metadata` | If set to true, the output of this command will be saved as comment-prefixed metadata block in the backup job log. This is useful for adding important information to the backup job log. | No | `false` |
 | `wait_for_prompt` | If set to false, KiwiSSH will not wait for the command prompt to return after running this command before proceeding to the next step. Use with caution. | No | `true` |
@@ -473,6 +473,9 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 ```
 
 .. you should do `ssh git@<domain>` manual first to add the host to `~/.ssh/known_hosts`.
+
+> [!TIP]
+> In order to persistently keep the `known_hosts` file in Docker, make sure to mount a volume to `/home/kiwissh/.ssh` and ensure the permissions are correct to ensure successful SSH authentication when pushing even after restarting the container.
 
 ---
 
