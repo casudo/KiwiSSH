@@ -150,12 +150,22 @@ class GroupConfig(BaseModel):
     """Device group configuration."""
     username: str | None = None
     password: str | None = None
+    ssh_key_file: str | None = None
     ssh_profile: str | None = None
     vendor: str
     timeout: int | None = Field(default=None, ge=1)
     retry: int | None = Field(default=None, ge=0)
     schedule: ScheduleConfig | None = None
     git: GroupGitConfig | None = None
+
+    @field_validator("ssh_key_file", mode="before")
+    @classmethod
+    def normalize_group_key_file(cls, value: str | None) -> str | None:
+        """Normalize optional SSH key file path and convert blanks to None."""
+        if value is None:
+            return None
+        text = str(value).strip()
+        return text or None
 
     @field_validator("vendor", mode="before")
     @classmethod
@@ -173,12 +183,22 @@ class NodeConfig(BaseModel):
     """Per-device configuration overrides."""
     username: str | None = None
     password: str | None = None
+    ssh_key_file: str | None = None
     ssh_profile: str | None = None
     vendor: str | None = None
     timeout: int | None = Field(default=None, ge=1)
     retry: int | None = Field(default=None, ge=0)
     schedule: ScheduleConfig | None = None
     git: NodeGitConfig | None = None
+
+    @field_validator("ssh_key_file", mode="before")
+    @classmethod
+    def normalize_node_key_file(cls, value: str | None) -> str | None:
+        """Normalize optional SSH key file path and convert blanks to None."""
+        if value is None:
+            return None
+        text = str(value).strip()
+        return text or None
 
     @field_validator("vendor", mode="before")
     @classmethod
@@ -490,6 +510,7 @@ class Settings(BaseSettings):
             device_config.update({
                 "username": group_config.username,
                 "password": group_config.password,
+                "ssh_key_file": group_config.ssh_key_file,
                 "ssh_profile": group_config.ssh_profile,
                 "vendor": group_config.vendor,
             })
@@ -516,6 +537,8 @@ class Settings(BaseSettings):
                 device_config["username"] = node_config.username
             if node_config.password is not None:
                 device_config["password"] = node_config.password
+            if node_config.ssh_key_file is not None:
+                device_config["ssh_key_file"] = node_config.ssh_key_file
             if node_config.schedule and node_config.schedule.cron is not None:
                 device_config["schedule"] = node_config.schedule
 

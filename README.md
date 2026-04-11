@@ -255,7 +255,8 @@ KiwiSSH will always store the device configurations in local git repositories to
 | Key | Description | Required | Default Value |
 | --- | ----------- | -------- | ------------- |
 | `groups.<group>.username` | The username for SSH authentication for devices in this group. | **Yes** | - |
-| `groups.<group>.password` | The password for SSH authentication for devices in this group. | **Yes** | - |
+| `groups.<group>.password` | The password for SSH authentication for devices in this group (optional when `ssh_key_file` is used). | No | - |
+| `groups.<group>.ssh_key_file` | The private key file path for SSH authentication for devices in this group (alternative to password). | No | - |
 | `groups.<group>.ssh_profile` | The SSH profile to use for devices in this group. This is used to determine the SSH options to use when connecting to the devices. | **Yes** | - |
 | `groups.<group>.vendor` | The vendor of the devices in this group. This is used to determine the CLI commands to run for fetching the configuration. | **Yes** | - |
 | `groups.<group>.timeout` | The SSH timeout in seconds for devices in this group. This overrides the global SSH timeout. | No | Global `app.timeout` |
@@ -274,6 +275,7 @@ KiwiSSH will always store the device configurations in local git repositories to
 | --- | ----------- | -------- | ------------- |
 | `nodes.<device_name>.username` | The username for SSH authentication for this device. | No | `groups.<group>.username` |
 | `nodes.<device_name>.password` | The password for SSH authentication for this device. | No | `groups.<group>.password` |
+| `nodes.<device_name>.ssh_key_file` | The private key file path for SSH authentication for this device. | No | `groups.<group>.ssh_key_file` |
 | `nodes.<device_name>.ssh_profile` | The SSH profile to use for this device. This is used to determine the SSH options to use when connecting to the device. | No | `groups.<group>.ssh_profile` |
 | `nodes.<device_name>.vendor` | The vendor of this device. This is used to determine the CLI commands to run for fetching the configuration. | No | `groups.<group>.vendor` |
 | `nodes.<device_name>.timeout` | The SSH timeout in seconds for this device. This overrides the group and global SSH timeout. | No | `groups.<group>.timeout` or Global `app.timeout` |

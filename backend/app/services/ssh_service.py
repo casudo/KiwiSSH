@@ -113,6 +113,20 @@ class SSHService:
         }
 
     @staticmethod
+    def _resolve_client_key_path(ssh_key_file: str | None) -> str | None:
+        """Resolve and normalize configured SSH key file path for AsyncSSH."""
+        if ssh_key_file is None:
+            return None
+
+        normalized = str(ssh_key_file).strip()
+        if not normalized:
+            return None
+
+        ### Expand '~' for local/bare-metal usage while preserving absolute paths..
+        ## ..used inside containers (for example '/home/kiwissh/.ssh/id_ed25519')
+        return str(Path(normalized).expanduser())
+
+    @staticmethod
     def _build_metadata_section(
         captured_output: list[dict[str, Any]],
         comment_prefix: str,
@@ -487,28 +501,50 @@ class SSHService:
 
     async def connect(
         self,
-        device: DeviceBase,
+        host: str,
         username: str,
-        password: str,
         *,
         ssh_profile: str,
+        password: str | None = None,
+        ssh_key_file: str | None = None,
         port: int = 22,
         timeout: int | None = None,
     ) -> asyncssh.SSHClientConnection:
-        """Establish SSH connection to a device using configured profile options."""
+        """Establish SSH connection using password and/or client key authentication."""
+        ### Normalize required values early to provide clear error messages
+        normalized_host = str(host).strip()
+        normalized_username = str(username).strip()
+        normalized_password = str(password).strip() if password is not None else ""
+        normalized_key_file = self._resolve_client_key_path(ssh_key_file)
+
+        if not normalized_host:
+            raise ValueError("SSH host must be a non-empty string")
+        if not normalized_username:
+            raise ValueError("SSH username must be a non-empty string")
+
+        ### Enforce at least one auth method
+        if not normalized_password and not normalized_key_file:
+            raise ValueError("SSH connection requires either password or ssh_key_file")
+
         ssh_options = self._get_ssh_options(ssh_profile)
 
-        ### Build asyncssh.connect kwargs.
+        ### Build asyncssh.connect kwargs
         ## IMPORTANT: keep known_hosts=None for ignore mode. If omitted, AsyncSSH falls back..
-        ## ..to strict host-key checks against ~/.ssh/known_hosts.
+        ## ..to strict host-key checks against ~/.ssh/known_hosts
         connect_kwargs: dict[str, Any] = {
-            "host": str(device.ip_address),
+            "host": normalized_host,
             "port": int(port),
-            "username": username,
-            "password": password,
+            "username": normalized_username,
             "known_hosts": ssh_options.get("known_hosts"),
         }
 
+        ### Add password auth only when configured
+        if normalized_password:
+            connect_kwargs["password"] = normalized_password
+
+        ### Add key-based auth when a key file is configured
+        if normalized_key_file:
+            connect_kwargs["client_keys"] = [normalized_key_file]
         optional_kwargs: dict[str, Any] = {
             "kex_algs": ssh_options.get("kex_algs"),
             "encryption_algs": ssh_options.get("encryption_algs"),
@@ -533,7 +569,7 @@ class SSHService:
         connection: asyncssh.SSHClientConnection,
         vendor_id: str,
         default_timeout: int,
-        password: str,
+        password: str | None,
     ) -> tuple[str, str | None]:
         """Collect configuration and metadata from device via vendor-defined command phases."""
         ### Get command sets for the vendor (pre_backup, backup, post_backup)
@@ -650,8 +686,6 @@ class SSHService:
     async def get_config(
         self,
         device: DeviceBase,
-        username: str,
-        password: str,
     ) -> tuple[str, str | None]:
         """Get device configuration plus optional metadata via local simulator or real SSH."""
         ### Get device config
@@ -662,6 +696,13 @@ class SSHService:
         retry_count = int(device_config["retry"])
         vendor_id = str(device_config["vendor"]).strip()
         ssh_profile = str(device_config["ssh_profile"]).strip()
+        device_username = str(device_config["username"]).strip()
+
+        ### Device authentication can be password-based, key-based, or both.
+        device_password_raw = str(device_config.get("password") or "").strip()
+        device_password = device_password_raw if device_password_raw else None
+        device_key_file_raw = str(device_config.get("ssh_key_file") or "").strip()
+        device_ssh_key_file = device_key_file_raw if device_key_file_raw else None
         max_attempts = retry_count + 1
 
         ### Use the local simulator if test mode is enabled
@@ -679,9 +720,10 @@ class SSHService:
             try:
                 ### Connect via SSH using SSH profile options
                 connection = await self.connect(
-                    device=device,
-                    username=username,
-                    password=password,
+                    host=str(device.ip_address),
+                    username=device_username,
+                    password=device_password,
+                    ssh_key_file=device_ssh_key_file,
                     ssh_profile=ssh_profile,
                     timeout=timeout_seconds,
                 )
@@ -691,7 +733,7 @@ class SSHService:
                     connection=connection,
                     vendor_id=vendor_id,
                     default_timeout=timeout_seconds,
-                    password=password,
+                    password=device_password,
                 )
                 return config, metadata_output
             except asyncio.TimeoutError as ex:
