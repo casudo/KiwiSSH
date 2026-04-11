@@ -313,11 +313,20 @@ class NodeConfig(BaseModel):
 class PostgresSourceConfig(BaseModel):
     """PostgreSQL device source."""
     host: str
-    port: int = 5432
+    port: int = Field(default=5432, ge=1, le=65535)
     database: str
     table: str
     username: str
     password: str
+
+    @field_validator("host", "database", "table", "username", "password", mode="before")
+    @classmethod
+    def validate_non_empty_text(cls, value: str | None) -> str:
+        """Require non-empty strings for PostgreSQL source connection fields."""
+        text = "" if value is None else str(value).strip()
+        if not text:
+            raise ValueError("postgres source connection fields must be non-empty strings")
+        return text
 
 
 class SourcesConfig(BaseModel):
@@ -413,10 +422,19 @@ class ApplicationDatabaseConfig(BaseModel):
     """Application PostgreSQL database configuration."""
 
     host: str
-    port: int
+    port: int = Field(default=5432,ge=1, le=65535)
     database: str
     username: str
     password: str
+
+    @field_validator("host", "database", "username", "password", mode="before")
+    @classmethod
+    def validate_non_empty_text(cls, value: str | None) -> str:
+        """Require non-empty strings for application database connection fields."""
+        text = "" if value is None else str(value).strip()
+        if not text:
+            raise ValueError("application_database connection fields must be non-empty strings")
+        return text
 
 
 class Settings(BaseSettings):

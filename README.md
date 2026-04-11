@@ -180,7 +180,7 @@ The `application_database` segment is used to configure the connection to the Po
 | Key | Description | Required | Default Value |
 | --- | ----------- | -------- | ------------- |
 | `application_database.host` | The host of the PostgreSQL database. | **Yes** | - |
-| `application_database.port` | The port of the PostgreSQL database. | **Yes** | - |
+| `application_database.port` | The port of the PostgreSQL database. | No | `5432` |
 | `application_database.database` | The name of the PostgreSQL database. | **Yes** | - |
 | `application_database.username` | The username for the PostgreSQL database. | **Yes** | - |
 | `application_database.password` | The password for the PostgreSQL database. | **Yes** | - |
