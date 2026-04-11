@@ -295,7 +295,7 @@ class SSHService:
         process: asyncssh.SSHClientProcess,
         commands: list[dict[str, Any]],
         default_timeout: int,
-        password: str,
+        password: str | None,
         prompt_patterns: list[re.Pattern[str]],
         capture_output: bool,
         required: bool = True,
@@ -333,8 +333,19 @@ class SSHService:
             ### Fire send input steps
             if step_type == "send_input":
                 try:
-                    ### Get input text and send it
-                    input_text = password if command_def.get("input") is None else str(command_def.get("input"))
+                    ### Resolve input text for send_input steps
+                    ## If the step does not define explicit input, reuse resolved..
+                    ## ..device password for backward compatibility.
+                    if command_def.get("input") is None:
+                        if password is None or not str(password).strip():
+                            raise RuntimeError(
+                                "Step failed: send_input requires explicit 'input' when no device password is configured"
+                            )
+                        input_text = str(password)
+                    else:
+                        input_text = str(command_def.get("input"))
+
+                    ### Send the resolved input as one line.
                     process.stdin.write(f"{input_text}\n")
 
                     ### Optionally wait for the prompt after sending input to ensure the device is ready for the next command
