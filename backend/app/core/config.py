@@ -342,6 +342,8 @@ class SourcesConfig(BaseModel):
             return None
 
         raw_path = str(value).strip()
+        if not raw_path:
+            return None
         expanded_path = os.path.expanduser(raw_path)
 
         native_path = Path(expanded_path)
@@ -355,6 +357,24 @@ class SourcesConfig(BaseModel):
             return str(native_path)
 
         return PurePosixPath(expanded_path).as_posix()
+
+    @model_validator(mode="after")
+    def validate_exactly_one_source(self) -> "SourcesConfig":
+        """Require exactly one configured device source: file or postgres."""
+        has_file_source = self.file is not None
+        has_postgres_source = self.postgres is not None
+
+        if has_file_source and has_postgres_source:
+            raise ValueError(
+                "Configure only one source under 'sources': either 'file' or 'postgres', not both"
+            )
+
+        if not has_file_source and not has_postgres_source:
+            raise ValueError(
+                "One source is required under 'sources': configure either 'file' or 'postgres'"
+            )
+
+        return self
 
 
 ### Git Configuration
