@@ -69,10 +69,15 @@ groups:
         url: "ssh://git@<domain>/customer-bbb/firewalls.git"
 
 ### Per-node overrides
-## Nodes can override: ssh_profile, vendor, timeout, retry, username, password, ssh_key_file, schedule, git.commit_message_template
+## Nodes can override: ssh_profile, vendor, timeout, retry, username, password, ssh_key_file, jumphost, schedule, git.commit_message_template
 ## Group CANNOT be overridden - change it in the source instead
 ## Remove this section if no overrides needed
 nodes:
   <device-name-here>:
     retry: 5
     ssh_key_file: "/home/kiwissh/.ssh/key_for_device"
+    jumphost:
+      hostname: "10.20.30.41"
+      username: "node-jump-user"
+      # password: "node-jump-password"
+      ssh_key_file: "/home/kiwissh/.ssh/key_for_jumphost"

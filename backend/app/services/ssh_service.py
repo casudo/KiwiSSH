@@ -509,6 +509,8 @@ class SSHService:
         ssh_key_file: str | None = None,
         port: int = 22,
         timeout: int | None = None,
+        tunnel: asyncssh.SSHClientConnection | None = None,
+        connection_label: str | None = None,
     ) -> asyncssh.SSHClientConnection:
         """Establish SSH connection using password and/or client key authentication."""
         ### Normalize required values early to provide clear error messages
@@ -545,6 +547,12 @@ class SSHService:
         ### Add key-based auth when a key file is configured
         if normalized_key_file:
             connect_kwargs["client_keys"] = [normalized_key_file]
+
+        ### Tunnel is used for jumphost chaining:
+        ### device connection goes through an already-open jumphost session
+        if tunnel is not None:
+            connect_kwargs["tunnel"] = tunnel
+
         optional_kwargs: dict[str, Any] = {
             "kex_algs": ssh_options.get("kex_algs"),
             "encryption_algs": ssh_options.get("encryption_algs"),
@@ -555,10 +563,11 @@ class SSHService:
             if value is not None:
                 connect_kwargs[key] = value
 
+        label = connection_label or normalized_host
         logger.debug(
             "Opening SSH connection to %s (%s:%d) with profile '%s'",
-            device.device_name,
-            device.ip_address,
+            label,
+            normalized_host,
             int(port),
             ssh_profile,
         )
@@ -703,6 +712,10 @@ class SSHService:
         device_password = device_password_raw if device_password_raw else None
         device_key_file_raw = str(device_config.get("ssh_key_file") or "").strip()
         device_ssh_key_file = device_key_file_raw if device_key_file_raw else None
+
+        ### Jump-host settings are optional and already validated in get_device_config
+        jumphost_cfg = device_config.get("jumphost")
+        
         max_attempts = retry_count + 1
 
         ### Use the local simulator if test mode is enabled
@@ -716,8 +729,37 @@ class SSHService:
         ### Try to fetch config from device with commands defined in vendor YAML, apply retries on failure
         last_exception: Exception | None = None
         for attempt in range(1, max_attempts + 1):
+            jump_connection: asyncssh.SSHClientConnection | None = None
             connection: asyncssh.SSHClientConnection | None = None
             try:
+                ### If jumphost is configured, open it first and tunnel the..
+                ## ..device SSH connection through that session
+                if jumphost_cfg:
+                    jumphost_name = str(jumphost_cfg.get("hostname") or "").strip()
+                    jumphost_port = int(jumphost_cfg.get("port") or 22)
+                    jumphost_username = str(jumphost_cfg.get("username") or "").strip()
+
+                    jumphost_password_raw = str(jumphost_cfg.get("password") or "").strip()
+                    jumphost_password = jumphost_password_raw if jumphost_password_raw else None
+                    jumphost_key_raw = str(jumphost_cfg.get("ssh_key_file") or "").strip()
+                    jumphost_ssh_key_file = jumphost_key_raw if jumphost_key_raw else None
+
+                    logger.debug(
+                        "Connecting to jumphost '%s' for device '%s'",
+                        jumphost_name,
+                        device.device_name,
+                    )
+                    jump_connection = await self.connect(
+                        host=jumphost_name,
+                        port=jumphost_port,
+                        username=jumphost_username,
+                        password=jumphost_password,
+                        ssh_key_file=jumphost_ssh_key_file,
+                        ssh_profile=ssh_profile,
+                        timeout=timeout_seconds,
+                        connection_label=f"jumphost:{jumphost_name}",
+                    )
+
                 ### Connect via SSH using SSH profile options
                 connection = await self.connect(
                     host=str(device.ip_address),
@@ -726,6 +768,8 @@ class SSHService:
                     ssh_key_file=device_ssh_key_file,
                     ssh_profile=ssh_profile,
                     timeout=timeout_seconds,
+                    tunnel=jump_connection,
+                    connection_label=device.device_name,
                 )
 
                 ### Fun part: Run the configured command phases to capture device config
@@ -766,6 +810,14 @@ class SSHService:
                     connection.close()
                     try:
                         await connection.wait_closed()
+                    except Exception:
+                        pass
+
+                ### Always close jumphost tunnel after device connection closes
+                if jump_connection is not None:
+                    jump_connection.close()
+                    try:
+                        await jump_connection.wait_closed()
                     except Exception:
                         pass
 

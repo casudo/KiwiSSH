@@ -146,6 +146,53 @@ class NodeGitConfig(BaseModel):
         return text or None
 
 
+class JumphostBaseConfig(BaseModel):
+    """Shared reusable jumphost fields for group and node-level config."""
+    hostname: str | None = None
+    username: str | None = None
+    password: str | None = None
+    ssh_key_file: str | None = None
+    port: int | None = Field(default=None, ge=1, le=65535)
+
+    @field_validator("hostname", "username", "password", "ssh_key_file", mode="before")
+    @classmethod
+    def normalize_optional_text(cls, value: str | None) -> str | None:
+        """Normalize optional string values and convert blanks to None."""
+        if value is None:
+            return None
+        text = str(value).strip()
+        return text or None
+
+
+class GroupJumphostConfig(JumphostBaseConfig):
+    """Group-level jumphost defaults applied to all devices in the group."""
+    hostname: str
+    username: str
+    port: int = Field(default=22, ge=1, le=65535)
+
+    @field_validator("hostname", "username", mode="before")
+    @classmethod
+    def validate_required_text(cls, value: str | None) -> str:
+        """Enforce non-empty hostname and username for configured group jumphost."""
+        text = "" if value is None else str(value).strip()
+        if not text:
+            raise ValueError("jumphost hostname and username must be non-empty strings")
+        return text
+
+    @model_validator(mode="after")
+    def validate_group_jumphost_auth(self) -> "GroupJumphostConfig":
+        """Require at least one auth method for group-level jumphost config."""
+        if not self.password and not self.ssh_key_file:
+            raise ValueError(
+                "groups.<group>.jumphost requires either 'password' or 'ssh_key_file'"
+            )
+        return self
+
+
+class NodeJumphostConfig(JumphostBaseConfig):
+    """Node-level jumphost overrides (all fields optional for partial override)."""
+
+
 class GroupConfig(BaseModel):
     """Device group configuration."""
     username: str | None = None
@@ -153,6 +200,7 @@ class GroupConfig(BaseModel):
     ssh_key_file: str | None = None
     ssh_profile: str | None = None
     vendor: str
+    jumphost: GroupJumphostConfig | None = None
     timeout: int | None = Field(default=None, ge=1)
     retry: int | None = Field(default=None, ge=0)
     schedule: ScheduleConfig | None = None
@@ -186,6 +234,7 @@ class NodeConfig(BaseModel):
     ssh_key_file: str | None = None
     ssh_profile: str | None = None
     vendor: str | None = None
+    jumphost: NodeJumphostConfig | None = None
     timeout: int | None = Field(default=None, ge=1)
     retry: int | None = Field(default=None, ge=0)
     schedule: ScheduleConfig | None = None
@@ -501,7 +550,8 @@ class Settings(BaseSettings):
         device_config = {
             "timeout": self.app.timeout,
             "retry": self.app.retry,
-            "schedule": self.app.schedule
+            "schedule": self.app.schedule,
+            "jumphost": None,
         }
 
         ### Step 1: Apply group-level defaults / overrides
@@ -514,6 +564,18 @@ class Settings(BaseSettings):
                 "ssh_profile": group_config.ssh_profile,
                 "vendor": group_config.vendor,
             })
+
+            ### Materialize group-level jumphost defaults into a mutable dict..
+            ## ..so node-level overrides can patch individual keys later
+            if group_config.jumphost is not None:
+                device_config["jumphost"] = {
+                    "hostname": group_config.jumphost.hostname,
+                    "port": int(group_config.jumphost.port),
+                    "username": group_config.jumphost.username,
+                    "password": group_config.jumphost.password,
+                    "ssh_key_file": group_config.jumphost.ssh_key_file,
+                }
+
             if group_config.timeout is not None:
                 device_config["timeout"] = group_config.timeout
             if group_config.retry is not None:
@@ -539,8 +601,58 @@ class Settings(BaseSettings):
                 device_config["password"] = node_config.password
             if node_config.ssh_key_file is not None:
                 device_config["ssh_key_file"] = node_config.ssh_key_file
+
+            ### Merge node-level jumphost overrides into group defaults key-by-key
+            ## This allows partial node overrides without duplicating the full block
+            if node_config.jumphost is not None:
+                resolved_jump_host = dict(device_config.get("jumphost") or {})
+                if node_config.jumphost.hostname is not None:
+                    resolved_jump_host["hostname"] = node_config.jumphost.hostname
+                if node_config.jumphost.port is not None:
+                    resolved_jump_host["port"] = int(node_config.jumphost.port)
+                if node_config.jumphost.username is not None:
+                    resolved_jump_host["username"] = node_config.jumphost.username
+                if node_config.jumphost.password is not None:
+                    resolved_jump_host["password"] = node_config.jumphost.password
+                if node_config.jumphost.ssh_key_file is not None:
+                    resolved_jump_host["ssh_key_file"] = node_config.jumphost.ssh_key_file
+                device_config["jumphost"] = resolved_jump_host or None
+
             if node_config.schedule and node_config.schedule.cron is not None:
                 device_config["schedule"] = node_config.schedule
+
+        ### Validate resolved device auth after group+node merging for optional fields
+        resolved_password = str(device_config.get("password") or "").strip()
+        resolved_key_file = str(device_config.get("ssh_key_file") or "").strip()
+
+        if not resolved_password and not resolved_key_file:
+            raise ValueError(
+                f"Device '{device_name}' in group '{group}' requires either password or ssh_key_file"
+            )
+
+        ### Validate jumphost details only when jumphost is configured
+        jumphost_cfg = device_config.get("jumphost")
+        if jumphost_cfg:
+            jumphost_name = str(jumphost_cfg.get("hostname") or "").strip()
+            jumphost_username = str(jumphost_cfg.get("username") or "").strip()
+            jumphost_password = str(jumphost_cfg.get("password") or "").strip()
+            jumphost_key_file = str(jumphost_cfg.get("ssh_key_file") or "").strip()
+
+            if not jumphost_name:
+                raise ValueError(
+                    f"Device '{device_name}' in group '{group}' has jumphost config without hostname"
+                )
+            if not jumphost_username:
+                raise ValueError(
+                    f"Device '{device_name}' in group '{group}' has jumphost config without username"
+                )
+            if not jumphost_password and not jumphost_key_file:
+                raise ValueError(
+                    f"Device '{device_name}' in group '{group}' jumphost requires either password or ssh_key_file"
+                )
+
+            ### Ensure a concrete jumphost port is always available after merge
+            jumphost_cfg["port"] = int(jumphost_cfg.get("port") or 22)
 
         return device_config
 
