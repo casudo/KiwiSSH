@@ -224,6 +224,17 @@ class GroupConfig(BaseModel):
         text = str(value).strip()
         return text or None
 
+    @field_validator("ssh_profile", mode="before")
+    @classmethod
+    def validate_group_ssh_profile(cls, ssh_profile: str | None) -> str:
+        """Require a non-empty SSH profile per group."""
+        if ssh_profile is None:
+            raise ValueError("ssh_profile is required")
+        text = str(ssh_profile).strip()
+        if not text:
+            raise ValueError("ssh_profile must be a non-empty string")
+        return text
+
     @field_validator("vendor", mode="before")
     @classmethod
     def validate_vendor(cls, vendor: str | None) -> str:
@@ -257,6 +268,17 @@ class NodeConfig(BaseModel):
             return None
         text = str(value).strip()
         return text or None
+
+    @field_validator("ssh_profile", mode="before")
+    @classmethod
+    def validate_node_ssh_profile(cls, ssh_profile: str | None) -> str | None:
+        """Normalize optional node SSH profile and reject blanks."""
+        if ssh_profile is None:
+            return None
+        text = str(ssh_profile).strip()
+        if not text:
+            raise ValueError("ssh_profile must be a non-empty string when provided")
+        return text
 
     @field_validator("vendor", mode="before")
     @classmethod
