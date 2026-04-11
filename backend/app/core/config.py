@@ -245,6 +245,15 @@ class GroupConfig(BaseModel):
         if not text:
             raise ValueError("Vendor must be a non-empty string")
         return text
+    
+    @field_validator("password", mode="before")
+    @classmethod
+    def normalize_group_password(cls, value: str | None) -> str | None:
+        """Normalize optional password and convert blanks to None."""
+        if value is None:
+            return None
+        text = str(value).strip()
+        return text or None
 
 
 class NodeConfig(BaseModel):
@@ -259,6 +268,15 @@ class NodeConfig(BaseModel):
     retry: int | None = Field(default=None, ge=0)
     schedule: ScheduleConfig | None = None
     git: NodeGitConfig | None = None
+
+    @field_validator("username", "password", mode="before")
+    @classmethod
+    def normalize_node_auth_text(cls, value: str | None) -> str | None:
+        """Normalize optional auth strings and convert blanks to None."""
+        if value is None:
+            return None
+        text = str(value).strip()
+        return text or None
 
     @field_validator("ssh_key_file", mode="before")
     @classmethod
