@@ -237,7 +237,7 @@ class GroupConfig(BaseModel):
 
     @field_validator("vendor", mode="before")
     @classmethod
-    def validate_vendor(cls, vendor: str | None) -> str:
+    def validate_vendor(cls, vendor: str) -> str:
         """Require a non-empty vendor id per group."""
         if vendor is None:
             raise ValueError("Vendor is required")
