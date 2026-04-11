@@ -195,7 +195,7 @@ class NodeJumphostConfig(JumphostBaseConfig):
 
 class GroupConfig(BaseModel):
     """Device group configuration."""
-    username: str | None = None
+    username: str
     password: str | None = None
     ssh_key_file: str | None = None
     ssh_profile: str | None = None
@@ -205,6 +205,15 @@ class GroupConfig(BaseModel):
     retry: int | None = Field(default=None, ge=0)
     schedule: ScheduleConfig | None = None
     git: GroupGitConfig | None = None
+
+    @field_validator("username", mode="before")
+    @classmethod
+    def validate_group_username(cls, value: str | None) -> str:
+        """Require a non-empty SSH username per group."""
+        text = "" if value is None else str(value).strip()
+        if not text:
+            raise ValueError("username is required and must be a non-empty string")
+        return text
 
     @field_validator("ssh_key_file", mode="before")
     @classmethod
