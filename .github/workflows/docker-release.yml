@@ -43,8 +43,8 @@ jobs:
       - name: Build and push frontend
         uses: docker/build-push-action@v5
         with:
-          context: .
-          file: ./frontend/Dockerfile_frontend
+          context: ./frontend
+          file: ./Dockerfile_frontend
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
@@ -57,8 +57,8 @@ jobs:
       - name: Build and push backend
         uses: docker/build-push-action@v5
         with:
-          context: .
-          file: ./backend/Dockerfile_backend
+          context: ./backend
+          file: ./Dockerfile_backend
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
