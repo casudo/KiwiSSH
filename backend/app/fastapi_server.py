@@ -44,6 +44,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info(f"Debug mode: {settings.app.debug}")
     logger.info(f"Loaded {len(settings.vendors)} vendor configurations")
     logger.info(f"Loaded {len(settings.ssh_profiles.get('profiles', {}))} SSH profiles")
+    logger.info(f"Loaded {len(settings.groups)} groups")
     logger.info(f"Max concurrent SSH sessions: {settings.app.threads}")
     logger.info(f"Global backup schedule: {settings.app.schedule.cron} ({settings.app.schedule.timezone})")
 

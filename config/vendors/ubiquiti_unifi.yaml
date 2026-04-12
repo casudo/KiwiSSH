@@ -33,6 +33,8 @@ commands:
       description: "Get network interface configuration for all interfaces"
     - command: "cat /tmp/system.cfg"
       description: "Get system configuration"
+    - command: "cat /etc/persistent/cfg/mgmt"
+      description: "Get management settings"
 
   ### Post-backup commands (cleanup) (OPTIONAL)
   ## Command outputs aren't saved in stored configuration
@@ -73,4 +75,8 @@ processing:
       - search: "^(syslog\\.remote\\.key=).*$"
         replacement: "\\1<password redacted>"
       - search: "^(.+\\.psk\\_file\\..+\\.psk=).*$"
+        replacement: "\\1<password redacted>"
+      - search: "^(mgmt\\.authkey=).*$"
+        replacement: "\\1<password redacted>"
+      - search: "^(sshd\\.auth\\.key\\..+\\.value=).*$"
         replacement: "\\1<password redacted>"

@@ -125,7 +125,7 @@ KiwiSSH uses separate Docker images for backend and frontend.
 3. Open the UI at `http://<IP>:8123`
 
 > [!IMPORTANT]
-> If you're using remote git storages, make sure the SSH keys for the remote git storages are correctly mounted to `/home/kiwissh/.ssh` and the permissions are correct (600 for private key, config file and known_hosts, owned by `kiwissh` (uid:gid 1000:1000) running the container) to ensure successful SSH authentication when pushing.
+> If you're using SSH key authentication (remote git push, device backup auth, or jumphost auth), mount your SSH material into `/home/kiwissh/.ssh` and ensure permissions are correct (typically `600` for private keys/config/known_hosts, owned by `kiwissh` uid:gid 1000:1000).
 
 > [!NOTE]
 > - API calls are available through the frontend proxy: `http://<IP>:8123/api/v1/...`
@@ -180,7 +180,7 @@ The `application_database` segment is used to configure the connection to the Po
 | Key | Description | Required | Default Value |
 | --- | ----------- | -------- | ------------- |
 | `application_database.host` | The host of the PostgreSQL database. | **Yes** | - |
-| `application_database.port` | The port of the PostgreSQL database. | **Yes** | - |
+| `application_database.port` | The port of the PostgreSQL database. | No | `5432` |
 | `application_database.database` | The name of the PostgreSQL database. | **Yes** | - |
 | `application_database.username` | The username for the PostgreSQL database. | **Yes** | - |
 | `application_database.password` | The password for the PostgreSQL database. | **Yes** | - |
@@ -255,9 +255,15 @@ KiwiSSH will always store the device configurations in local git repositories to
 | Key | Description | Required | Default Value |
 | --- | ----------- | -------- | ------------- |
 | `groups.<group>.username` | The username for SSH authentication for devices in this group. | **Yes** | - |
-| `groups.<group>.password` | The password for SSH authentication for devices in this group. | **Yes** | - |
+| `groups.<group>.password` | The password for SSH authentication for devices in this group (optional when `ssh_key_file` is used). | No | - |
+| `groups.<group>.ssh_key_file` | The private key file path for SSH authentication for devices in this group (alternative to password). | No | - |
 | `groups.<group>.ssh_profile` | The SSH profile to use for devices in this group. This is used to determine the SSH options to use when connecting to the devices. | **Yes** | - |
 | `groups.<group>.vendor` | The vendor of the devices in this group. This is used to determine the CLI commands to run for fetching the configuration. | **Yes** | - |
+| `groups.<group>.jumphost.hostname` | Jumphost hostname or IP for this group. If set, devices in this group are reached through this jumphost. | No | - |
+| `groups.<group>.jumphost.port` | Jumphost SSH port. | No | `22` |
+| `groups.<group>.jumphost.username` | Jumphost SSH username. | No | - |
+| `groups.<group>.jumphost.password` | Jumphost SSH password (optional when `groups.<group>.jumphost.ssh_key_file` is used). | No | - |
+| `groups.<group>.jumphost.ssh_key_file` | Jumphost private key file path (alternative to jumphost password). | No | - |
 | `groups.<group>.timeout` | The SSH timeout in seconds for devices in this group. This overrides the global SSH timeout. | No | Global `app.timeout` |
 | `groups.<group>.retry` | The SSH retry count for devices in this group. This overrides the global SSH retry count. | No | Global `app.retry` |
 | `groups.<group>.schedule.cron` | The cron expression for the backup schedule for devices in this group. This overrides the global backup schedule. | No | Global `app.schedule.cron` |
@@ -274,8 +280,14 @@ KiwiSSH will always store the device configurations in local git repositories to
 | --- | ----------- | -------- | ------------- |
 | `nodes.<device_name>.username` | The username for SSH authentication for this device. | No | `groups.<group>.username` |
 | `nodes.<device_name>.password` | The password for SSH authentication for this device. | No | `groups.<group>.password` |
+| `nodes.<device_name>.ssh_key_file` | The private key file path for SSH authentication for this device. | No | `groups.<group>.ssh_key_file` |
 | `nodes.<device_name>.ssh_profile` | The SSH profile to use for this device. This is used to determine the SSH options to use when connecting to the device. | No | `groups.<group>.ssh_profile` |
 | `nodes.<device_name>.vendor` | The vendor of this device. This is used to determine the CLI commands to run for fetching the configuration. | No | `groups.<group>.vendor` |
+| `nodes.<device_name>.jumphost.hostname` | Node-level jumphost hostname/IP override. | No | `groups.<group>.jumphost.hostname` |
+| `nodes.<device_name>.jumphost.port` | Node-level jumphost SSH port override. | No | `groups.<group>.jumphost.port` or `22` |
+| `nodes.<device_name>.jumphost.username` | Node-level jumphost username override. | No | `groups.<group>.jumphost.username` |
+| `nodes.<device_name>.jumphost.password` | Node-level jumphost password override. | No | `groups.<group>.jumphost.password` |
+| `nodes.<device_name>.jumphost.ssh_key_file` | Node-level jumphost key file override. | No | `groups.<group>.jumphost.ssh_key_file` |
 | `nodes.<device_name>.timeout` | The SSH timeout in seconds for this device. This overrides the group and global SSH timeout. | No | `groups.<group>.timeout` or Global `app.timeout` |
 | `nodes.<device_name>.retry` | The SSH retry count for this device. This overrides the group and global SSH retry count. | No | `groups.<group>.retry` or Global `app.retry` |
 | `nodes.<device_name>.schedule.cron` | The cron expression for the backup schedule for this device. This overrides the group and global backup schedule. | No | `groups.<group>.schedule.cron` or Global `app.schedule.cron` |
@@ -350,7 +362,7 @@ You can use the following keys for each command step:
 | --- | ----------- | -------- | ------------- |
 | `command` | Directly run the command on the device. | **Either `command` or `type`** | - |
 | `type` | Run the command in specified in this item and send the input (`input`) afterwards. If `input` is omitted, the resolved device password will be sent as input. | **Either `command` or `type`** | Must be `send_input` |
-| `input` (for `type: "send_input"` only!) | The input to send after the command. This is only used for `send_input` type steps. If omitted, the resolved device password will be sent as input. | No | Resolved device password |
+| `input` (for `type: "send_input"` only!) | The input to send after the command. This is only used for `send_input` type steps. If omitted, the resolved device password will be sent as input. If no device password is configured, this must be explicitly set. | No | Resolved device password |
 | `description` | A brief description of the command. | No | - |
 | `metadata` | If set to true, the output of this command will be saved as comment-prefixed metadata block in the backup job log. This is useful for adding important information to the backup job log. | No | `false` |
 | `wait_for_prompt` | If set to false, KiwiSSH will not wait for the command prompt to return after running this command before proceeding to the next step. Use with caution. | No | `true` |
@@ -388,7 +400,7 @@ SSH profiles define reusable options for SSH connections. Assign a profile via `
 > `strict` validates against `~/.ssh/known_hosts`
 > `ignore` skips known-host validation (mapped to `known_hosts: None` in AsyncSSH)
 > `auto_add` currently falls back to `ignore` and logs a warning
-> Device backup authentication uses username/password from group/node config
+> Jump-host connections use the same `ssh_profile` as the target device connection
 > SSH port and timeout are configured in group/node/app settings, not in SSH profiles
 
 You can create your own SSH profile by adding a new entry to the `ssh_profiles.yaml` file. Each profile should have a unique name.
@@ -462,6 +474,9 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 
 .. you should do `ssh git@<domain>` manual first to add the host to `~/.ssh/known_hosts`.
 
+> [!TIP]
+> In order to persistently keep the `known_hosts` file in Docker, make sure to mount a volume to `/home/kiwissh/.ssh` and ensure the permissions are correct to ensure successful SSH authentication when pushing even after restarting the container.
+
 ---
 
 # Future Goals
@@ -470,7 +485,6 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 
 - More logging
 - Checks for device source: No duplicate hostnames, valid IPs, ... (What if multiple groups hold the same IP address range?)
-- SSH Key pair support instead of just passwords
 - Override SSH port (Probably better placed in groups/nodes than SSH profiles?)
 
 **Mid-term:**
@@ -480,7 +494,6 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 - Docker Image + GitHub Action to build and push image
   - Publish Image to Docker hub
 - Login Screen, User management and RBAC
-- Jumphost support (configurable in YAML config as global, group or node level)
 - Implement backup job log rotation and retention policies (e.g. delete logs if line >10000 or older than 90 days)
 - Add visual popup when opening JobView.vue if the page load takes longer than 2 seconds to inform the user that the page is still loading and to prevent them from thinking the UI is frozen
 - Move function-level imports to top-level imports to comply with PEP8

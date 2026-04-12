@@ -141,12 +141,9 @@ class BackupService:
             ### Get config from device via SSH (or simulator)
             ssh_fetch_semaphore = self._get_ssh_fetch_semaphore()
             async with ssh_fetch_semaphore:
-                device_config = get_settings().get_device_config(device.group, device.device_name)
-                config, metadata_output = await ssh_service.get_config(
-                    device,
-                    username=device_config["username"],
-                    password=device_config["password"],
-                )
+                ### SSHService resolves merged auth settings..
+                ## ..internally via settings.get_device_config.
+                config, metadata_output = await ssh_service.get_config(device)
             logger.debug(f"Got config for {device.device_name} ({len(config)} bytes)")
 
             ### Save config to git (using device's group)
