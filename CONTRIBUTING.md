@@ -50,8 +50,8 @@ To run KiwiSSH on your local machine without Docker, follow these steps:
 #### Build Docker image yourself
 
 1. Make sure you're in the root of the repository
-2. Build the backend image: `docker build -f .\backend\Dockerfile_backend -t casudo/kiwissh-backend:v1.0.1-fix1 .\backend`
-3. Build the frontend image: `docker build -f .\frontend\Dockerfile_frontend -t casudo/kiwissh-frontend:v1.0.1-fix1 .\frontend`
+2. Build the backend image: `docker build -f .\backend\Dockerfile_backend --platform linux/amd64,linux/arm64 -t casudo/kiwissh-backend:<YOUR_TAG> .\backend`
+3. Build the frontend image: `docker build -f .\frontend\Dockerfile_frontend --platform linux/amd64,linux/arm64 -t casudo/kiwissh-frontend:<YOUR_TAG> .\frontend`
 
 > [!TIP]
 > The `.dockerignore` file is always resolved from the build context root:
