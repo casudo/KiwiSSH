@@ -8,7 +8,7 @@ import "./style.css"
 
 // Versions
 export const APP_VERSION = "1.0.2" // KiwiSSH backend + frontend bundled together
-export const FRONTEND_VERSION = "1.0.1" // Frontend version only
+export const FRONTEND_VERSION = "1.0.2" // Frontend version only
 
 function applyInitialTheme(): void {
 	const themeStorageKey = "kiwissh-theme"
