@@ -51,7 +51,7 @@ It was created as better alternative to RANCID and Oxidized, with a focus on sim
   - [fatal: Could not read from remote repository](#fatal-could-not-read-from-remote-repository)
 - [Future Goals](#future-goals)
 - [Technical Documentation](#technical-documentation)
-- [Development](#development)
+- [Contributing to KiwiSSH](#contributing-to-kiwissh)
 - [License](#license)
 - [Support](#support)
 
@@ -529,7 +529,7 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 
 Please visit [TECHNICAL.md](TECHNICAL.md) for detailed technical documentation about the architecture and design decisions of KiwiSSH.
 
-# Development
+# Contributing to KiwiSSH
 
 > [!IMPORTANT]
 > If you would like to contribute to the project, please to a look at the [CONTRIBUTING.md](CONTRIBUTING.md) file for guidelines on how to contribute and the code of conduct.
