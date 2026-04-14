@@ -25,9 +25,10 @@ ANSI_ESCAPE_RE = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
 ## - [user@host ~]#
 ## Notes:
 ## - Excludes '=' to avoid matching config assignment lines
-GENERIC_PROMPT_RE = re.compile(r"[^\r\n=]*[A-Za-z0-9][^\r\n=]*[>#]\s*$")
+GENERIC_PROMPT_PATTERNS = [
+        re.compile(r"[^\r\n=]*[A-Za-z0-9][^\r\n=]*[>#]\s*$"),
+    ]
 
-GENERIC_PROMPT_PATTERNS = [GENERIC_PROMPT_RE]
 
 
 class SSHService:
