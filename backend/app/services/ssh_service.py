@@ -25,9 +25,18 @@ ANSI_ESCAPE_RE = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
 ## - [user@host ~]#
 ## Notes:
 ## - Excludes '=' to avoid matching config assignment lines
-GENERIC_PROMPT_RE = re.compile(r"[^\r\n=]*[A-Za-z0-9][^\r\n=]*[>#]\s*$")
+GENERIC_PROMPT_PATTERNS = [
+        re.compile(r"[^\r\n=]*[A-Za-z0-9][^\r\n=]*[>#]\s*$"),
+    ]
 
-GENERIC_PROMPT_PATTERNS = [GENERIC_PROMPT_RE]
+### Generic pagination patterns to handle common pagination for all vendors as default
+DEFAULT_PAGINATION_PATTERNS = [
+    re.compile(r"^\s*--\s*More\s*--\s*(?:\(\d+%\))?\s*$", re.IGNORECASE),
+    re.compile(r"^\s*---\s*\(more(?: \d+%)?\)\s*---\s*$", re.IGNORECASE),
+    re.compile(r"^\s*More:\s*<space>,\s*Quit:\s*q,\s*One line:\s*<return>\s*$", re.IGNORECASE),
+    re.compile(r"^\s*Press any key to continue(?: or q to quit)?\s*$", re.IGNORECASE),
+    re.compile(r"^\s*Press <space> to continue(?:, q to quit)?\s*$", re.IGNORECASE),
+]
 
 
 class SSHService:
@@ -88,6 +97,62 @@ class SSHService:
             vendor_id,
         )
         return GENERIC_PROMPT_PATTERNS
+
+    def _get_pagination_settings(self, vendor_id: str) -> tuple[list[re.Pattern[str]], str]:
+        """Get optional pagination detection patterns and response from vendor session config."""
+        session_config = vendor_service.get_session_parameters(vendor_id)
+        pagination_config = session_config.get("pagination")
+
+        ### Default: handle common pagination markers even when vendor config doesn't define pagination settings
+        if pagination_config is None:
+            return list(DEFAULT_PAGINATION_PATTERNS), " "
+
+        if not isinstance(pagination_config, dict):
+            logger.warning(
+                "Invalid session.pagination for vendor '%s': expected mapping; disabling pagination handling",
+                vendor_id,
+            )
+            return [], " "
+
+        if not bool(pagination_config.get("enabled", False)):
+            return [], " "
+
+        raw_patterns = pagination_config.get("patterns", [])
+
+        ### Check for single or multiple pagination patterns and normalize to a list
+        pattern_values: list[str]
+        if isinstance(raw_patterns, str):
+            pattern_values = [raw_patterns]
+        elif isinstance(raw_patterns, list):
+            pattern_values = [str(value) for value in raw_patterns if str(value).strip()]
+        else:
+            logger.warning(
+                "Invalid session.pagination.patterns for vendor '%s': expected string or list; disabling pagination handling",
+                vendor_id,
+            )
+            return [], " "
+
+        ### Validate pagination REGEX patterns
+        compiled_patterns: list[re.Pattern[str]] = []
+        for pattern_value in pattern_values:
+            try:
+                compiled_patterns.append(re.compile(pattern_value))
+            except re.error as ex:
+                logger.warning(
+                    "Invalid session.pagination regex pattern '%s' for vendor '%s': %s",
+                    pattern_value,
+                    vendor_id,
+                    ex,
+                )
+
+        if not compiled_patterns:
+            return [], " "
+
+        response = str(pagination_config.get("response", " "))
+        if not response:
+            response = " "
+
+        return compiled_patterns, response
 
     def _get_ssh_options(self, profile_name: str) -> dict[str, Any]:
         """Get SSH options from profile and map known_hosts policy."""
@@ -164,11 +229,16 @@ class SSHService:
         stream: asyncssh.SSHReader,
         patterns: list[re.Pattern[str]],
         timeout: int,
+        *,
+        stdin: Any | None = None,
+        pagination_patterns: list[re.Pattern[str]] | None = None,
+        pagination_response: str = " ",
     ) -> str:
         """Read stream until one of the patterns appears or timeout is reached."""
         loop = asyncio.get_running_loop()
         deadline = loop.time() + max(1, int(timeout))
         buffer = ""
+        resolved_pagination_patterns = pagination_patterns or []
 
         ### Read in a loop until we see a prompt pattern or hit the timeout
         while True:
@@ -177,20 +247,57 @@ class SSHService:
             ## ..and from random chunk boundaries inside large command outputs
             if patterns:
                 tail = buffer[-4096:]
-                last_line = tail.split("\n")[-1]
-                if self._line_matches_prompt(last_line, patterns):
+                tail_lines = tail.split("\n")
+
+                ### Some devices return a newline right after the command output
+                ## Use the last non-empty line so prompt detection remains reliable
+                while tail_lines and not tail_lines[-1].strip():
+                    tail_lines.pop()
+
+                if tail_lines and self._line_matches_prompt(tail_lines[-1], patterns):
                     ### Collect any trailing bytes that arrive immediately after prompt detection
                     ### This reduces output bleed into the next command on some devices
                     buffer += await self._read_trailing_output(stream)
                     return buffer
 
+                ### Handle pagination prompts (for example '--More--') by sending configured input
+                if tail_lines and resolved_pagination_patterns and self._line_matches_prompt(tail_lines[-1], resolved_pagination_patterns):
+                    if stdin is not None:
+                        stdin.write(pagination_response)
+
+                    ### Remove pagination marker line from captured output to avoid noisy backups
+                    if "\n" in buffer:
+                        buffer = f"{buffer.rsplit('\n', 1)[0]}\n"
+                    else:
+                        buffer = ""
+                    continue
+
             ### If no pattern matched, read more data with a short timeout to allow for checking the deadline
             remaining = deadline - loop.time()
             if remaining <= 0:
+                ### Check last 1024 bytes for a non-empty line to include in the timeout log
+                timeout_tail = buffer[-1024:]
+                timeout_lines = timeout_tail.split("\n")
+                last_non_empty = ""
+                while timeout_lines:
+                    candidate = timeout_lines.pop().strip("\r")
+                    if candidate.strip():
+                        last_non_empty = candidate
+                        break
+
+                logger.debug(
+                    "Timed out waiting for prompt. Last non-empty output line: %r",
+                    ANSI_ESCAPE_RE.sub("", last_non_empty)[-200:],
+                )
                 raise asyncio.TimeoutError("Timed out waiting for prompt")
 
             ### Read the next chunk of output with a short timeout to allow for prompt detection
-            chunk = await asyncio.wait_for(stream.read(256), timeout=min(remaining, 1.0))
+            try:
+                chunk = await asyncio.wait_for(stream.read(256), timeout=min(remaining, 1.0))
+            except asyncio.TimeoutError:
+                ### No new bytes in this polling window; keep waiting until overall deadline
+                continue
+
             if chunk == "":
                 return buffer
 
@@ -275,6 +382,8 @@ class SSHService:
         timeout: int,
         wait_for_prompt: bool,
         prompt_patterns: list[re.Pattern[str]],
+        pagination_patterns: list[re.Pattern[str]],
+        pagination_response: str,
     ) -> str:
         """Execute a single command in an interactive shell session."""
         ### Send the command to the shell
@@ -285,7 +394,14 @@ class SSHService:
             return ""
 
         ### Wait until shell responds with a prompt again (shell is ready again)
-        raw = await self._read_until_patterns(process.stdout, prompt_patterns, timeout)
+        raw = await self._read_until_patterns(
+            process.stdout,
+            prompt_patterns,
+            timeout,
+            stdin=process.stdin,
+            pagination_patterns=pagination_patterns,
+            pagination_response=pagination_response,
+        )
 
         ### Return normalized command output
         return self._sanitize_command_output(raw, command, prompt_patterns)
@@ -297,6 +413,8 @@ class SSHService:
         default_timeout: int,
         password: str | None,
         prompt_patterns: list[re.Pattern[str]],
+        pagination_patterns: list[re.Pattern[str]],
+        pagination_response: str,
         capture_output: bool,
         required: bool = True,
     ) -> list[dict[str, Any]]:
@@ -354,6 +472,9 @@ class SSHService:
                             process.stdout,
                             prompt_patterns,
                             default_timeout,
+                            stdin=process.stdin,
+                            pagination_patterns=pagination_patterns,
+                            pagination_response=pagination_response,
                         )
                     else:
                         await asyncio.sleep(0.1)
@@ -380,6 +501,8 @@ class SSHService:
                     timeout=default_timeout,
                     wait_for_prompt=wait_for_prompt,
                     prompt_patterns=prompt_patterns,
+                    pagination_patterns=pagination_patterns,
+                    pagination_response=pagination_response,
                 )
                 if capture_output and output:
                     captured_outputs.append({
@@ -604,6 +727,7 @@ class SSHService:
         comment_prefix = "! " if not prefix else (prefix if prefix.endswith(" ") else f"{prefix} ")
         include_metadata_in_config = bool(session_config.get("include_metadata_in_config", False))
         prompt_patterns = self._get_prompt_patterns(vendor_id)
+        pagination_patterns, pagination_response = self._get_pagination_settings(vendor_id)
 
         ### Get processing rules for the vendor
         processing_rules = vendor_service.get_processing_rules(vendor_id)
@@ -623,6 +747,8 @@ class SSHService:
                 default_timeout=default_timeout,
                 password=password,
                 prompt_patterns=prompt_patterns,
+                pagination_patterns=pagination_patterns,
+                pagination_response=pagination_response,
                 capture_output=False,
             )
 
@@ -632,6 +758,8 @@ class SSHService:
                 default_timeout=default_timeout,
                 password=password,
                 prompt_patterns=prompt_patterns,
+                pagination_patterns=pagination_patterns,
+                pagination_response=pagination_response,
                 capture_output=True,
             )
 
@@ -641,6 +769,8 @@ class SSHService:
                 default_timeout=default_timeout,
                 password=password,
                 prompt_patterns=prompt_patterns,
+                pagination_patterns=pagination_patterns,
+                pagination_response=pagination_response,
                 capture_output=False,
             )
 

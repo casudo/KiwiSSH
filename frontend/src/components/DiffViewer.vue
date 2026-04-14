@@ -268,17 +268,17 @@ function getLineClass(type: string): string {
 
     <!-- Side-by-side diff viewer -->
     <div class="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
-      <div class="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-slate-200 dark:divide-slate-700 bg-slate-100/90 dark:bg-slate-800/95 border-b border-slate-200 dark:border-slate-700">
+      <div class="grid grid-cols-2 divide-x divide-slate-200 dark:divide-slate-700 bg-slate-100/90 dark:bg-slate-800/95 border-b border-slate-200 dark:border-slate-700">
         <div class="px-4 py-2 font-medium text-slate-700 dark:text-slate-100 text-xs">Original (Removed lines in red)</div>
         <div class="px-4 py-2 font-medium text-slate-700 dark:text-slate-100 text-xs">Modified (Added lines in green)</div>
       </div>
 
       <div class="font-mono text-sm bg-slate-50/50 dark:bg-slate-900 overflow-x-auto">
-        <div class="min-w-max">
+        <div class="min-w-5xl">
           <div
             v-for="(row, rowIndex) in parsedDiff"
             :key="`row-${rowIndex}`"
-            class="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-slate-200 dark:divide-slate-700"
+            class="grid grid-cols-2 divide-x divide-slate-200 dark:divide-slate-700"
           >
             <!-- Left side line -->
             <div v-if="row.left" :class="getLineClass(row.left.type)" class="flex min-h-7">
@@ -289,7 +289,7 @@ function getLineClass(type: string): string {
                 {{ row.left.lineNum }}
               </div>
               <div v-else class="shrink-0 w-14" />
-              <pre class="flex-1 px-4 py-1 text-gray-800 dark:text-gray-100 whitespace-pre-wrap wrap-break-word"><span
+              <pre class="flex-1 px-4 py-1 text-gray-800 dark:text-gray-100 whitespace-pre-wrap break-all"><span
                 v-for="(segment, segmentIndex) in row.left.segments"
                 :key="`left-${rowIndex}-${segmentIndex}`"
                 :class="segment.changed ? getInlineClass(row.left.type) : ''"
@@ -309,7 +309,7 @@ function getLineClass(type: string): string {
                 {{ row.right.lineNum }}
               </div>
               <div v-else class="shrink-0 w-14" />
-              <pre class="flex-1 px-4 py-1 text-gray-800 dark:text-gray-100 whitespace-pre-wrap wrap-break-word"><span
+              <pre class="flex-1 px-4 py-1 text-gray-800 dark:text-gray-100 whitespace-pre-wrap break-all"><span
                 v-for="(segment, segmentIndex) in row.right.segments"
                 :key="`right-${rowIndex}-${segmentIndex}`"
                 :class="segment.changed ? getInlineClass(row.right.type) : ''"
