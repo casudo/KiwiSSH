@@ -491,6 +491,8 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 - More logging
 - Checks for device source: No duplicate hostnames, valid IPs, ... (What if multiple groups hold the same IP address range?)
 - Override SSH port (Probably better placed in groups/nodes than SSH profiles?)
+- Automatically mount `/config/vendors` from this repo inside the backend container's `config_dir` so the user can directly use and modify the existing vendor YAML files
+- Instead of manually configuring the versions in `main.ts` and `__init__.py`, use the docker image tag as version source. This would only work if the users uses KiwiSSH in Docker containers. How to handle it when used manually?
 
 **Mid-term:**
 
@@ -506,6 +508,7 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 - Pentests
 - Rework Pydantic models (required vs optional fields, default values, validators, etc.)
 - Rework `tests/`. Include real mock device CLI outputs and uniform sources CSV. Exclude `tests/backups` in .gitignoore. These files can be then freely used by any maintainer to test things out
+- Bug report and Feature request template
 
 **Long Term:**
 
@@ -527,6 +530,7 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 - Swagger API documentation on GitHub Pages
 - Allow group passwords to bet set via env vars or other input
 - Better device simulation: Add a small script for user to run against actual hardware to create realistic CLI output samples for the vendor YAML file creation. Secrets and sensitive info should be redacted
+- Add Conventional Commits
 
 ---
 
