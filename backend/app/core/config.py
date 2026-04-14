@@ -152,9 +152,10 @@ class JumphostBaseConfig(BaseModel):
     username: str | None = None
     password: str | None = None
     ssh_key_file: str | None = None
+    ssh_profile: str | None = None
     port: int | None = Field(default=None, ge=1, le=65535)
 
-    @field_validator("hostname", "username", "password", "ssh_key_file", mode="before")
+    @field_validator("hostname", "username", "password", "ssh_key_file", "ssh_profile", mode="before")
     @classmethod
     def normalize_optional_text(cls, value: str | None) -> str | None:
         """Normalize optional string values and convert blanks to None."""
@@ -168,15 +169,16 @@ class GroupJumphostConfig(JumphostBaseConfig):
     """Group-level jumphost defaults applied to all devices in the group."""
     hostname: str
     username: str
+    ssh_profile: str
     port: int = Field(default=22, ge=1, le=65535)
 
-    @field_validator("hostname", "username", mode="before")
+    @field_validator("hostname", "username", "ssh_profile", mode="before")
     @classmethod
     def validate_required_text(cls, value: str | None) -> str:
-        """Enforce non-empty hostname and username for configured group jumphost."""
+        """Enforce non-empty required strings for configured group jumphost."""
         text = "" if value is None else str(value).strip()
         if not text:
-            raise ValueError("jumphost hostname and username must be non-empty strings")
+            raise ValueError("jumphost hostname, username, and ssh_profile must be non-empty strings")
         return text
 
     @model_validator(mode="after")
@@ -661,6 +663,7 @@ class Settings(BaseSettings):
                     "username": group_config.jumphost.username,
                     "password": group_config.jumphost.password,
                     "ssh_key_file": group_config.jumphost.ssh_key_file,
+                    "ssh_profile": group_config.jumphost.ssh_profile,
                 }
 
             if group_config.timeout is not None:
@@ -703,6 +706,8 @@ class Settings(BaseSettings):
                     resolved_jump_host["password"] = node_config.jumphost.password
                 if node_config.jumphost.ssh_key_file is not None:
                     resolved_jump_host["ssh_key_file"] = node_config.jumphost.ssh_key_file
+                if node_config.jumphost.ssh_profile is not None:
+                    resolved_jump_host["ssh_profile"] = node_config.jumphost.ssh_profile
                 device_config["jumphost"] = resolved_jump_host or None
 
             if node_config.schedule and node_config.schedule.cron is not None:
@@ -724,6 +729,7 @@ class Settings(BaseSettings):
             jumphost_username = str(jumphost_cfg.get("username") or "").strip()
             jumphost_password = str(jumphost_cfg.get("password") or "").strip()
             jumphost_key_file = str(jumphost_cfg.get("ssh_key_file") or "").strip()
+            jumphost_ssh_profile = str(jumphost_cfg.get("ssh_profile") or "").strip()
 
             if not jumphost_name:
                 raise ValueError(
@@ -737,6 +743,13 @@ class Settings(BaseSettings):
                 raise ValueError(
                     f"Device '{device_name}' in group '{group}' jumphost requires either password or ssh_key_file"
                 )
+            if not jumphost_ssh_profile:
+                raise ValueError(
+                    f"Device '{device_name}' in group '{group}' jumphost requires ssh_profile"
+                )
+
+            ### Keep normalized profile text in resolved config for SSHService consumption
+            jumphost_cfg["ssh_profile"] = jumphost_ssh_profile
 
             ### Ensure a concrete jumphost port is always available after merge
             jumphost_cfg["port"] = int(jumphost_cfg.get("port") or 22)

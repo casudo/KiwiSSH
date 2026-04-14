@@ -259,11 +259,12 @@ KiwiSSH will always store the device configurations in local git repositories to
 | `groups.<group>.ssh_key_file` | The private key file path for SSH authentication for devices in this group (alternative to password). | No | - |
 | `groups.<group>.ssh_profile` | The SSH profile to use for devices in this group. This is used to determine the SSH options to use when connecting to the devices. | **Yes** | - |
 | `groups.<group>.vendor` | The vendor of the devices in this group. This is used to determine the CLI commands to run for fetching the configuration. | **Yes** | - |
-| `groups.<group>.jumphost.hostname` | Jumphost hostname or IP for this group. If set, devices in this group are reached through this jumphost. | No | - |
+| `groups.<group>.jumphost.hostname` | Jumphost hostname or IP for this group. If set, devices in this group are reached through this jumphost. | **Yes**, if `jumphost` | - |
 | `groups.<group>.jumphost.port` | Jumphost SSH port. | No | `22` |
-| `groups.<group>.jumphost.username` | Jumphost SSH username. | No | - |
+| `groups.<group>.jumphost.username` | Jumphost SSH username. | **Yes**, if `jumphost` | - |
 | `groups.<group>.jumphost.password` | Jumphost SSH password (optional when `groups.<group>.jumphost.ssh_key_file` is used). | No | - |
 | `groups.<group>.jumphost.ssh_key_file` | Jumphost private key file path (alternative to jumphost password). | No | - |
+| `groups.<group>.jumphost.ssh_profile` | SSH profile for the jumphost connection. This is separate from `groups.<group>.ssh_profile` (device connection profile) and is required when a jumphost is configured. | **Yes**, if `jumphost` | - |
 | `groups.<group>.timeout` | The SSH timeout in seconds for devices in this group. This overrides the global SSH timeout. | No | Global `app.timeout` |
 | `groups.<group>.retry` | The SSH retry count for devices in this group. This overrides the global SSH retry count. | No | Global `app.retry` |
 | `groups.<group>.schedule.cron` | The cron expression for the backup schedule for devices in this group. This overrides the global backup schedule. | No | Global `app.schedule.cron` |
@@ -283,11 +284,12 @@ KiwiSSH will always store the device configurations in local git repositories to
 | `nodes.<device_name>.ssh_key_file` | The private key file path for SSH authentication for this device. | No | `groups.<group>.ssh_key_file` |
 | `nodes.<device_name>.ssh_profile` | The SSH profile to use for this device. This is used to determine the SSH options to use when connecting to the device. | No | `groups.<group>.ssh_profile` |
 | `nodes.<device_name>.vendor` | The vendor of this device. This is used to determine the CLI commands to run for fetching the configuration. | No | `groups.<group>.vendor` |
-| `nodes.<device_name>.jumphost.hostname` | Node-level jumphost hostname/IP override. | No | `groups.<group>.jumphost.hostname` |
+| `nodes.<device_name>.jumphost.hostname` | Node-level jumphost hostname/IP override. | **Yes**, if `jumphost` | `groups.<group>.jumphost.hostname` |
 | `nodes.<device_name>.jumphost.port` | Node-level jumphost SSH port override. | No | `groups.<group>.jumphost.port` or `22` |
-| `nodes.<device_name>.jumphost.username` | Node-level jumphost username override. | No | `groups.<group>.jumphost.username` |
+| `nodes.<device_name>.jumphost.username` | Node-level jumphost username override. | **Yes**, if `jumphost` | `groups.<group>.jumphost.username` |
 | `nodes.<device_name>.jumphost.password` | Node-level jumphost password override. | No | `groups.<group>.jumphost.password` |
 | `nodes.<device_name>.jumphost.ssh_key_file` | Node-level jumphost key file override. | No | `groups.<group>.jumphost.ssh_key_file` |
+| `nodes.<device_name>.jumphost.ssh_profile` | Node-level jumphost SSH profile override. | **Yes**, if `jumphost` | `groups.<group>.jumphost.ssh_profile` |
 | `nodes.<device_name>.timeout` | The SSH timeout in seconds for this device. This overrides the group and global SSH timeout. | No | `groups.<group>.timeout` or Global `app.timeout` |
 | `nodes.<device_name>.retry` | The SSH retry count for this device. This overrides the group and global SSH retry count. | No | `groups.<group>.retry` or Global `app.retry` |
 | `nodes.<device_name>.schedule.cron` | The cron expression for the backup schedule for this device. This overrides the group and global backup schedule. | No | `groups.<group>.schedule.cron` or Global `app.schedule.cron` |
@@ -400,7 +402,7 @@ SSH profiles define reusable options for SSH connections. Assign a profile via `
 > `strict` validates against `~/.ssh/known_hosts`
 > `ignore` skips known-host validation (mapped to `known_hosts: None` in AsyncSSH)
 > `auto_add` currently falls back to `ignore` and logs a warning
-> Jump-host connections use the same `ssh_profile` as the target device connection
+> Device and jumphost connections can use separate profiles (`ssh_profile` for devices, `jumphost.ssh_profile` for jumphosts)
 > SSH port and timeout are configured in group/node/app settings, not in SSH profiles
 
 You can create your own SSH profile by adding a new entry to the `ssh_profiles.yaml` file. Each profile should have a unique name.

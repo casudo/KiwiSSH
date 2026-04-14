@@ -57,6 +57,10 @@ groups:
     git:
       remote:
         url: "ssh://git@gitea/customer-aaa/switches.git"
+    jumphost:
+      username: "jumphost-user"
+      hostname: "my.jumphost.com"
+      ssh_profile: "legacy-jumphost"
   
   <another-group-name>:
     username: "admin"

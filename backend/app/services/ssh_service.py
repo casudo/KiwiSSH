@@ -92,6 +92,8 @@ class SSHService:
     def _get_ssh_options(self, profile_name: str) -> dict[str, Any]:
         """Get SSH options from profile and map known_hosts policy."""
         profile = self.settings.get_ssh_profile(profile_name)
+        if not isinstance(profile, dict):
+            raise ValueError(f"SSH profile '{profile_name}' not found")
 
         policy = str(profile.get("known_hosts_policy", "ignore")).lower().strip()
         if policy == "strict":
@@ -715,7 +717,7 @@ class SSHService:
         timeout_seconds = int(device_config["timeout"])
         retry_count = int(device_config["retry"])
         vendor_id = str(device_config["vendor"]).strip()
-        ssh_profile = str(device_config["ssh_profile"]).strip()
+        device_ssh_profile = str(device_config["ssh_profile"]).strip()
         device_username = str(device_config["username"]).strip()
 
         ### Device authentication can be password-based, key-based, or both.
@@ -724,7 +726,7 @@ class SSHService:
         device_key_file_raw = str(device_config.get("ssh_key_file") or "").strip()
         device_ssh_key_file = device_key_file_raw if device_key_file_raw else None
 
-        ### Jump-host settings are optional and already validated in get_device_config
+        ### Jumphost settings are optional and already validated in get_device_config
         jumphost_cfg = device_config.get("jumphost")
         
         max_attempts = retry_count + 1
@@ -749,6 +751,7 @@ class SSHService:
                     jumphost_name = str(jumphost_cfg.get("hostname") or "").strip()
                     jumphost_port = int(jumphost_cfg.get("port") or 22)
                     jumphost_username = str(jumphost_cfg.get("username") or "").strip()
+                    jumphost_ssh_profile = str(jumphost_cfg.get("ssh_profile") or "").strip()
 
                     jumphost_password_raw = str(jumphost_cfg.get("password") or "").strip()
                     jumphost_password = jumphost_password_raw if jumphost_password_raw else None
@@ -766,7 +769,7 @@ class SSHService:
                         username=jumphost_username,
                         password=jumphost_password,
                         ssh_key_file=jumphost_ssh_key_file,
-                        ssh_profile=ssh_profile,
+                        ssh_profile=jumphost_ssh_profile,
                         timeout=timeout_seconds,
                         connection_label=f"jumphost:{jumphost_name}",
                     )
@@ -777,7 +780,7 @@ class SSHService:
                     username=device_username,
                     password=device_password,
                     ssh_key_file=device_ssh_key_file,
-                    ssh_profile=ssh_profile,
+                    ssh_profile=device_ssh_profile,
                     timeout=timeout_seconds,
                     tunnel=jump_connection,
                     connection_label=device.device_name,
