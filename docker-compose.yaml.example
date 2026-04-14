@@ -8,10 +8,8 @@ services:
     #   - 8000:8000
     volumes:
       - PATH_TO_CONFIG/config:/config
-    ### Optional: mount SSH material for remote git pushes (needs to be uid:gid 1000:1000)
-      # - /PATH_TO_CONFIG/ssh_config:/home/kiwissh/.ssh/config
-      # - /PATH_TO_CONFIG/kiwissh_gitea:/home/kiwissh/.ssh/kiwissh_gitea
-      # - /PATH_TO_CONFIG/known_hosts:/home/kiwissh/.ssh/known_hosts
+    ### Optional: mount SSH material for remote git pushes or device login (needs to be uid:gid 1000:1000)
+      # - /PATH_TO_CONFIG/ssh_material:/home/kiwissh/.ssh/
 
   frontend:
     container_name: kiwissh_frontend
