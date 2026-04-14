@@ -29,6 +29,14 @@ GENERIC_PROMPT_PATTERNS = [
         re.compile(r"[^\r\n=]*[A-Za-z0-9][^\r\n=]*[>#]\s*$"),
     ]
 
+### Generic pagination patterns to handle common pagination for all vendors as default
+DEFAULT_PAGINATION_PATTERNS = [
+    re.compile(r"^\s*--\s*More\s*--\s*(?:\(\d+%\))?\s*$", re.IGNORECASE),
+    re.compile(r"^\s*---\s*\(more(?: \d+%)?\)\s*---\s*$", re.IGNORECASE),
+    re.compile(r"^\s*More:\s*<space>,\s*Quit:\s*q,\s*One line:\s*<return>\s*$", re.IGNORECASE),
+    re.compile(r"^\s*Press any key to continue(?: or q to quit)?\s*$", re.IGNORECASE),
+    re.compile(r"^\s*Press <space> to continue(?:, q to quit)?\s*$", re.IGNORECASE),
+]
 
 
 class SSHService:
@@ -89,6 +97,62 @@ class SSHService:
             vendor_id,
         )
         return GENERIC_PROMPT_PATTERNS
+
+    def _get_pagination_settings(self, vendor_id: str) -> tuple[list[re.Pattern[str]], str]:
+        """Get optional pager detection patterns and response from vendor session config."""
+        session_config = vendor_service.get_session_parameters(vendor_id)
+        pager_config = session_config.get("pagination")
+
+        ### Default: handle common pager markers even when vendor config doesn't define pager settings
+        if pager_config is None:
+            return list(DEFAULT_PAGINATION_PATTERNS), " "
+
+        if not isinstance(pager_config, dict):
+            logger.warning(
+                "Invalid session.pagination for vendor '%s': expected mapping; disabling pagination handling",
+                vendor_id,
+            )
+            return [], " "
+
+        if not bool(pager_config.get("enabled", False)):
+            return [], " "
+
+        raw_patterns = pager_config.get("patterns", [])
+
+        ### Check for single or multiple pagination patterns and normalize to a list
+        pattern_values: list[str]
+        if isinstance(raw_patterns, str):
+            pattern_values = [raw_patterns]
+        elif isinstance(raw_patterns, list):
+            pattern_values = [str(value) for value in raw_patterns if str(value).strip()]
+        else:
+            logger.warning(
+                "Invalid session.pagination.patterns for vendor '%s': expected string or list; disabling pagination handling",
+                vendor_id,
+            )
+            return [], " "
+
+        ### Validate pagination REGEX patterns
+        compiled_patterns: list[re.Pattern[str]] = []
+        for pattern_value in pattern_values:
+            try:
+                compiled_patterns.append(re.compile(pattern_value))
+            except re.error as ex:
+                logger.warning(
+                    "Invalid session.pagination regex pattern '%s' for vendor '%s': %s",
+                    pattern_value,
+                    vendor_id,
+                    ex,
+                )
+
+        if not compiled_patterns:
+            return [], " "
+
+        response = str(pager_config.get("response", " "))
+        if not response:
+            response = " "
+
+        return compiled_patterns, response
 
     def _get_ssh_options(self, profile_name: str) -> dict[str, Any]:
         """Get SSH options from profile and map known_hosts policy."""
@@ -605,6 +669,7 @@ class SSHService:
         comment_prefix = "! " if not prefix else (prefix if prefix.endswith(" ") else f"{prefix} ")
         include_metadata_in_config = bool(session_config.get("include_metadata_in_config", False))
         prompt_patterns = self._get_prompt_patterns(vendor_id)
+        pagination_patterns, pagination_response = self._get_pagination_settings(vendor_id)
 
         ### Get processing rules for the vendor
         processing_rules = vendor_service.get_processing_rules(vendor_id)

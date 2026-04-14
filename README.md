@@ -310,7 +310,7 @@ Vendor YAML files define how KiwiSSH interacts with each device CLI and how capt
 Each vendor file contains these top-level sections:
 
 - `vendor`: metadata (`id`, `name`, `description`)
-- `session`: session-level output settings (currently `comment_prefix`)
+- `session`: session-level output settings (`comment_prefix`, `prompt`, `pagination`, `include_metadata_in_config`)
 - `commands`: command phases (`pre_backup`, `backup`, `post_backup`)
 - `processing`: optional output cleanup/redaction rules
 
@@ -333,6 +333,9 @@ Each segment is explained in detail below.
 | --- | ----------- | -------- | ------------- |
 | `session.comment_prefix` | If set, command outputs will be prefixed with this string and rendered as comments in the saved config file. This is useful for adding metadata like command descriptions or timestamps directly in the config file. | No | `! ` |
 | `session.prompt` | Optional prompt regex (or list of regexes) used to detect command completion in interactive shells. Match should cover the full prompt line. If omitted or invalid, KiwiSSH falls back to the built-in generic prompt pattern. | No | `[^\r\n=]*[A-Za-z0-9][^\r\n=]*[>#]\s*$` |
+| `session.pagination.enabled` | Enables pagination prompt handling for this vendor. | No | `false` |
+| `session.pagination.patterns` | Pagination regex (or list of regexes) matched against the full last output line. If `session.pagination` is omitted entirely, KiwiSSH falls back to built-in standard pagination detection patterns. | No | Built-in standard pagination pattern list |
+| `session.pagination.response` | Input sent when a pagination prompt is detected (for example a space to continue). | No | Single space character `" "` |
 | `session.include_metadata_in_config` | Controls whether outputs from `metadata: true` commands are prepended as a block in the saved config. Metadata is always present in the backup job log. | No | `false` |
 
 #### commands
