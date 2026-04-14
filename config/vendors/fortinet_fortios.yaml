@@ -9,6 +9,11 @@ vendor:
 ### Session-level output behavior.
 session:
   comment_prefix: "# "
+  pagination:
+    enabled: true
+    patterns:
+      - '^--More--\s*$'
+    response: " "
 
 ### Commands to execute for backup
 ## Supported step types in command phases:
