@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class ApiConfig(BaseModel):
     """API server configuration."""
     host: str = "127.0.0.1"
-    port: int = 8000
+    port: int = Field(default=8000, ge=1, le=65535)
     cors_origins: list[str] = Field(default_factory=list)
 
 
@@ -200,7 +200,7 @@ class GroupConfig(BaseModel):
     username: str
     password: str | None = None
     ssh_key_file: str | None = None
-    ssh_profile: str | None = None
+    ssh_profile: str
     vendor: str
     jumphost: GroupJumphostConfig | None = None
     timeout: int | None = Field(default=None, ge=1)
