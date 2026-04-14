@@ -247,8 +247,14 @@ class SSHService:
             ## ..and from random chunk boundaries inside large command outputs
             if patterns:
                 tail = buffer[-4096:]
-                last_line = tail.split("\n")[-1]
-                if self._line_matches_prompt(last_line, patterns):
+                tail_lines = tail.split("\n")
+
+                ### Some devices return a newline right after the command output
+                ## Use the last non-empty line so prompt detection remains reliable
+                while tail_lines and not tail_lines[-1].strip():
+                    tail_lines.pop()
+
+                if tail_lines and self._line_matches_prompt(tail_lines[-1], patterns):
                     ### Collect any trailing bytes that arrive immediately after prompt detection
                     ### This reduces output bleed into the next command on some devices
                     buffer += await self._read_trailing_output(stream)
@@ -269,10 +275,29 @@ class SSHService:
             ### If no pattern matched, read more data with a short timeout to allow for checking the deadline
             remaining = deadline - loop.time()
             if remaining <= 0:
+                ### Check last 1024 bytes for a non-empty line to include in the timeout log
+                timeout_tail = buffer[-1024:]
+                timeout_lines = timeout_tail.split("\n")
+                last_non_empty = ""
+                while timeout_lines:
+                    candidate = timeout_lines.pop().strip("\r")
+                    if candidate.strip():
+                        last_non_empty = candidate
+                        break
+
+                logger.debug(
+                    "Timed out waiting for prompt. Last non-empty output line: %r",
+                    ANSI_ESCAPE_RE.sub("", last_non_empty)[-200:],
+                )
                 raise asyncio.TimeoutError("Timed out waiting for prompt")
 
             ### Read the next chunk of output with a short timeout to allow for prompt detection
-            chunk = await asyncio.wait_for(stream.read(256), timeout=min(remaining, 1.0))
+            try:
+                chunk = await asyncio.wait_for(stream.read(256), timeout=min(remaining, 1.0))
+            except asyncio.TimeoutError:
+                ### No new bytes in this polling window; keep waiting until overall deadline
+                continue
+
             if chunk == "":
                 return buffer
 
