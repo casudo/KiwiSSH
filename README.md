@@ -498,8 +498,7 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 
 - Make Footer more distinct
 - Customizable theme
-- Docker Image + GitHub Action to build and push image
-  - Publish Image to Docker hub
+- Publish Image to Docker hub?
 - Login Screen, User management and RBAC
 - Implement backup job log rotation and retention policies (e.g. delete logs if line >10000 or older than 90 days)
 - Add visual popup when opening JobView.vue if the page load takes longer than 2 seconds to inform the user that the page is still loading and to prevent them from thinking the UI is frozen
