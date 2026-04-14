@@ -14,7 +14,7 @@
 
         <!-- Contact -->
         <a
-          href="mailto:kiwi@kida.one"
+          href="mailto:kiwissh@kida.one"
           class="hover:text-white dark:hover:text-gray-200 transition-colors flex items-center gap-1"
           title="Contact"
         >
