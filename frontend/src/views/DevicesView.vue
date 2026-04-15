@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, computed } from "vue"
+import { ref, onMounted, onBeforeUnmount, computed, watch } from "vue"
 import { useRouter } from "vue-router"
 import { useDevicesStore } from "@/stores/devices"
 import DeviceCard from "@/components/DeviceCard.vue"
@@ -110,6 +110,28 @@ function clearFilters() {
 function handlePageSizeChange() {
   currentPage.value = 1
 }
+
+watch(
+  [selectedGroup, selectedVendor, selectedSshProfile, searchName, searchIP, showEnabledOnly],
+  () => {
+    currentPage.value = 1
+  },
+)
+
+watch(
+  selectedStatus,
+  () => {
+    currentPage.value = 1
+  },
+  { deep: true },
+)
+
+watch(totalPages, (value) => {
+  const maxPage = Math.max(1, value)
+  if (currentPage.value > maxPage) {
+    currentPage.value = maxPage
+  }
+})
 
 function toggleStatusFilter(value: string) {
   if (selectedStatus.value.includes(value)) {

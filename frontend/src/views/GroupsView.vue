@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, computed, ref } from "vue"
+import { onMounted, computed, ref, watch } from "vue"
 import { useDevicesStore } from "@/stores/devices"
 import { groupApi, type GroupWithConfig } from "@/api/groups"
 import LoadingSpinner from "@/components/LoadingSpinner.vue"
@@ -86,6 +86,17 @@ function setLayout(layout: LayoutType) {
 function handlePageSizeChange() {
   currentPage.value = 1
 }
+
+watch(searchQuery, () => {
+  currentPage.value = 1
+})
+
+watch(totalPages, (value) => {
+  const maxPage = Math.max(1, value)
+  if (currentPage.value > maxPage) {
+    currentPage.value = maxPage
+  }
+})
 
 onMounted(async () => {
   groupsLoading.value = true

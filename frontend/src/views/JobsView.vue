@@ -67,6 +67,10 @@ watch(filterDevice, (value) => {
   }, 250)
 })
 
+watch([filterIP, filterDateFrom, filterDateTo], () => {
+  currentPage.value = 1
+})
+
 const filteredJobs = computed(() => {
   let result = jobsStore.jobs
 
