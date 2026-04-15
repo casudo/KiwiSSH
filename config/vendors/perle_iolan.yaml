@@ -9,6 +9,7 @@ vendor:
 ### Session-level behavior
 session:
   comment_prefix: "! "
+  prompt: '^[\w.-]+#$'
 
 ### Commands to execute for backup
 ## Supported step types in command phases:

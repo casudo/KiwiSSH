@@ -9,7 +9,7 @@ vendor:
 ### Session-level behavior
 session:
   comment_prefix: "! "
-  prompt: '^(\r?[\w.@_()-]+#\s?)$'
+  prompt: '^(\r?[\w.@_()-]+\#\s?)$'
 
 ### Commands to execute for backup
 ## Supported step types in command phases:
