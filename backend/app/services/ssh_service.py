@@ -848,6 +848,7 @@ class SSHService:
         retry_count = int(device_config["retry"])
         vendor_id = str(device_config["vendor"]).strip()
         device_ssh_profile = str(device_config["ssh_profile"]).strip()
+        device_ssh_port = int(device_config.get("ssh_port") or 22)
         device_username = str(device_config["username"]).strip()
 
         ### Device authentication can be password-based, key-based, or both.
@@ -910,6 +911,7 @@ class SSHService:
                     username=device_username,
                     password=device_password,
                     ssh_key_file=device_ssh_key_file,
+                    port=device_ssh_port,
                     ssh_profile=device_ssh_profile,
                     timeout=timeout_seconds,
                     tunnel=jump_connection,

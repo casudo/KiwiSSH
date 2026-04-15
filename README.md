@@ -258,6 +258,7 @@ KiwiSSH will always store the device configurations in local git repositories to
 | `groups.<group>.password` | The password for SSH authentication for devices in this group (optional when `ssh_key_file` is used). | No | - |
 | `groups.<group>.ssh_key_file` | The private key file path for SSH authentication for devices in this group (alternative to password). | No | - |
 | `groups.<group>.ssh_profile` | The SSH profile to use for devices in this group. This is used to determine the SSH options to use when connecting to the devices. | **Yes** | - |
+| `groups.<group>.ssh_port` | SSH port for devices in this group. | No | `22` |
 | `groups.<group>.vendor` | The vendor of the devices in this group. This is used to determine the CLI commands to run for fetching the configuration. | **Yes** | - |
 | `groups.<group>.jumphost.hostname` | Jumphost hostname or IP for this group. If set, devices in this group are reached through this jumphost. | **Yes**, if `jumphost` | - |
 | `groups.<group>.jumphost.port` | Jumphost SSH port. | No | `22` |
@@ -283,6 +284,7 @@ KiwiSSH will always store the device configurations in local git repositories to
 | `nodes.<device_name>.password` | The password for SSH authentication for this device. | No | `groups.<group>.password` |
 | `nodes.<device_name>.ssh_key_file` | The private key file path for SSH authentication for this device. | No | `groups.<group>.ssh_key_file` |
 | `nodes.<device_name>.ssh_profile` | The SSH profile to use for this device. This is used to determine the SSH options to use when connecting to the device. | No | `groups.<group>.ssh_profile` |
+| `nodes.<device_name>.ssh_port` | SSH port override for this device. | No | `groups.<group>.ssh_port` or `22` |
 | `nodes.<device_name>.vendor` | The vendor of this device. This is used to determine the CLI commands to run for fetching the configuration. | No | `groups.<group>.vendor` |
 | `nodes.<device_name>.jumphost.hostname` | Node-level jumphost hostname/IP override. | **Yes**, if `jumphost` | `groups.<group>.jumphost.hostname` |
 | `nodes.<device_name>.jumphost.port` | Node-level jumphost SSH port override. | No | `groups.<group>.jumphost.port` or `22` |
