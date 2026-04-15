@@ -12,8 +12,8 @@ session:
   pagination:
     enabled: true
     patterns:
-      - '^--More--\s*$'
-    response: " "
+      - pattern: '^--More--\s*$'
+        response: " "
 
 ### Commands to execute for backup
 ## Supported step types in command phases:
