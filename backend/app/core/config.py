@@ -493,11 +493,6 @@ class Settings(BaseSettings):
     ### Database URL (computed from application_database config)
     database_url: str = ""
 
-    @field_validator("config_dir", mode="before")
-    @classmethod
-    def resolve_path(cls, v: str | Path) -> Path:
-        """Resolve paths to absolute paths relative to backend directory."""
-        return Path(v).resolve()
 
     @model_validator(mode="after")
     def use_test_config_if_enabled(self) -> "Settings":
