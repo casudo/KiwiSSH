@@ -15,7 +15,7 @@ from app.core.logging import configure_logging
 from app.services import source_service
 from app.services.backup_scheduler_service import backup_scheduler_service
 from app.services.backup_job_service import backup_job_service
-from app.db.database import init_database
+from app.db.database import init_database, SessionLocal
 
 ### Load .env file early to ensure env vars are available
 load_dotenv()
@@ -57,7 +57,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     init_database(settings)
     
     ### Startup recovery: mark stuck jobs as failed
-    from app.db.database import SessionLocal
     if SessionLocal is not None:
         try:
             db = SessionLocal()

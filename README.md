@@ -502,8 +502,6 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 - Login Screen, User management and RBAC
 - Implement backup job log rotation and retention policies (e.g. delete logs if line >10000 or older than 90 days)
 - Add visual popup when opening JobView.vue if the page load takes longer than 2 seconds to inform the user that the page is still loading and to prevent them from thinking the UI is frozen
-- Move function-level imports to top-level imports to comply with PEP8
-- Move config validation from `entrypoint.py` to `@field_validator` or `@model_validator` in the Pydantic models in `config.py`. These get directly called when the config is loaded via `get_settings()`. This is the first and fastest way to validate the config. Maybe the entrypoint file is obsolite after that or can be simplified to just validate environment variables. `entrypoint.py` is still useful to check for non-empty fields.
 - Pentests
 - Rework Pydantic models (required vs optional fields, default values, validators, etc.)
 - Rework `tests/`. Include real mock device CLI outputs and uniform sources CSV. Exclude `tests/backups` in .gitignoore. These files can be then freely used by any maintainer to test things out

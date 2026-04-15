@@ -11,6 +11,8 @@ from app.services.backup_service import backup_service
 from app.services.source_service import source_service
 from app.services.git_service import git_service
 from app.db.database import get_db
+from sqlalchemy import desc, func
+from app.db.models import BackupJob
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -131,9 +133,6 @@ async def get_backup_jobs(
     db: Session = Depends(get_db),
 ) -> dict:
     """Get backup job records from the database."""
-    from sqlalchemy import desc, func
-    from app.db.models import BackupJob
-
     try:
         base_query = db.query(BackupJob)
         if device_name:
@@ -321,8 +320,6 @@ async def flush_database(db: Session = Depends(get_db)) -> dict:
 
     WARNING: This action cannot be undone. All job history will be permanently deleted.
     """
-    from app.db.models import BackupJob
-
     try:
         ### Get count of jobs to be deleted
         job_count = db.query(BackupJob).count()

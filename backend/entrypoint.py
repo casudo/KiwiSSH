@@ -7,6 +7,7 @@ or extended with dedicated environment variable checks.
 
 import logging
 import sys
+import uvicorn
 from dotenv import load_dotenv
 from app.core.config import get_settings
 
@@ -55,10 +56,7 @@ def main() -> int:
         logger.info("✓ All validations passed")
         logger.info("Starting FastAPI server...")
         
-        ### Start the FastAPI server
-        import uvicorn
-        from app.core.config import get_settings
-        
+        ### Start the FastAPI server        
         settings = get_settings()
         
         uvicorn.run(
