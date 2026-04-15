@@ -3,6 +3,7 @@
 | Vendor       | OS/Device Type        | YAML file                                                                | Notes                               |
 | ------------ | --------------------- | ------------------------------------------------------------------------ | ----------------------------------- |
 | A10 Networks | A10 ACOS              | [a10_acos.yaml](/config/vendors/a10_acos.yaml)                           |                                     |
+| Cisco        | AireOS                | [cisco_aireos.yaml](/config/vendors/cisco_aireos.yaml)                   | [AireOS](#cisco-aireos)             |
 | Cisco        | IOS                   | [cisco_ios.yaml](/config/vendors/cisco_ios.yaml)                         |                                     |
 | Cisco        | NXOS                  | [cisco_nxos.yaml](/config/vendors/cisco_nxos.yaml)                       |                                     |
 | Fortinet     | FortiGate             | [fortinet_fortigate.yaml](/config/vendors/fortinet_fortigate.yaml)       | [FortiGate](#fortinet-device-types) |
@@ -19,6 +20,15 @@
 | Watchguard   | FirewareOS            | [watchguard_firewareos.yaml](/config/vendors/watchguard_firewareos.yaml) |                                     |
 
 ---
+
+## Cisco AireOS
+
+**Cisco WLC Configuration**
+Create a user with read-write privilege:
+
+`mgmtuser add kiwissh **** read-write`
+
+KiwiSSH needs read-write privilege in order to execute `config paging disable`.
 
 ## Fortinet device types
 
