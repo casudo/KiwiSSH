@@ -26,11 +26,17 @@ commands:
   ## Commands whose output becomes the stored configuration
   backup:
     - command: "show version"
+      metadata: true
     - command: "show bootimage"
+      metadata: true
     - command: "show license"
-    - command: "show partition-config all"
-    - command: "show running-config all-partitions"
+      metadata: true
     - command: "show aflex all-partitions"
+      metadata: true
+    - command: "show partition-config all"
+      show_command_in_config: true
+    - command: "show running-config all-partitions"
+      show_command_in_config: true
 
   ### Post-backup commands (cleanup) (OPTIONAL)
   ## Command outputs aren't saved in stored configuration
@@ -40,10 +46,11 @@ commands:
 ## Processing reduces diff noise and trims non-config boilerplate
 processing:
   ### Lines to strip from captured config (regex patterns)
-  # strip_patterns:
-  #   - "^\\s*RX packets:.*$"
-  #   - "^\\s*TX packets:.*$"
-  #   - "^\\s*RX bytes:.*$"
+  strip_patterns:
+    # - "^(Current configuration).*$"
+    # - "^(Configuration last updated at).*$"
+    # - "^(Configuration last saved at).*$"
+    # - "^(Configuration last synchronized at).*$"
 
   ### Lines that mark config boundaries
   ## If either boundary is missing, keep from/to the file edge.

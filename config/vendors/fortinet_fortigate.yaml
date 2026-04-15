@@ -26,21 +26,23 @@ commands:
   pre_backup:
     - command: "a"
       description: "When a post-login-banner is enabled, you have to press 'a' to log in"
-    - command: "config system console"
-    - command: "set output standard"
-    - command: "end"
 
   ### Main backup command(s)
   ## Commands whose output becomes the stored configuration
   backup:
     - command: "get system status"
+      metadata: true
     - command: "config global"
+      metadata: true
     - command: "get system ha status"
+      metadata: true
+    # - command: "get system interface transceiver"
     - command: "get hardware status"
-    - command: "diagnose hardware deviceinfo psu"
-    - command: "get system interface transceiver"
-    - command: "diagnose autoupdate version"
-    - command: "show full-configuration"
+      metadata: true
+    - command: "end"
+      metadata: true
+    - command: "show full-configuration" # or 'show | grep .' to hide defaults
+      show_command_in_config: true
 
   ### Post-backup commands (cleanup) (OPTIONAL)
   ## Command outputs aren't saved in stored configuration
@@ -63,9 +65,9 @@ processing:
     patterns:
       - search: "^(#private-encryption-key=).+"
         replacement: "\\1<secret hidden>"
-      - search: "(set .+ ENC) .+"
+      - search: "^(set .+ ENC ).*$"
         replacement: "\\1<secret hidden>"
-      - search: "(set .*secret) .+"
+      - search: "^(set .*secret) .+$"
         replacement: "\\1<secret hidden>"
       - search: "(set (?:passwd|password|key|group-password|auth-password-l1|auth-password-l2|rsso|history0|history1)) .+"
         replacement: "\\1<secret hidden>"

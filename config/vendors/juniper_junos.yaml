@@ -25,10 +25,21 @@ commands:
   ## Commands whose output becomes the stored configuration
   backup:
     - command: "show version"
+      metadata: true
+    # - comamnd: "show chassis fabric reachability" # only for mx960
+    #   metadata: true
+    # - command: "show virtual-chassis" # for ^(ex22|ex3[34]|ex4|ex8|qfx)$
+    #   metadata: true
+    # - command: "show chassis cluster status" # only for SRX
+    #   metadata: true
     - command: "show chassis hardware"
+      metadata: true
     - command: "show system license"
+      metadata: true
     - command: "show system license keys"
+      metadata: true
     - command: "show configuration | display omit"
+      show_command_in_config: true
 
   ### Post-backup commands (cleanup) (OPTIONAL)
   ## Command outputs aren't saved in stored configuration

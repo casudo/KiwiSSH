@@ -26,8 +26,10 @@ commands:
   backup:
     - command: "show version"
       metadata: true
-    - command: "show inventory all"
-    - command: "ifconfig"
+    - command: "show inventory all" # not supported on older models
+      metadata: true
+    # - command: "show inventory"
+    #   metadata: true
     - command: "show running-config"
 
   ### Post-backup commands (cleanup) (OPTIONAL)
