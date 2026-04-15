@@ -8,6 +8,7 @@
 | Cisco        | NXOS                  | [cisco_nxos.yaml](/config/vendors/cisco_nxos.yaml)                       |                                     |
 | Fortinet     | FortiGate             | [fortinet_fortigate.yaml](/config/vendors/fortinet_fortigate.yaml)       | [FortiGate](#fortinet-device-types) |
 | Fortinet     | FortiOS               | [fortinet_fortios.yaml](/config/vendors/fortinet_fortios.yaml)           | [FortiOS](#fortinet-device-types)   |
+| HP           | ProCurve              | [hp_procurve.yaml](/config/vendors/hp_procurve.yaml)                     |                                     |
 | Juniper      | JunOS                 | [juniper_junos.yaml](/config/vendors/juniper_junos.yaml)                 | [JunOS](#juniper-junos)             |
 | OpenWRT      |                       | [openwrt.yaml](/config/vendors/openwrt.yaml)                             |                                     |
 | OPNsense     |                       | [opnsense.yaml](/config/vendors/opnsense.yaml)                           |                                     |
