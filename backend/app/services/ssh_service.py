@@ -54,7 +54,7 @@ class SSHService:
         patterns: list[re.Pattern[str]],
     ) -> bool:
         """Check whether a line matches any configured prompt pattern."""
-        normalized_line = ANSI_ESCAPE_RE.sub("", line).replace("\r", "")
+        normalized_line = ANSI_ESCAPE_RE.sub("", line).replace("\r", "").replace("\x08", "")
         return any(pattern.fullmatch(normalized_line) for pattern in patterns)
 
     def _get_prompt_patterns(self, vendor_id: str) -> list[re.Pattern[str]]:
@@ -191,7 +191,7 @@ class SSHService:
         rules: list[PaginationRule],
     ) -> str | None:
         """Return the response for the first matching pagination rule, if any."""
-        normalized_line = ANSI_ESCAPE_RE.sub("", line).replace("\r", "")
+        normalized_line = ANSI_ESCAPE_RE.sub("", line).replace("\r", "").replace("\x08", "")
         for pattern, response in rules:
             if pattern.fullmatch(normalized_line):
                 return response
