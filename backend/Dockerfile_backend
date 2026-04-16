@@ -26,13 +26,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ### Create a non-privileged user
 RUN groupadd -g 1000 kiwissh && \
     useradd -u 1000 -g kiwissh -s /bin/sh -m kiwissh && \
-    mkdir /home/kiwissh/.ssh && chown -R kiwissh:kiwissh /home/kiwissh/.ssh
+    mkdir /home/kiwissh/.ssh /config && chown -R kiwissh:kiwissh /home/kiwissh/.ssh /config
 
 ### Copy installed Python packages from builder
 COPY --from=builder /install /usr/local
 
 ### Copy backend sources
-COPY . /app/backend/
+COPY --exclude=config/ . /app/backend/
+
+### Copy default vendor + SSH profile config directly in /config
+COPY config/ssh_profiles.yaml /config/ssh_profiles.yaml
+COPY config/vendors/ /config/vendors/
 
 ### Switch to the non-root user
 USER kiwissh

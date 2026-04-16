@@ -7,7 +7,10 @@ services:
     # ports:
     #   - 8000:8000
     volumes:
-      - PATH_TO_CONFIG/config:/config
+      ### Mount the kiwissh.yaml into the container
+      - /PATH_TO_CONFIG/kiwissh.yaml:/config/kiwissh.yaml
+      ### Optional: Mount your own vendor/ssh_profile files to the /config folder
+      # - /PATH_TO_CONFIG/config:/config
     ### Optional: mount SSH material for remote git pushes or device login (needs to be uid:gid 1000:1000)
       # - /PATH_TO_CONFIG/ssh_material:/home/kiwissh/.ssh/
 
