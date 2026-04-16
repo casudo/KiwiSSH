@@ -193,7 +193,7 @@ class SSHService:
         """Return the response for the first matching pagination rule, if any."""
         normalized_line = ANSI_ESCAPE_RE.sub("", line).replace("\r", "").replace("\x08", "")
         for pattern, response in rules:
-            if pattern.fullmatch(normalized_line):
+            if pattern.search(normalized_line):
                 return response
         return None
 
