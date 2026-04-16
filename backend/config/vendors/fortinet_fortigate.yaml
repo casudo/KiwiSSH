@@ -15,12 +15,6 @@ session:
     patterns:
       - pattern: '^--More--\s*$'
         response: " "
-      - pattern: '^\s*---\s*\(more(?: \d+%)?\)\s*---\s*$'
-        response: " "
-      - pattern: '^\s*More:\s*<space>,\s*Quit:\s*q,\s*One line:\s*<return>\s*$'
-        response: " "
-      - pattern: '^\s*(?:Press\s+Enter|Press\s+RETURN)\s+to\s+continue\s*$'
-        response: "\n"
 
 ### Commands to execute for backup
 ## Supported step types in command phases:
