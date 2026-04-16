@@ -40,7 +40,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     configure_logging(debug=settings.app.debug)
 
     logger.info(f"Starting KiwiSSH v{__version__}")
-    logger.info(f"Config directory: {settings.config_dir}")
     logger.info(f"Debug mode: {settings.app.debug}")
     logger.info(f"Loaded {len(settings.vendors)} vendor configurations")
     logger.info(f"Loaded {len(settings.ssh_profiles.get('profiles', {}))} SSH profiles")
