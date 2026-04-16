@@ -1,4 +1,4 @@
-### Stage 1: build wheels
+### === Stage 1: build wheels ===
 FROM python:3.13-slim AS builder
 
 ### Prevent Python from writing .pyc files to disc
@@ -8,35 +8,36 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git openssh-client ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt /app/backend/requirements.txt
-RUN pip install --no-cache-dir --prefix=/install -r /app/backend/requirements.txt
+COPY requirements.txt /code/backend/requirements.txt
+RUN pip install --no-cache-dir --prefix=/install -r /code/backend/requirements.txt
 
-### Stage 2: runtime
+### === Stage 2: runtime ===
 FROM python:3.13-slim
 
 ### Prevent Python from creating __pycache__ in the runtime container
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 
-WORKDIR /app/backend
+WORKDIR /code/backend
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git openssh-client ca-certificates nano \
+    git openssh-client ca-certificates nano tree \
  && rm -rf /var/lib/apt/lists/*
 
 ### Create a non-privileged user
 RUN groupadd -g 1000 kiwissh && \
     useradd -u 1000 -g kiwissh -s /bin/sh -m kiwissh && \
-    mkdir /home/kiwissh/.ssh /config && chown -R kiwissh:kiwissh /home/kiwissh/.ssh /config
+    mkdir -p /home/kiwissh/.ssh /config/sources && chown -R kiwissh:kiwissh /home/kiwissh/.ssh
 
 ### Copy installed Python packages from builder
 COPY --from=builder /install /usr/local
 
 ### Copy backend sources
-COPY --exclude=config/ . /app/backend/
+COPY --exclude=config/ . /code/backend/
 
 ### Copy default vendor + SSH profile config directly in /config
 COPY config/ssh_profiles.yaml /config/ssh_profiles.yaml
 COPY config/vendors/ /config/vendors/
+RUN chown -R kiwissh:kiwissh /config
 
 ### Switch to the non-root user
 USER kiwissh

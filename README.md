@@ -129,7 +129,9 @@ KiwiSSH uses separate Docker images for backend and frontend.
 
 > [!NOTE]
 > - API calls are available through the frontend proxy: `http://<IP>:8123/api/v1/...`
-> - The mounted `/config` directory must contain `kiwissh.yaml`, `ssh_profiles.yaml`, and `vendors/`
+> - The backend image includes default `ssh_profiles.yaml` and `vendors/*.yaml` directly in `/config`
+> - The backend always reads configuration from `/config`
+> - You still need a valid `kiwissh.yaml` in `/config` and should persist `backups/` on a host volume
 
 # Configuration
 
@@ -142,7 +144,6 @@ See the example [`backend/.env.example`](backend/.env.example) file. Either rena
 | Variable Name | Description | Required | Default Value |
 | ------------- | ----------- | -------- | ------------- |
 | `KIWISSH_LOCAL_TEST_MODE` | If set to true, the application will run in local test mode, which enforces certain config values for easier local testing and development. | No | `false` |
-| `KIWISSH_CONFIG_DIR` | The directory where the `kiwissh.yaml` configuration file is located. This is used to load the main configuration for the application. | No | `/config` |
 | `TZ` | Timezone for the application. This is used for timestamps in backup job logs and Git commit messages. | **No** | `UTC` |
 
 ## kiwissh.yaml
@@ -491,13 +492,11 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 
 - More logging
 - Checks for device source: No duplicate hostnames, valid IPs, ... (What if multiple groups hold the same IP address range?)
-- Override SSH port (Probably better placed in groups/nodes than SSH profiles?)
-- Automatically mount `/config/vendors` from this repo inside the backend container's `config_dir` so the user can directly use and modify the existing vendor YAML files
+- Update ssh_service to use FQDN instead of IP to avoid?
 - Instead of manually configuring the versions in `main.ts` and `__init__.py`, use the docker image tag as version source. This would only work if the users uses KiwiSSH in Docker containers. How to handle it when used manually?
 
 **Mid-term:**
 
-- Make Footer more distinct
 - Customizable theme
 - Publish Image to Docker hub?
 - Login Screen, User management and RBAC
@@ -507,13 +506,16 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 - Rework Pydantic models (required vs optional fields, default values, validators, etc.)
 - Rework `tests/`. Include real mock device CLI outputs and uniform sources CSV. Exclude `tests/backups` in .gitignoore. These files can be then freely used by any maintainer to test things out
 - Bug report and Feature request template
+- Update Ruff linter and formatter
+- Add Vue linter/formatter?
+- Update `use_test_config_if_enabled` to use the roots `/config` folder
 
 **Long Term:**
 
 - Switch from package-level imports to absolute imports for better readability and maintainability.
   - **Keep them:** cleaner imports, stable public package API. **Remove them:** more explicit imports, less indirection, but more verbose and tighter coupling to file layout.
 - Add CHANGELOG.md to keep track of changes and make it required for external PRs?
-- Notification System (Email, Slack, Webhook)
+- Notification System (Email, Slack, Webhook) ([#5](https://github.com/casudo/KiwiSSH/issues/5))
 - i18n localization support
 - Add yaak API collection
 - "Live Log" when pressing "Trigger Backup": Even if not "live live", show the log output as it comes in with nice visual animations and auto-scrolling
@@ -529,6 +531,8 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 - Allow group passwords to bet set via env vars or other input
 - Better device simulation: Add a small script for user to run against actual hardware to create realistic CLI output samples for the vendor YAML file creation. Secrets and sensitive info should be redacted
 - Add Conventional Commits
+- Optional share anonymouse usage data for statistics (needs opt-in, privacy policy and telemetry server)
+- Add UI banner when new update is available
 
 ---
 
