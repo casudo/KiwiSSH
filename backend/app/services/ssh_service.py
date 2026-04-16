@@ -178,7 +178,12 @@ class SSHService:
             )
             return [(pattern, DEFAULT_PAGINATION_RESPONSE) for pattern in DEFAULT_PAGINATION_PATTERNS]
 
-        return compiled_rules
+        ### Keep generic defaults as fallback for uncovered pagination variants
+        ## compiled_rules are used FIRST before default patterns
+        return compiled_rules + [
+            (pattern, DEFAULT_PAGINATION_RESPONSE)
+            for pattern in DEFAULT_PAGINATION_PATTERNS
+        ]
 
     @staticmethod
     def _match_pagination_response(
