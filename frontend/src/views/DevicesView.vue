@@ -13,6 +13,18 @@ const devicesStore = useDevicesStore()
 
 type LayoutType = "detailed" | "compact" | "list"
 
+interface DevicesFilterState {
+  selectedGroup: string
+  selectedVendor: string
+  selectedSshProfile: string
+  selectedStatus: string[]
+  searchName: string
+  searchIP: string
+  showEnabledOnly: boolean
+  showFilters: boolean
+  pageSize: number
+}
+
 const selectedGroup = ref<string>("")
 const selectedVendor = ref<string>("")
 const selectedSshProfile = ref<string>("")
@@ -34,6 +46,7 @@ const handleDocumentClick = (e: MouseEvent) => {
 }
 
 const LAYOUT_STORAGE_KEY = "devices-layout"
+const FILTERS_STORAGE_KEY = "devices-filters"
 
 const statusOptions = [
   { value: "unknown", label: "Unknown" },
@@ -42,6 +55,61 @@ const statusOptions = [
   { value: "backup_failed", label: "Backup Failed" },
   { value: "backup_no_changes", label: "No Changes" },
 ]
+
+function restoreLayoutPreference() {
+  const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY) as LayoutType | null
+  if (savedLayout && ["detailed", "compact", "list"].includes(savedLayout)) {
+    currentLayout.value = savedLayout
+  }
+}
+
+function saveFilterPreferences() {
+  const state: DevicesFilterState = {
+    selectedGroup: selectedGroup.value,
+    selectedVendor: selectedVendor.value,
+    selectedSshProfile: selectedSshProfile.value,
+    selectedStatus: selectedStatus.value,
+    searchName: searchName.value,
+    searchIP: searchIP.value,
+    showEnabledOnly: showEnabledOnly.value,
+    showFilters: showFilters.value,
+    pageSize: pageSize.value,
+  }
+
+  localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(state))
+}
+
+function restoreFilterPreferences() {
+  const rawState = localStorage.getItem(FILTERS_STORAGE_KEY)
+  if (!rawState) {
+    return
+  }
+
+  try {
+    const parsed = JSON.parse(rawState) as Partial<DevicesFilterState>
+    const validStatusValues = new Set(statusOptions.map(option => option.value))
+    const validPageSizes = new Set([6, 12, 24, 50])
+
+    if (typeof parsed.selectedGroup === "string") selectedGroup.value = parsed.selectedGroup
+    if (typeof parsed.selectedVendor === "string") selectedVendor.value = parsed.selectedVendor
+    if (typeof parsed.selectedSshProfile === "string") selectedSshProfile.value = parsed.selectedSshProfile
+    if (typeof parsed.searchName === "string") searchName.value = parsed.searchName
+    if (typeof parsed.searchIP === "string") searchIP.value = parsed.searchIP
+    if (typeof parsed.showEnabledOnly === "boolean") showEnabledOnly.value = parsed.showEnabledOnly
+    if (typeof parsed.showFilters === "boolean") showFilters.value = parsed.showFilters
+    if (typeof parsed.pageSize === "number" && validPageSizes.has(parsed.pageSize)) {
+      pageSize.value = parsed.pageSize
+    }
+
+    if (Array.isArray(parsed.selectedStatus)) {
+      selectedStatus.value = parsed.selectedStatus.filter(
+        (status): status is string => typeof status === "string" && validStatusValues.has(status),
+      )
+    }
+  } catch {
+    localStorage.removeItem(FILTERS_STORAGE_KEY)
+  }
+}
 
 const filteredDevices = computed((): Device[] => {
   let devices = devicesStore.devices
@@ -126,6 +194,24 @@ watch(
   { deep: true },
 )
 
+watch(
+  [
+    selectedGroup,
+    selectedVendor,
+    selectedSshProfile,
+    selectedStatus,
+    searchName,
+    searchIP,
+    showEnabledOnly,
+    showFilters,
+    pageSize,
+  ],
+  () => {
+    saveFilterPreferences()
+  },
+  { deep: true },
+)
+
 watch(totalPages, (value) => {
   const maxPage = Math.max(1, value)
   if (currentPage.value > maxPage) {
@@ -150,17 +236,14 @@ async function handleReload() {
 }
 
 onMounted(async () => {
+  restoreLayoutPreference()
+  restoreFilterPreferences()
+
   await Promise.all([
     devicesStore.fetchDevices(),
     devicesStore.fetchGroups(),
     devicesStore.fetchVendors(),
   ])
-
-  // Load layout preference from localStorage
-  const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY) as LayoutType | null
-  if (savedLayout && ["detailed", "compact", "list"].includes(savedLayout)) {
-    currentLayout.value = savedLayout
-  }
 
   // Close dropdown when clicking outside
   document.addEventListener("click", handleDocumentClick)
