@@ -48,6 +48,7 @@ git:
 
 ### Groups configuration
 ## Priority for device configuration (default to most specific): app < groups < nodes
+## KiwiSSH closes shell sessions automatically after backup command phases, you don't need to explicitly add "exit" or "logout" but you can.
 groups:
   <your-group-name-here>:
     username: "admin"
