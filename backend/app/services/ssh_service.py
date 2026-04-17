@@ -14,6 +14,7 @@ from app.services.vendor_service import vendor_service
 from app.services.local_ssh_simulator import local_ssh_simulator
 
 logger = logging.getLogger(__name__)
+SSH_TRACE_LOG_LEVEL = 15 ### CHECK TODO IN logging.py !!
 
 ANSI_ESCAPE_RE = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
 
@@ -513,6 +514,7 @@ class SSHService:
             ### Fire send input steps
             if step_type == "send_input":
                 try:
+                    logger.log(SSH_TRACE_LOG_LEVEL, "Executing send_input step (wait_for_prompt=%s)", wait_for_prompt)
                     ### Resolve input text for send_input steps
                     ## If the step does not define explicit input, reuse resolved..
                     ## ..device password for backward compatibility.
@@ -539,6 +541,8 @@ class SSHService:
                         )
                     else:
                         await asyncio.sleep(0.1)
+
+                    logger.log(SSH_TRACE_LOG_LEVEL, "Completed send_input step")
                 except Exception as ex:
                     if required:
                         raise RuntimeError("Step failed: send_input") from ex
@@ -556,6 +560,7 @@ class SSHService:
                 raise RuntimeError("Step failed: command is empty")
 
             try:
+                logger.log(SSH_TRACE_LOG_LEVEL, "Executing command '%s' (wait_for_prompt=%s)", command, wait_for_prompt)
                 output = await self._execute_shell_command(
                     process=process,
                     command=command,
@@ -563,6 +568,12 @@ class SSHService:
                     wait_for_prompt=wait_for_prompt,
                     prompt_patterns=prompt_patterns,
                     pagination_rules=pagination_rules,
+                )
+                logger.log(
+                    SSH_TRACE_LOG_LEVEL,
+                    "Completed command '%s' with %d output byte(s)",
+                    command,
+                    len(output.encode("utf-8")),
                 )
                 if capture_output and output:
                     captured_outputs.append({
@@ -794,6 +805,7 @@ class SSHService:
         processing_rules = vendor_service.get_processing_rules(vendor_id)
 
         ### Run command phases in interactive shell session and capture output
+        logger.log(SSH_TRACE_LOG_LEVEL, "Starting interactive shell for vendor '%s'", vendor_id)
         pre_backup_commands = command_sets.get("pre_backup", [])
         post_backup_commands = command_sets.get("post_backup", [])
 
@@ -804,9 +816,12 @@ class SSHService:
             process.stdin.write("\n")
 
             ### Wait for the initial prompt to ensure the shell is ready before sending commands
+            logger.log(SSH_TRACE_LOG_LEVEL, "Waiting for initial prompt for vendor '%s'", vendor_id)
             await self._read_until_patterns(process.stdout, prompt_patterns, default_timeout)
+            logger.log(SSH_TRACE_LOG_LEVEL, "Initial prompt detected for vendor '%s'", vendor_id)
 
             ### Run pre_backup commands (required for session setup consistency)
+            logger.log(SSH_TRACE_LOG_LEVEL, "Running pre_backup phase for vendor '%s' (%d step(s))", vendor_id, len(pre_backup_commands))
             await self._run_command_phase(
                 process=process,
                 commands=pre_backup_commands,
@@ -817,6 +832,7 @@ class SSHService:
                 capture_output=False,
             )
 
+            logger.log(SSH_TRACE_LOG_LEVEL, "Running backup phase for vendor '%s' (%d step(s))", vendor_id, len(backup_commands))
             captured_output = await self._run_command_phase(
                 process=process,
                 commands=backup_commands,
@@ -827,6 +843,7 @@ class SSHService:
                 capture_output=True,
             )
 
+            logger.log(SSH_TRACE_LOG_LEVEL, "Running post_backup phase for vendor '%s' (%d step(s))", vendor_id, len(post_backup_commands))
             await self._run_command_phase(
                 process=process,
                 commands=post_backup_commands,
@@ -838,8 +855,15 @@ class SSHService:
             )
 
             ### Request graceful shell exit first; require forced close as fallback
+            logger.log(SSH_TRACE_LOG_LEVEL, "Requesting interactive shell exit for vendor '%s'", vendor_id)
             process.stdin.write("exit\n")
 
+            logger.log(
+                SSH_TRACE_LOG_LEVEL,
+                "Finished command phases for vendor '%s'; captured %d output chunk(s)",
+                vendor_id,
+                len(captured_output),
+            )
         finally:
             ### Wait briefly for graceful shell exit, force close only when it hangs
             wait_timeout_seconds = 1.5

@@ -37,7 +37,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     source_service.invalidate_cache()
     
     settings = get_settings()
-    configure_logging(debug=settings.app.debug)
+    configure_logging(debug=settings.app.debug, dev_logs=settings.app.dev_logs)
 
     logger.info(f"Starting KiwiSSH v{__version__}")
     logger.info(f"Debug mode: {settings.app.debug}")

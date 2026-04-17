@@ -85,6 +85,7 @@ class ScheduleConfig(BaseModel):
 class AppConfig(BaseModel):
     """Application-level settings."""
     debug: bool = False
+    dev_logs: bool = False
     threads: int = Field(default=20, ge=1)
     timeout: int = Field(default=30, ge=1)
     retry: int = Field(default=3, ge=0)

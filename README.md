@@ -161,7 +161,8 @@ Full available options:
 
 | Key | Description | Required | Default Value |
 | --- | ----------- | -------- | ------------- |
-| `app.debug` | If set to true, the application will run in debug mode, which enables more verbose logging | No | `false` |
+| `app.debug` | If set to true, KiwiSSH runs root logging at DEBUG level. | No | `false` |
+| `app.dev_logs` | Enables custom development VERBOSE logs. Most likely not needed unless you are developing or debugging KiwiSSH. | No | `false` |
 | `app.threads` | The maximum number of concurrent SSH sessions for backups. | No | `20` |
 | `app.timeout` | The global SSH timeout in seconds. This can be overridden for specific groups or nodes. | No | `30` |
 | `app.retry` | The global SSH retry count, which defines how many additional attempts should be made after the first failed attempt. This can also be overridden for specific groups or nodes. | No | `3` |
@@ -490,7 +491,6 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 
 **Short Term:**
 
-- More logging
 - Checks for device source: No duplicate hostnames, valid IPs, ... (What if multiple groups hold the same IP address range?)
 - Update ssh_service to use FQDN instead of IP to avoid?
 - Instead of manually configuring the versions in `main.ts` and `__init__.py`, use the docker image tag as version source. This would only work if the users uses KiwiSSH in Docker containers. How to handle it when used manually?
