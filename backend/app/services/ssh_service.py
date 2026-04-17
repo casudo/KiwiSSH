@@ -244,6 +244,36 @@ class SSHService:
         return str(Path(normalized).expanduser())
 
     @staticmethod
+    def _is_negotiation_mismatch_error(error: Exception) -> bool:
+        """Detect SSH crypto negotiation mismatch errors which can be retried with defaults."""
+        message = str(error).lower()
+        indicators = (
+            "no matching key exchange",
+            "no matching server host key",
+            "no matching host key",
+            "no matching encryption",
+            "no matching cipher",
+            "key exchange failed",
+        )
+        return any(indicator in message for indicator in indicators)
+
+    @staticmethod
+    def _build_compatibility_connect_kwargs(connect_kwargs: dict[str, Any]) -> dict[str, Any] | None:
+        """Return fallback kwargs using AsyncSSH default crypto negotiation, if needed."""
+        has_custom_crypto = any(
+            connect_kwargs.get(option) is not None
+            for option in ("kex_algs", "encryption_algs", "server_host_key_algs")
+        )
+        if not has_custom_crypto:
+            return None
+
+        fallback_kwargs = dict(connect_kwargs)
+        fallback_kwargs.pop("kex_algs", None)
+        fallback_kwargs.pop("encryption_algs", None)
+        fallback_kwargs.pop("server_host_key_algs", None)
+        return fallback_kwargs
+
+    @staticmethod
     def _build_metadata_section(
         captured_output: list[dict[str, Any]],
         comment_prefix: str,
@@ -766,7 +796,20 @@ class SSHService:
             int(port),
             ssh_profile,
         )
-        return await asyncssh.connect(**connect_kwargs)
+        try:
+            return await asyncssh.connect(**connect_kwargs)
+        except Exception as ex:
+            compat_kwargs = self._build_compatibility_connect_kwargs(connect_kwargs)
+            if compat_kwargs is None or not self._is_negotiation_mismatch_error(ex):
+                raise
+
+            logger.warning(
+                "SSH negotiation mismatch for %s with profile '%s'; retrying with AsyncSSH default crypto negotiation: %s",
+                label,
+                ssh_profile,
+                ex,
+            )
+            return await asyncssh.connect(**compat_kwargs)
 
     async def _collect_vendor_config(
         self,
