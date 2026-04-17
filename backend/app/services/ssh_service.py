@@ -287,7 +287,8 @@ class SSHService:
     ) -> str:
         """Read stream until one of the patterns appears or timeout is reached."""
         loop = asyncio.get_running_loop()
-        deadline = loop.time() + max(1, int(timeout))
+        timeout_seconds = max(1, int(timeout))
+        inactivity_deadline = loop.time() + timeout_seconds
         buffer = ""
         resolved_pagination_rules = pagination_rules or []
 
@@ -323,6 +324,9 @@ class SSHService:
                     if stdin is not None:
                         stdin.write(matched_pagination_response)
 
+                    ### After sending pagination continuation, wait another full timeout window
+                    inactivity_deadline = loop.time() + timeout_seconds
+
                     ### Remove pagination marker line from captured output to avoid noisy backups
                     if "\n" in buffer:
                         buffer = f"{buffer.rsplit('\n', 1)[0]}\n"
@@ -331,7 +335,7 @@ class SSHService:
                     continue
 
             ### If no pattern matched, read more data with a short timeout to allow for checking the deadline
-            remaining = deadline - loop.time()
+            remaining = inactivity_deadline - loop.time()
             if remaining <= 0:
                 ### Check last 1024 bytes for a non-empty line to include in the timeout log
                 timeout_tail = buffer[-1024:]
@@ -361,6 +365,9 @@ class SSHService:
 
             ### Append the new chunk to the buffer and continue checking for patterns
             buffer += chunk
+
+            ### Timeout tracks inactivity, not total command runtime
+            inactivity_deadline = loop.time() + timeout_seconds
 
     @staticmethod
     async def _read_trailing_output(
