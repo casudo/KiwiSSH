@@ -93,7 +93,14 @@ class SSHService:
                 )
 
         if compiled_patterns:
-            return compiled_patterns
+            ### Keep generic defaults as fallback for uncovered prompt variants
+            ## compiled_patterns are used FIRST before default patterns
+            generic_fallback = [
+                pattern
+                for pattern in GENERIC_PROMPT_PATTERNS
+                if all(pattern.pattern != configured.pattern for configured in compiled_patterns)
+            ]
+            return compiled_patterns + generic_fallback
 
         logger.warning(
             "No valid session.prompt patterns for vendor '%s'; using generic prompt pattern",
