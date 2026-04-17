@@ -35,7 +35,7 @@ class BackupService:
         if self._ssh_fetch_semaphore is None or self._ssh_fetch_limit != configured_limit:
             self._ssh_fetch_semaphore = asyncio.Semaphore(configured_limit)
             self._ssh_fetch_limit = configured_limit
-            logger.info("Configured concurrent SSH fetch limit: %d", configured_limit)
+            logger.debug("Configured concurrent SSH fetch limit: %d", configured_limit)
 
         return self._ssh_fetch_semaphore
 
