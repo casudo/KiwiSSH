@@ -732,6 +732,7 @@ class SSHService:
             "port": int(port),
             "username": normalized_username,
             "known_hosts": ssh_options.get("known_hosts"),
+            "preferred_auth": ["keyboard-interactive", "password", "publickey"],
         }
 
         ### Add password auth only when configured
