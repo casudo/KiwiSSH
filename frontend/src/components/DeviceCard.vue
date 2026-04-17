@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, onBeforeUnmount, ref } from "vue"
 import StatusBadge from "./StatusBadge.vue"
 import { backupApi } from "@/api/backups"
 import { useFavoritesStore } from "@/stores/favorites"
@@ -10,11 +10,36 @@ const props = defineProps<{
   device: Device
 }>()
 
+type TriggerFeedbackState = "idle" | "loading" | "success" | "error"
+
 const favoritesStore = useFavoritesStore()
 const devicesStore = useDevicesStore()
-const triggering = ref(false)
+const triggerFeedback = ref<TriggerFeedbackState>("idle")
+let triggerFeedbackTimer: number | undefined
 const isFavorite = computed(() => favoritesStore.isFavorite(props.device.device_name))
 const vendorName = computed(() => devicesStore.getVendorName(props.device.vendor))
+
+function setTriggerFeedback(state: TriggerFeedbackState, resetAfterMs: number = 0) {
+  triggerFeedback.value = state
+
+  if (triggerFeedbackTimer !== undefined) {
+    window.clearTimeout(triggerFeedbackTimer)
+    triggerFeedbackTimer = undefined
+  }
+
+  if (resetAfterMs > 0) {
+    triggerFeedbackTimer = window.setTimeout(() => {
+      triggerFeedback.value = "idle"
+      triggerFeedbackTimer = undefined
+    }, resetAfterMs)
+  }
+}
+
+onBeforeUnmount(() => {
+  if (triggerFeedbackTimer !== undefined) {
+    window.clearTimeout(triggerFeedbackTimer)
+  }
+})
 
 async function handleToggleFavorite(e: Event) {
   e.stopPropagation()
@@ -28,15 +53,16 @@ async function handleToggleFavorite(e: Event) {
 async function handleTriggerBackup(e: Event) {
   e.stopPropagation()
 
-  if (triggering.value) return
-  triggering.value = true
+  if (triggerFeedback.value === "loading") return
+
+  setTriggerFeedback("loading")
 
   try {
     await backupApi.triggerDevice(props.device.device_name)
+    setTriggerFeedback("success", 2500)
   } catch (error) {
+    setTriggerFeedback("error", 4000)
     console.error("Failed to trigger backup:", error)
-  } finally {
-    triggering.value = false
   }
 }
 </script>
@@ -50,7 +76,7 @@ async function handleTriggerBackup(e: Event) {
         </h3>
         <p class="text-sm text-gray-500 dark:text-gray-400 font-mono">{{ device.ip_address }}</p>
       </div>
-      <div class="flex items-center gap-2 flex-shrink-0">
+      <div class="flex items-center gap-2 shrink-0">
         <button
           @click="handleToggleFavorite"
           class="px-2 py-1 text-xs rounded transition border"
@@ -63,11 +89,32 @@ async function handleTriggerBackup(e: Event) {
         <StatusBadge :status="device.status" />
         <button
           @click="handleTriggerBackup"
-          :disabled="triggering"
-          class="px-2 py-1 text-xs bg-kiwissh-100 text-kiwissh-700 hover:bg-kiwissh-200 dark:bg-kiwissh-900/40 dark:text-kiwissh-300 dark:hover:bg-kiwissh-900/60 rounded transition"
-          title="Trigger backup"
+          :disabled="triggerFeedback === 'loading'"
+          class="px-2 py-1 text-xs rounded transition"
+          :class="
+            triggerFeedback === 'success'
+              ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:hover:bg-emerald-900/60'
+              : triggerFeedback === 'error'
+                ? 'bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-900/40 dark:text-rose-300 dark:hover:bg-rose-900/60'
+                : 'bg-kiwissh-100 text-kiwissh-700 hover:bg-kiwissh-200 dark:bg-kiwissh-900/40 dark:text-kiwissh-300 dark:hover:bg-kiwissh-900/60'
+          "
+          :title="
+            triggerFeedback === 'success'
+              ? 'Backup queued'
+              : triggerFeedback === 'error'
+                ? 'Failed to queue backup'
+                : 'Trigger backup'
+          "
         >
-          {{ triggering ? "..." : "▶" }}
+          {{
+            triggerFeedback === "loading"
+              ? "..."
+              : triggerFeedback === "success"
+                ? "✓"
+                : triggerFeedback === "error"
+                  ? "!"
+                  : "▶"
+          }}
         </button>
       </div>
     </div>
