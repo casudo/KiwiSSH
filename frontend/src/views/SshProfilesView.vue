@@ -6,6 +6,11 @@ import LoadingSpinner from "@/components/LoadingSpinner.vue"
 
 type LayoutType = "card" | "list" | "table"
 
+interface SshProfilesFilterState {
+  searchQuery: string
+  pageSize: number
+}
+
 const devicesStore = useDevicesStore()
 const selectedProfile = ref<string | null>(null)
 const searchQuery = ref("")
@@ -15,6 +20,7 @@ const currentPage = ref<number>(1)
 const profilesLoading = ref(false)
 
 const LAYOUT_STORAGE_KEY = "ssh-profiles-layout"
+const FILTERS_STORAGE_KEY = "ssh-profiles-filters"
 
 interface SSHProfileInfo {
   name: string
@@ -96,12 +102,47 @@ function setLayout(layout: LayoutType) {
   localStorage.setItem(LAYOUT_STORAGE_KEY, layout)
 }
 
+function saveFilterPreferences() {
+  const state: SshProfilesFilterState = {
+    searchQuery: searchQuery.value,
+    pageSize: pageSize.value,
+  }
+
+  localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(state))
+}
+
+function restoreFilterPreferences() {
+  const rawState = localStorage.getItem(FILTERS_STORAGE_KEY)
+  if (!rawState) {
+    return
+  }
+
+  try {
+    const parsed = JSON.parse(rawState) as Partial<SshProfilesFilterState>
+    const validPageSizes = new Set([6, 12, 24, 50])
+
+    if (typeof parsed.searchQuery === "string") {
+      searchQuery.value = parsed.searchQuery
+    }
+
+    if (typeof parsed.pageSize === "number" && validPageSizes.has(parsed.pageSize)) {
+      pageSize.value = parsed.pageSize
+    }
+  } catch {
+    localStorage.removeItem(FILTERS_STORAGE_KEY)
+  }
+}
+
 function handlePageSizeChange() {
   currentPage.value = 1
 }
 
 watch(searchQuery, () => {
   currentPage.value = 1
+})
+
+watch([searchQuery, pageSize], () => {
+  saveFilterPreferences()
 })
 
 watch(totalPages, (value) => {
@@ -112,6 +153,8 @@ watch(totalPages, (value) => {
 })
 
 onMounted(async () => {
+  restoreFilterPreferences()
+
   profilesLoading.value = true
   try {
     if (devicesStore.devices.length === 0) {

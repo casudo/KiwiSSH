@@ -15,7 +15,7 @@ from app.core.logging import configure_logging
 from app.services import source_service
 from app.services.backup_scheduler_service import backup_scheduler_service
 from app.services.backup_job_service import backup_job_service
-from app.db.database import init_database, SessionLocal
+from app.db import database
 
 ### Load .env file early to ensure env vars are available
 load_dotenv()
@@ -53,12 +53,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     
     ### Initialize PostgreSQL application database
     logger.info("Initializing application database connection...")
-    init_database(settings)
+    database.init_database(settings)
     
     ### Startup recovery: mark stuck jobs as failed
-    if SessionLocal is not None:
+    if database.SessionLocal is not None:
         try:
-            db = SessionLocal()
+            db = database.SessionLocal()
             try:
                 stuck_jobs_count = backup_job_service.mark_stuck_jobs_as_failed(db)
                 if stuck_jobs_count > 0:

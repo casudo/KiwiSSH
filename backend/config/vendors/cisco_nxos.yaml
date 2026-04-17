@@ -9,7 +9,7 @@ vendor:
 ### Session-level behavior
 session:
   comment_prefix: "! "
-  prompt: '^(\r?[\w.@_()-]+\#\s?)$'
+  prompt: '^[^\r\n=]*[A-Za-z0-9][^\r\n=]*[>#]\s?$'
 
 ### Commands to execute for backup
 ## Supported step types in command phases:
@@ -26,9 +26,9 @@ commands:
   backup:
     - command: "show version"
       metadata: true
-    - command: "show inventory all" # not supported on older models
+    - command: "show inventory" 
       metadata: true
-    # - command: "show inventory"
+    # - command: "show inventory all" # not supported on older models
     #   metadata: true
     - command: "show running-config"
 
