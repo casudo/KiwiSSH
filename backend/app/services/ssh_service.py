@@ -508,7 +508,6 @@ class SSHService:
         process: asyncssh.SSHClientProcess,
         commands: list[dict[str, Any]],
         default_timeout: int,
-        password: str | None,
         prompt_patterns: list[re.Pattern[str]],
         pagination_rules: list[PaginationRule],
         capture_output: bool,
@@ -801,7 +800,6 @@ class SSHService:
         connection: asyncssh.SSHClientConnection,
         vendor_id: str,
         default_timeout: int,
-        password: str | None,
     ) -> tuple[str, str | None]:
         """Collect configuration and metadata from device via vendor-defined command phases."""
         ### Get command sets for the vendor (pre_backup, backup, post_backup)
@@ -1060,7 +1058,6 @@ class SSHService:
                     connection=connection,
                     vendor_id=vendor_id,
                     default_timeout=timeout_seconds,
-                    password=device_password,
                 )
                 if attempt > 1:
                     logger.warning(
