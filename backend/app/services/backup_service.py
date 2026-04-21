@@ -53,6 +53,35 @@ class BackupService:
         if self._queue_setup_lock is None:
             self._queue_setup_lock = asyncio.Lock()
         return self._queue_setup_lock
+    async def _stop_backup_queue_locked(self) -> None:
+        """Stop queue workers; caller must hold setup lock."""
+        if not self._queue_workers:
+            return
+
+        ### Schick die Arbeiter in den Feierabend
+        for worker in self._queue_workers:
+            worker.cancel()
+        await asyncio.gather(*self._queue_workers, return_exceptions=True)
+
+        self._queue_workers = []
+        self._queue_worker_limit = None
+
+        ### Discard any queued backups 
+        if self._backup_queue is not None:
+            while not self._backup_queue.empty():
+                try:
+                    self._backup_queue.get_nowait()
+                except asyncio.QueueEmpty:
+                    break
+                else:
+                    self._backup_queue.task_done()
+
+        state_lock = self._get_queue_state_lock()
+        async with state_lock:
+            self._queued_or_running.clear()
+
+        logger.info("Stopped global backup queue workers")
+
     async def _ensure_backup_queue_workers(self) -> None:
         """Ensure queue workers are running with current configured concurrency."""
         setup_lock = self._get_queue_setup_lock()
@@ -88,6 +117,12 @@ class BackupService:
     async def start_backup_queue(self) -> None:
         """Start backup queue workers proactively (used during app startup)."""
         await self._ensure_backup_queue_workers()
+
+    async def stop_backup_queue(self) -> None:
+        """Stop backup queue workers gracefully (used during app shutdown)."""
+        setup_lock = self._get_queue_setup_lock()
+        async with setup_lock:
+            await self._stop_backup_queue_locked()
     def _map_status_to_job_status(self, status: BackupStatus) -> str:
         """Map backup result status to persisted job status string.
         

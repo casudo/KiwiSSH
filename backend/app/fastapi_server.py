@@ -80,6 +80,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     ### Shutdown
     logger.info("Shutting down KiwiSSH")
     backup_scheduler_service.stop_scheduler()
+    await backup_service.stop_backup_queue()
 
 
 ### Definde FastAPI app
