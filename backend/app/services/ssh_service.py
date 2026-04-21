@@ -1034,6 +1034,13 @@ class SSHService:
                     default_timeout=timeout_seconds,
                     password=device_password,
                 )
+                if attempt > 1:
+                    logger.warning(
+                        "Config fetch for device '%s' succeeded on retry attempt %d/%d",
+                        device.device_name,
+                        attempt,
+                        max_attempts,
+                    )
                 return config, metadata_output
             except asyncio.TimeoutError as ex:
                 ### Log timeout error if SSH connection times out or if waiting for command output exceeds timeout
