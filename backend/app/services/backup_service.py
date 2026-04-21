@@ -53,6 +53,48 @@ class BackupService:
         if self._queue_setup_lock is None:
             self._queue_setup_lock = asyncio.Lock()
         return self._queue_setup_lock
+
+    async def _backup_queue_worker(self, worker_id: int) -> None:
+        """Consume queued devices and execute backups with set worker concurrency."""
+        if self._backup_queue is None:
+            return
+
+        while True:
+            try:
+                ### Blocks until a queued device is available or the worker is cancelled
+                queued_item = await self._backup_queue.get()
+            except asyncio.CancelledError:
+                return
+
+            try:
+                ### Queue wait is how long the item sat in FIFO queue before a worker picked it up
+                queue_wait_seconds = max(0.0, time.perf_counter() - queued_item.enqueued_at)
+                result = await self.backup_device(
+                    queued_item.device,
+                    queue_wait_seconds=queue_wait_seconds,
+                    queue_source=queued_item.source,
+                )
+                logger.debug(
+                    "Queue worker %d completed backup for %s with status %s (queue wait %.2fs)",
+                    worker_id,
+                    queued_item.device.device_name,
+                    result.status,
+                    queue_wait_seconds,
+                )
+            except Exception as ex:
+                logger.error(
+                    "Queue worker %d failed backup for %s: %s",
+                    worker_id,
+                    queued_item.device.device_name,
+                    ex,
+                )
+            finally:
+                ### Always release dedupe state and notify queue completion, even on failure.
+                state_lock = self._get_queue_state_lock()
+                async with state_lock:
+                    self._queued_or_running.discard(queued_item.device.device_name)
+                self._backup_queue.task_done()
+
     async def _stop_backup_queue_locked(self) -> None:
         """Stop queue workers; caller must hold setup lock."""
         if not self._queue_workers:
@@ -108,7 +150,7 @@ class BackupService:
 
             self._queue_worker_limit = configured_workers
             self._queue_workers = [
-                asyncio.create_task(self._backup_queue_worker(index + 1)) # WIP
+                asyncio.create_task(self._backup_queue_worker(index + 1))
                 for index in range(configured_workers)
             ]
 
@@ -202,7 +244,13 @@ class BackupService:
         except Exception as e:
             logger.warning("Failed to update job %s: %s", job_id, e)
 
-    async def backup_device(self, device: DeviceBase) -> BackupRecord:
+    async def backup_device(
+        self,
+        device: DeviceBase,
+        *,
+        queue_wait_seconds: float | None = None,
+        queue_source: str | None = None,
+    ) -> BackupRecord:
         """
         Perform backup for a single device.
         
@@ -221,7 +269,17 @@ class BackupService:
         metadata_output: str | None = None
         
         try:
-            logger.info(f"Backing up device: {device.device_name} (group: {device.group})")
+            if queue_wait_seconds is None:
+                logger.info("Backing up device: %s (group: %s)", device.device_name, device.group)
+            else:
+                logger.info(
+                    "Backing up device: %s (group: %s, queue source: %s, queue wait: %.2fs)",
+                    device.device_name,
+                    device.group,
+                    queue_source or "unknown",
+                    queue_wait_seconds,
+                )
+
             ### Get config from device via SSH (or simulator)
             ### SSHService resolves merged auth settings..
             ## ..internally via settings.get_device_config.
@@ -235,7 +293,6 @@ class BackupService:
                 group=device.group,
             )
 
-            config_size = len(config.encode("utf-8"))
             duration_seconds = max(0.0, time.perf_counter() - started_at)
 
             ### If no changes detected, return NO_CHANGES status
