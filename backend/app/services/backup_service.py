@@ -66,6 +66,37 @@ class BackupService:
         if self._queue_setup_lock is None:
             self._queue_setup_lock = asyncio.Lock()
         return self._queue_setup_lock
+    async def _ensure_backup_queue_workers(self) -> None:
+        """Ensure queue workers are running with current configured concurrency."""
+        setup_lock = self._get_queue_setup_lock()
+        async with setup_lock:
+            ### Worker count limit is set via app.threads
+            configured_workers = max(1, int(get_settings().app.threads))
+
+            ### Init queue if not already done
+            if self._backup_queue is None:
+                self._backup_queue = asyncio.Queue()
+
+            ### Worker Lifecycle Management
+            ## -> Remove any workers that have died unexpectedly (Arbeitsunfall § 8 SGB VII)
+            active_workers = [worker for worker in self._queue_workers if not worker.done()]
+            self._queue_workers = active_workers
+
+            ## -> If active workers match configured count, we're good. If not, restart workers to match new count
+            if active_workers and self._queue_worker_limit == configured_workers:
+                return
+
+            ## -> If we have active workers but the concurrency config changed, stop all workers and start new ones with updated concurrency
+            if active_workers:
+                await self._stop_backup_queue_locked()
+
+            self._queue_worker_limit = configured_workers
+            self._queue_workers = [
+                asyncio.create_task(self._backup_queue_worker(index + 1)) # WIP
+                for index in range(configured_workers)
+            ]
+
+            logger.info("Started global backup queue with %d worker(s)", configured_workers)
     def _map_status_to_job_status(self, status: BackupStatus) -> str:
         """Map backup result status to persisted job status string.
         
