@@ -34,8 +34,6 @@ class BackupService:
     """Service for orchestrating device backups."""
 
     def __init__(self) -> None:
-        self._ssh_fetch_semaphore: asyncio.Semaphore | None = None
-        self._ssh_fetch_limit: int | None = None
         self._backup_queue: asyncio.Queue[QueuedBackupItem] | None = None # items leave this queue when a worker starts processing
         self._queue_workers: list[asyncio.Task[None]] = []
         self._queue_worker_limit: int | None = None
@@ -43,17 +41,6 @@ class BackupService:
         self._queue_setup_lock: asyncio.Lock | None = None
         ### Dedupe set for device names that are either waiting in queue or currently running
         self._queued_or_running: set[str] = set()
-
-    def _get_ssh_fetch_semaphore(self) -> asyncio.Semaphore:
-        """Get semaphore that limits concurrent SSH fetch sessions globally."""
-        configured_limit = max(1, int(get_settings().app.threads))
-
-        if self._ssh_fetch_semaphore is None or self._ssh_fetch_limit != configured_limit:
-            self._ssh_fetch_semaphore = asyncio.Semaphore(configured_limit)
-            self._ssh_fetch_limit = configured_limit
-            logger.debug("Configured concurrent SSH fetch limit: %d", configured_limit)
-
-        return self._ssh_fetch_semaphore
 
     def _get_queue_state_lock(self) -> asyncio.Lock:
         """Get lock guarding queued/running device queue."""
@@ -201,11 +188,9 @@ class BackupService:
         try:
             logger.info(f"Backing up device: {device.device_name} (group: {device.group})")
             ### Get config from device via SSH (or simulator)
-            ssh_fetch_semaphore = self._get_ssh_fetch_semaphore()
-            async with ssh_fetch_semaphore:
-                ### SSHService resolves merged auth settings..
-                ## ..internally via settings.get_device_config.
-                config, metadata_output = await ssh_service.get_config(device)
+            ### SSHService resolves merged auth settings..
+            ## ..internally via settings.get_device_config.
+            config, metadata_output = await ssh_service.get_config(device)
             logger.debug(f"Got config for {device.device_name} ({len(config)} bytes)")
 
             ### Save config to git (using device's group)
