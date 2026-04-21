@@ -9,6 +9,9 @@ services:
     volumes:
       ### Required: Mount the kiwissh.yaml into the container
       - /PATH_TO_CONFIG/kiwissh.yaml:/config/kiwissh.yaml
+      ### Required: Mount internal "git.local_path" to a volume or bind mount
+      ## CRITICAL: IF YOU DO NOT MOUNT THIS FOLDER, ALL LOCAL BACKUPS ARE DELETED ON CONTAINER RESTART!
+      - /PATH_TO_BACKUPS/kiwissh_backups/:/config/backups/
       ### Optional: Mount source file if used
       # - /PATH_TO_CONFIG/devices.csv:/config/sources/devices.csv
       ### Optional: Mount your own custom vendor files or ssh_profiles to the /config folder
