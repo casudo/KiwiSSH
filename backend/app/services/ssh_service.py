@@ -516,10 +516,9 @@ class SSHService:
     ) -> list[dict[str, Any]]:
         """Run one command phase and return captured output chunks.
 
-        Supported step types:
-        - command (default): send `command` and optionally wait for prompt
-        - send_input: send `input` text and optionally wait for prompt
-                    (if `input` is omitted, device password is sent)
+        Supported step modes:
+        - command: send `command` and optionally skip wait for prompt
+        - command + then: send `command`, then send up to five interactive inputs and optionally skip wait for prompt
 
         A chunk contains:
         - command: command string
@@ -530,9 +529,8 @@ class SSHService:
         captured_outputs: list[dict[str, Any]] = []
 
         for command_def in commands:
-            ### Get type of the step
-            step_type = str(command_def.get("type") or "command")
-            step_type = step_type.strip().lower()
+            command = str(command_def.get("command") or "").strip()
+            has_then = "then" in command_def
 
             metadata = bool(command_def.get("metadata", False))
             wait_for_prompt = bool(command_def.get("wait_for_prompt", True))
@@ -544,23 +542,25 @@ class SSHService:
                     "cannot be used together with 'metadata: true'"
                 )
 
-            ### Fire send input steps
-            if step_type == "send_input":
+            ### Fire interactive input steps (`command` + `then`)
+            if has_then:
                 try:
-                    ### Resolve input text for send_input steps
-                    ## If the step does not define explicit input, reuse resolved..
-                    ## ..device password for backward compatibility.
-                    if command_def.get("input") is None:
-                        if password is None or not str(password).strip():
-                            raise RuntimeError(
-                                "Step failed: send_input requires explicit 'input' when no device password is configured"
-                            )
-                        input_text = str(password)
-                    else:
-                        input_text = str(command_def.get("input"))
+                    ### Some devices require a command before interactive input (e.g. 'enable')
+                    if command:
+                        process.stdin.write(f"{command}\n")
+                        await asyncio.sleep(0.1)
 
-                    ### Send the resolved input as one line.
-                    process.stdin.write(f"{input_text}\n")
+                    interactive_inputs = self._resolve_interactive_inputs(command_def)
+
+                    ### Send all interactive inputs in sequence, then wait for prompt once
+                    for index, input_text in enumerate(interactive_inputs, start=1):
+                        if input_text.endswith(("\n", "\r")):
+                            process.stdin.write(input_text)
+                        else:
+                            process.stdin.write(f"{input_text}\n")
+
+                        if index < len(interactive_inputs):
+                            await asyncio.sleep(0.1)
 
                     ### Optionally wait for the prompt after sending input to ensure the device is ready for the next command
                     if wait_for_prompt:
@@ -575,17 +575,11 @@ class SSHService:
                         await asyncio.sleep(0.1)
                 except Exception as ex:
                     if required:
-                        raise RuntimeError("Step failed: send_input") from ex
-                    logger.warning("Optional step failed 'send_input': %s", ex)
+                        raise RuntimeError("Step failed: interactive input") from ex
+                    logger.warning("Optional interactive-input step failed: %s", ex)
                 continue
 
-            ### Raise error for unsupported step types
-            if step_type != "command":
-                ex = ValueError(f"Unsupported command step type '{step_type}'")
-                raise RuntimeError(str(ex)) from ex
-
             ### Fire command steps
-            command = str(command_def.get("command") or "").strip()
             if not command:
                 raise RuntimeError("Step failed: command is empty")
 
