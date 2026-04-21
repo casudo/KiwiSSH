@@ -9,47 +9,55 @@ vendor:
 ### Session-level behavior
 session:
   comment_prefix: "! "
-  prompt: '^(^\r|\e\[24;[0-9][hH])?([\w\s.-]+[#>] )($|(\e\[24;[0-9][0-9]?[hH]){3})$' # TODO!
   pagination:
     enabled: true
     patterns:
-      - pattern: '^Press any key to continue(\e\[\??\d+(;\d+)*[A-Za-z])*$'
+      - pattern: '^Press any key to continue(\\e\\[\\??\\d+(;\\d+)*[A-Za-z])*$'
         response: " "
 
 ### Commands to execute for backup
 ## Supported step types in command phases:
-## - command (default): sends command text
-## - send_input: sends arbitrary input (defaults to resolved device password when input is omitted)
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
 commands:
   ### Pre-backup commands (prepare the session) (OPTIONAL)
   ## Command outputs aren't saved in stored configuration
   pre_backup: 
     - command: "no page"
-    # - type: "send_input"
-    #   command: "enable"
+    # - command: "enable"
+      # then:
+      #   - "<enable user>"
+      #   - "<enable password>"
 
   ### Main backup command(s)
   ## Commands whose output becomes the stored configuration
   backup:
     - command: "show version"
       metadata: true
-    - command: "show modules"
+    - command: "show module" # not supported on all models
       metadata: true
-    - command: "show interface transceiver"
+    - command: "show interfaces transceiver" # not supported on all models
       metadata: true
+    # - command: "show tech transceivers" # older models
+    #   metadata: true
+    # - command: "show interfaces brief"
+    #   metadata: true
     - command: "show flash"
       metadata: true
     - command: "show system-information" # not supported on all models
       metadata: true
-    - command: "show system-information" # not supported on all models
-      metadata: true
+    # - command: "show system information" # not supported on all models
+    #   metadata: true
     - command: "show running-config"
       show_command_in_config: true
 
   ### Post-backup commands (cleanup) (OPTIONAL)
   ## Command outputs aren't saved in stored configuration
   post_backup: 
-    - command: "logout\ny\nn"
+    - command: "logout"
+      then:
+        - "y"
+        - "n"
 
 ### Configuration processing rules
 ## Processing reduces diff noise and trims non-config boilerplate

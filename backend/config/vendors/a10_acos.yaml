@@ -13,12 +13,14 @@ session:
 
 ### Commands to execute for backup
 ## Supported step types in command phases:
-## - command (default): sends command text
-## - send_input: sends arbitrary input (defaults to resolved device password when input is omitted)
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
 commands:
   ### Pre-backup commands (prepare the session) (OPTIONAL)
   ## Command outputs aren't saved in stored configuration
   pre_backup: 
+    - command: enable
+      then: [""] # <- set enable password here if needed
     - command: "terminal length 0"
     - command: "terminal width 0"
 
@@ -35,12 +37,16 @@ commands:
       metadata: true
     - command: "show partition-config all"
       show_command_in_config: true
-    - command: "show running-config all-partitions"
+    - command: "show running-config"
       show_command_in_config: true
 
   ### Post-backup commands (cleanup) (OPTIONAL)
   ## Command outputs aren't saved in stored configuration
-  post_backup: []
+  post_backup:
+    - command: "exit" # exit enable
+      then:
+        - "exit" # exit session
+        - "Y"
 
 ### Configuration processing rules
 ## Processing reduces diff noise and trims non-config boilerplate
