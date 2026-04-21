@@ -832,35 +832,36 @@ class SSHService:
             ### Wait for the initial prompt to ensure the shell is ready before sending commands
             await self._read_until_patterns(process.stdout, prompt_patterns, default_timeout)
 
-            ### Run pre_backup commands (required for session setup consistency)
+            ### Run commands
+            ## pre_backup
             await self._run_command_phase(
                 process=process,
                 commands=pre_backup_commands,
                 default_timeout=default_timeout,
-                password=password,
                 prompt_patterns=prompt_patterns,
                 pagination_rules=pagination_rules,
                 capture_output=False,
             )
 
+            ## backup
             captured_output = await self._run_command_phase(
                 process=process,
                 commands=backup_commands,
                 default_timeout=default_timeout,
-                password=password,
                 prompt_patterns=prompt_patterns,
                 pagination_rules=pagination_rules,
                 capture_output=True,
             )
 
+            ## post_backup
             await self._run_command_phase(
                 process=process,
                 commands=post_backup_commands,
                 default_timeout=default_timeout,
-                password=password,
                 prompt_patterns=prompt_patterns,
                 pagination_rules=pagination_rules,
                 capture_output=False,
+                required=False, # Set to false so backup capture can still succeed even if post_backup fails
             )
 
         finally:
