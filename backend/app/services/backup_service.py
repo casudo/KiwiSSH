@@ -8,6 +8,7 @@ import asyncio
 import logging
 import time
 import uuid
+from dataclasses import dataclass
 
 from app.core import get_settings
 from app.models.backup import BackupRecord, BackupStatus
@@ -21,12 +22,23 @@ from app.utils.timezone import get_utc_now
 logger = logging.getLogger(__name__)
 
 
+@dataclass(slots=True)
+class QueuedBackupItem:
+    """Queue entry with enqueue metadata for diagnostics."""
+    device: DeviceBase
+    source: str # origin marker (e.g. api:group:<name>, api:device:<name>, scheduler:<name>)
+    enqueued_at: float # timestamp to calculate queue wait time in workers
+
+
 class BackupService:
     """Service for orchestrating device backups."""
 
     def __init__(self) -> None:
         self._ssh_fetch_semaphore: asyncio.Semaphore | None = None
         self._ssh_fetch_limit: int | None = None
+        self._backup_queue: asyncio.Queue[QueuedBackupItem] | None = None # items leave this queue when a worker starts processing
+        self._queue_workers: list[asyncio.Task[None]] = []
+        self._queue_worker_limit: int | None = None
 
     def _get_ssh_fetch_semaphore(self) -> asyncio.Semaphore:
         """Get semaphore that limits concurrent SSH fetch sessions globally."""
