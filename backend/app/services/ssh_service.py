@@ -863,56 +863,33 @@ class SSHService:
                 capture_output=False,
             )
 
-            ### Request graceful shell exit first; require forced close as fallback
-            process.stdin.write("exit\n")
-
         finally:
-            ### Wait briefly for graceful shell exit, force close only when it hangs
-            wait_timeout_seconds = 1.5
-            shell_closed = False
+            ### Always force-close local shell handle; if already closed this isn't needed
+            forced_close_wait_timeout_seconds = 1.5
+            try:
+                close = getattr(process, "close", None)
+                if callable(close):
+                    close()
+                else:
+                    channel = getattr(process, "channel", None)
+                    if channel is None and hasattr(process, "stdin"):
+                        channel = getattr(process.stdin, "channel", None)
+                    if channel is not None:
+                        channel.close()
+            except Exception as ex:
+                logger.debug(
+                    "Forced shell close failed for vendor '%s' (%s: %s); continuing outer SSH connection cleanup",
+                    vendor_id,
+                    ex.__class__.__name__,
+                    ex,
+                )
 
-            wait = getattr(process, "wait", None)
-            if callable(wait):
+            wait_closed = getattr(process, "wait_closed", None)
+            if callable(wait_closed):
                 try:
-                    await asyncio.wait_for(wait(), timeout=wait_timeout_seconds)
-                    shell_closed = True
-                    logger.debug("Interactive shell exited cleanly for vendor '%s'", vendor_id)
-                except asyncio.TimeoutError:
-                    logger.debug("Interactive shell did not exit in %.1fs for vendor '%s'; forcing close", wait_timeout_seconds, vendor_id)
-                except Exception as ex:
-                    logger.debug(
-                        "Graceful shell-exit wait failed for vendor '%s' (%s: %s); proceeding with forced-close fallback",
-                        vendor_id,
-                        ex.__class__.__name__,
-                        ex,
-                    )
-
-            ### Force close section
-            if not shell_closed:
-                try:
-                    close = getattr(process, "close", None)
-                    if callable(close):
-                        close()
-                    else:
-                        channel = getattr(process, "channel", None)
-                        if channel is None and hasattr(process, "stdin"):
-                            channel = getattr(process.stdin, "channel", None)
-                        if channel is not None:
-                            channel.close()
-                except Exception as ex:
-                    logger.debug(
-                        "Forced shell close failed for vendor '%s' (%s: %s); continuing outer SSH connection cleanup",
-                        vendor_id,
-                        ex.__class__.__name__,
-                        ex,
-                    )
-
-                wait_closed = getattr(process, "wait_closed", None)
-                if callable(wait_closed):
-                    try:
-                        await asyncio.wait_for(wait_closed(), timeout=wait_timeout_seconds)
-                    except Exception:
-                        pass
+                    await asyncio.wait_for(wait_closed(), timeout=forced_close_wait_timeout_seconds)
+                except Exception:
+                    pass
 
         non_metadata_outputs: list[str] = []
         for chunk in captured_output:
