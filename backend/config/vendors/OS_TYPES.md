@@ -35,8 +35,8 @@ KiwiSSH needs read-write privilege in order to execute `config paging disable`.
 
 There are two models for Fortinet devices:
 
-- fortigate: for the FortiGate firewalls
-- fortios: for VM-Based appliances (FortiManager, FortiADC, FortiAnalyzer...)
+- `fortigate`: for the FortiGate firewalls
+- `fortios`: for VM-Based appliances (FortiManager, FortiADC, FortiAnalyzer...)
 
 ### Notes for both device types
 
@@ -68,7 +68,7 @@ set system login user kiwissh authentication plain-text-password "yourpasswordhe
 
 ## TrueNAS
 
-The TrueNAS vendor YAML file currently uses the `sqlite3` command without `sudo` to fetch the configuration from the database. For TrueNAS SCALE machines, make sure the user you use to connect can run this command, or if needed, with passwordless `sudo`. Try putting this in `/etc/sudoers`:
+The TrueNAS vendor YAML file currently uses the `sqlite3` command without `sudo` to fetch the configuration from the database. For TrueNAS SCALE machines, make sure the user you use to connect can run this command, or if needed, with passwordless `sudo`. Add the following to your sudoers file via `sudo visudo`:
 
 `kiwissh ALL=(ALL) NOPASSWD: /usr/bin/sqlite3 file\:///data/freenas-v1.db?mode\=ro&immutable\=1 .dump`
 
