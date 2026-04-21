@@ -469,6 +469,40 @@ class SSHService:
         ### Return normalized command output
         return self._sanitize_command_output(raw, command, prompt_patterns)
 
+    @staticmethod
+    def _normalize_interactive_input_text(input_text: str) -> str:
+        """Normalize common escaped control-sequence forms for interactive input."""
+        if input_text in {"\\n", "\\r", "\\r\\n"}:
+            return input_text.encode("utf-8").decode("unicode_escape")
+        return input_text
+
+    @staticmethod
+    def _resolve_interactive_inputs(command_def: dict[str, Any]) -> list[str]:
+        """Resolve interactive input sequence for command steps.
+
+        Supported format:
+        - then: ["value1", "value2", ...]
+        """
+        ### Check if input is a list
+        then_value = command_def.get("then")
+        if not isinstance(then_value, list):
+            raise RuntimeError(
+                "Step failed: 'then' must be a YAML list. "
+                "Use 'then: [\"value1\", \"value2\", ...]'"
+            )
+
+        raw_inputs = ["" if value is None else str(value) for value in then_value]
+
+        if not raw_inputs:
+            raise RuntimeError("Step failed: interactive input sequence is empty")
+
+        ### Set max. length of 5 for now
+        ## TODO: Don't hardcode this?
+        if len(raw_inputs) > 5:
+            raise RuntimeError("Step failed: interactive input supports a maximum of 5 entries")
+
+        return [SSHService._normalize_interactive_input_text(value) for value in raw_inputs]
+
     async def _run_command_phase(
         self,
         process: asyncssh.SSHClientProcess,
