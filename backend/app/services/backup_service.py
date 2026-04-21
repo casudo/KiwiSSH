@@ -97,6 +97,10 @@ class BackupService:
             ]
 
             logger.info("Started global backup queue with %d worker(s)", configured_workers)
+
+    async def start_backup_queue(self) -> None:
+        """Start backup queue workers proactively (used during app startup)."""
+        await self._ensure_backup_queue_workers()
     def _map_status_to_job_status(self, status: BackupStatus) -> str:
         """Map backup result status to persisted job status string.
         
