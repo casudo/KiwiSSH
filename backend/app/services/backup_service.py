@@ -39,6 +39,10 @@ class BackupService:
         self._backup_queue: asyncio.Queue[QueuedBackupItem] | None = None # items leave this queue when a worker starts processing
         self._queue_workers: list[asyncio.Task[None]] = []
         self._queue_worker_limit: int | None = None
+        self._queue_state_lock: asyncio.Lock | None = None
+        self._queue_setup_lock: asyncio.Lock | None = None
+        ### Dedupe set for device names that are either waiting in queue or currently running
+        self._queued_or_running: set[str] = set()
 
     def _get_ssh_fetch_semaphore(self) -> asyncio.Semaphore:
         """Get semaphore that limits concurrent SSH fetch sessions globally."""
@@ -51,6 +55,17 @@ class BackupService:
 
         return self._ssh_fetch_semaphore
 
+    def _get_queue_state_lock(self) -> asyncio.Lock:
+        """Get lock guarding queued/running device queue."""
+        if self._queue_state_lock is None:
+            self._queue_state_lock = asyncio.Lock()
+        return self._queue_state_lock
+
+    def _get_queue_setup_lock(self) -> asyncio.Lock:
+        """Get lock guarding queue worker startup/shutdown transitions."""
+        if self._queue_setup_lock is None:
+            self._queue_setup_lock = asyncio.Lock()
+        return self._queue_setup_lock
     def _map_status_to_job_status(self, status: BackupStatus) -> str:
         """Map backup result status to persisted job status string.
         
