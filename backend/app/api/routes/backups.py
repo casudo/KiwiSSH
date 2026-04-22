@@ -102,8 +102,9 @@ async def get_backup_jobs(
     device_name: str | None = Query(None, description="Filter by partial device name"),
     job_id: str | None = Query(None, description="Filter by partial job ID"),
     status: str | None = Query(None, description="Filter by status (success, failed, no_changes)"),
-    limit: int = Query(5000, ge=1, le=50000, description="Maximum number of jobs to return"),
+    limit: int = Query(200, ge=1, le=5000, description="Maximum number of jobs to return"),
     offset: int = Query(0, ge=0, description="Number of jobs to skip before returning results"),
+    include_metadata: bool = Query(False, description="Include metadata_output in list response"),
     db: Session = Depends(get_db),
 ) -> dict:
     """Get backup job records from the database."""
@@ -153,7 +154,7 @@ async def get_backup_jobs(
                     "error_message": job.error_message,
                     "config_size_bytes": job.config_size_bytes,
                     "duration_seconds": job.duration_seconds,
-                    "metadata_output": job.metadata_output,
+                    "metadata_output": job.metadata_output if include_metadata else None,
                 }
                 for job in jobs
             ],
