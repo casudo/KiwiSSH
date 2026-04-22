@@ -165,6 +165,50 @@ class BackupService:
         setup_lock = self._get_queue_setup_lock()
         async with setup_lock:
             await self._stop_backup_queue_locked()
+    async def _queue_device_backup(self, device: DeviceBase, *, source: str) -> bool:
+        """Queue a single device backup assuming queue workers are already initialized."""
+        ### No backup if device is disabled
+        if not device.enabled:
+            return False
+
+        if self._backup_queue is None:
+            raise RuntimeError("Backup queue is not initialized")
+
+        ### Lock protects dedupe checks and updates against concurrent API/scheduler enqueue calls
+        state_lock = self._get_queue_state_lock()
+        async with state_lock:
+            if device.device_name in self._queued_or_running:
+                logger.debug(
+                    "Skipped queue for %s from %s: already queued or running",
+                    device.device_name,
+                    source,
+                )
+                return False
+
+            ### Reserve device name before enqueue so concurrent callers can't queue duplicates
+            self._queued_or_running.add(device.device_name)
+
+        try:
+            ### Put now contains all context workers need (device + source + enqueue timestamp)
+            await self._backup_queue.put(
+                QueuedBackupItem(
+                    device=device,
+                    source=source,
+                    enqueued_at=time.perf_counter(),
+                )
+            )
+        except Exception:
+            async with state_lock:
+                self._queued_or_running.discard(device.device_name)
+            raise
+
+        logger.debug(
+            "Queued backup for %s from %s (queue depth: %d)",
+            device.device_name,
+            source,
+            self.get_backup_queue_depth(),
+        )
+        return True
     def _map_status_to_job_status(self, status: BackupStatus) -> str:
         """Map backup result status to persisted job status string.
         
