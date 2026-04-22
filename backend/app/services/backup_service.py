@@ -300,7 +300,7 @@ class BackupService:
             job_id: ID of job to update
             result: BackupRecord with final backup result
         """
-        try:            
+        try:
             if database.SessionLocal is None or job_id is None:
                 return
             
@@ -371,6 +371,7 @@ class BackupService:
                 group=device.group,
             )
 
+            config_size = len(config.encode("utf-8"))
             duration_seconds = max(0.0, time.perf_counter() - started_at)
 
             ### If no changes detected, return NO_CHANGES status
