@@ -209,6 +209,32 @@ class BackupService:
             self.get_backup_queue_depth(),
         )
         return True
+
+    async def queue_device_backup(self, device: DeviceBase, *, source: str) -> bool:
+        """Queue a single device backup if not already queued/running."""
+        await self._ensure_backup_queue_workers()
+        return await self._queue_device_backup(device, source=source)
+
+    async def queue_device_backups(self, devices: list[DeviceBase], *, source: str) -> tuple[list[str], list[str]]:
+        """Queue multiple device backups and return queued/skipped device names."""
+        await self._ensure_backup_queue_workers()
+
+        queued: list[str] = []
+        skipped: list[str] = []
+
+        ### Queue each device independently so one enqueue failure doesn't abort the whole batch
+        for device in devices:
+            try:
+                if await self._queue_device_backup(device, source=source):
+                    queued.append(device.device_name)
+                else:
+                    skipped.append(device.device_name)
+            except Exception as ex:
+                skipped.append(device.device_name)
+                logger.error("Failed to queue backup for %s from %s: %s", device.device_name, source, ex)
+
+        return queued, skipped
+
     def _map_status_to_job_status(self, status: BackupStatus) -> str:
         """Map backup result status to persisted job status string.
         
