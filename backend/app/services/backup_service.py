@@ -165,6 +165,14 @@ class BackupService:
         setup_lock = self._get_queue_setup_lock()
         async with setup_lock:
             await self._stop_backup_queue_locked()
+
+    def get_backup_queue_depth(self) -> int:
+        """Return number of queued devices waiting for a worker."""
+        ### Depth includes only waiting items in queue, not currently running backups
+        if self._backup_queue is None:
+            return 0
+        return self._backup_queue.qsize()
+
     async def _queue_device_backup(self, device: DeviceBase, *, source: str) -> bool:
         """Queue a single device backup assuming queue workers are already initialized."""
         ### No backup if device is disabled
