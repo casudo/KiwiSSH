@@ -355,21 +355,23 @@ Each item in the `commands.<phase>` list follows this structure:
 ```yaml
 commands:
   backups:
-    - command: "show running-config"
+    - command: "show running-config" # simple command
       description: "Get running configuration"
-    - command: "another command here"
-    - type: "send_input"
-      command: "some command that requires input"
-      input: "the input to send after the command"
+    - command: "another command here" # another simple command
+    - command: "enable" # interactive command
+      then: ["<enable password>"]
+    - command: "logout" # another interactive command
+      then:
+        - "y"
+        - "n"
 ```
 
 You can use the following keys for each command step:
 
 | Key | Description | Required | Default Value |
 | --- | ----------- | -------- | ------------- |
-| `command` | Directly run the command on the device. | **Either `command` or `type`** | - |
-| `type` | Run the command in specified in this item and send the input (`input`) afterwards. If `input` is omitted, the resolved device password will be sent as input. | **Either `command` or `type`** | Must be `send_input` |
-| `input` (for `type: "send_input"` only!) | The input to send after the command. This is only used for `send_input` type steps. If omitted, the resolved device password will be sent as input. If no device password is configured, this must be explicitly set. | No | Resolved device password |
+| `command` | Directly run the command on the device. | **Yes** | - |
+| `then` | Optional interactive input sequence to send after `command`. Must be a YAML list (`then: ["value1", "value2", ...]`) with up to 5 entries. | No | - |
 | `description` | A brief description of the command. | No | - |
 | `metadata` | If set to true, the output of this command will be saved as comment-prefixed metadata block in the backup job log. This is useful for adding important information to the backup job log. | No | `false` |
 | `wait_for_prompt` | If set to false, KiwiSSH will not wait for the command prompt to return after running this command before proceeding to the next step. Use with caution. | No | `true` |

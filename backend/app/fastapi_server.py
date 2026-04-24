@@ -13,6 +13,7 @@ from app.api.routes import api_router_v1
 from app.core import get_settings
 from app.core.logging import configure_logging
 from app.services import source_service
+from app.services.backup_service import backup_service
 from app.services.backup_scheduler_service import backup_scheduler_service
 from app.services.backup_job_service import backup_job_service
 from app.db import database
@@ -67,6 +68,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
                 db.close()
         except Exception as e:
             logger.warning(f"Failed to clean up stuck jobs during startup: {e}")
+
+    ### Start global backup queue workers
+    await backup_service.start_backup_queue()
     
     ### Start backup scheduler
     backup_scheduler_service.start_scheduler(devices)
@@ -76,6 +80,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     ### Shutdown
     logger.info("Shutting down KiwiSSH")
     backup_scheduler_service.stop_scheduler()
+    await backup_service.stop_backup_queue()
 
 
 ### Definde FastAPI app

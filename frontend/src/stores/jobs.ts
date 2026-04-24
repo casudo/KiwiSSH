@@ -9,6 +9,7 @@ interface JobsQueryState {
   limit: number
   offset: number
   jobId?: string
+  includeMetadata: boolean
 }
 
 export const useJobsStore = defineStore("jobs", () => {
@@ -26,8 +27,9 @@ export const useJobsStore = defineStore("jobs", () => {
   const totalNoChangesJobs = ref(0)
   const avgDurationSeconds = ref<number | null>(null)
   const lastQuery = ref<JobsQueryState>({
-    limit: 5000,
+    limit: 200,
     offset: 0,
+    includeMetadata: false,
   })
 
   let refreshTimer: ReturnType<typeof setInterval> | null = null
@@ -63,8 +65,30 @@ export const useJobsStore = defineStore("jobs", () => {
     }
   }
 
+  // Map API job record to internal job status format
+  function mapJobRecord(job: BackupJobRecord): BackupJobStatus {
+    return {
+      job_id: job.job_id,
+      device_name: job.device_name,
+      group: job.group,
+      status: job.status,
+      timestamp: new Date(job.timestamp).getTime(),
+      message: job.error_message || getJobMessage(job.status, job.device_name),
+      duration_seconds: job.duration_seconds ?? null,
+      metadata_output: job.metadata_output ?? null,
+      config_size_bytes: job.config_size_bytes ?? null,
+    }
+  }
+
   // Actions
-  async function loadJobs(deviceName?: string, status?: string, limit: number = 5000, offset: number = 0, jobId?: string) {
+  async function loadJobs(
+    deviceName?: string,
+    status?: string,
+    limit: number = 200,
+    offset: number = 0,
+    jobId?: string,
+    includeMetadata: boolean = false,
+  ) {
     loading.value = true
     error.value = null
     lastQuery.value = {
@@ -73,10 +97,11 @@ export const useJobsStore = defineStore("jobs", () => {
       limit,
       offset,
       jobId,
+      includeMetadata,
     }
 
     try {
-      const response = await backupApi.getJobs(deviceName, status, limit, offset, jobId)
+      const response = await backupApi.getJobs(deviceName, status, limit, offset, jobId, includeMetadata)
       const rawJobs = response.jobs || []
       totalJobs.value = typeof response.total_count === "number" ? response.total_count : rawJobs.length
       avgDurationSeconds.value = typeof response.avg_duration_seconds === "number"
@@ -95,23 +120,34 @@ export const useJobsStore = defineStore("jobs", () => {
         totalNoChangesJobs.value = rawJobs.filter((job: BackupJobRecord) => job.status === "no_changes").length
       }
 
-      // Convert database records to BackupJobStatus format
-      jobs.value = rawJobs.map((job: BackupJobRecord) => ({
-        job_id: job.job_id,
-        device_name: job.device_name,
-        group: job.group,
-        status: job.status, // "success", "failed", or "no_changes"
-        timestamp: new Date(job.timestamp).getTime(),
-        message: job.error_message || getJobMessage(job.status, job.device_name),
-        duration_seconds: job.duration_seconds ?? null,
-        metadata_output: job.metadata_output ?? null,
-        config_size_bytes: job.config_size_bytes ?? null,
-      }))
+      jobs.value = rawJobs.map((job: BackupJobRecord) => mapJobRecord(job))
     } catch (e) {
       error.value = e instanceof Error ? e.message : "Failed to load jobs"
       console.error("Error loading jobs:", e)
     } finally {
       loading.value = false
+    }
+  }
+
+  // Load details for a specific job and update the store
+  async function loadJobDetails(jobId: string): Promise<BackupJobStatus | null> {
+    try {
+      const response = await backupApi.getJobs(undefined, undefined, 1, 0, jobId, true)
+      const rawJob = response.jobs?.[0]
+      if (!rawJob) {
+        return null
+      }
+
+      const detailedJob = mapJobRecord(rawJob)
+      const existingIndex = jobs.value.findIndex((job) => job.job_id === detailedJob.job_id)
+      if (existingIndex !== -1) {
+        jobs.value[existingIndex] = detailedJob
+      }
+      selectedJob.value = detailedJob
+      return detailedJob
+    } catch (e) {
+      console.error("Error loading job details:", e)
+      return null
     }
   }
 
@@ -181,6 +217,7 @@ export const useJobsStore = defineStore("jobs", () => {
         lastQuery.value.limit,
         lastQuery.value.offset,
         lastQuery.value.jobId,
+        lastQuery.value.includeMetadata,
       )
     }, autoRefreshInterval.value * 1000) // Convert seconds to milliseconds
   }
@@ -251,6 +288,7 @@ export const useJobsStore = defineStore("jobs", () => {
     clearOldJobs,
     clearAllJobs,
     setSelectedJob,
+    loadJobDetails,
     clearError,
   }
 })

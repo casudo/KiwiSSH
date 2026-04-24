@@ -13,8 +13,8 @@ session:
 
 ### Commands to execute for backup
 ## Supported step types in command phases:
-## - command (default): sends command text
-## - send_input: sends arbitrary input (defaults to resolved device password when input is omitted)
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
 commands:
   ### Pre-backup commands (prepare the session) (OPTIONAL)
   ## Command outputs aren't saved in stored configuration
@@ -23,14 +23,14 @@ commands:
   ### Main backup command(s)
   ## Commands whose output becomes the stored configuration
   backup:
-    - type: "send_input"
+    - command: "yes"
       description: "Handle Logon Disclaimer added in XTM 11.9.3"
-      input: "yes"
     - command: "show sysinfo"
 
   ### Post-backup commands (cleanup) (OPTIONAL)
   ## Command outputs aren't saved in stored configuration
-  post_backup: []
+  post_backup:
+    - command: "exit"
 
 ### Configuration processing rules
 ## Processing reduces diff noise and trims non-config boilerplate

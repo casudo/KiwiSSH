@@ -3,6 +3,7 @@ import { onMounted, onBeforeUnmount, computed, ref, watch } from "vue"
 import { useJobsStore } from "@/stores/jobs"
 import { useDevicesStore } from "@/stores/devices"
 import { backupApi } from "@/api/backups"
+import type { BackupJobStatus } from "@/types/backup"
 import LoadingSpinner from "@/components/LoadingSpinner.vue"
 
 const jobsStore = useJobsStore()
@@ -213,6 +214,14 @@ function formatSize(bytes?: number | null): string {
   const value = bytes / 1024 ** exponent
   const precision = value >= 10 || exponent === 0 ? 0 : 1
   return `${value.toFixed(precision)} ${units[exponent]}`
+}
+
+// Load job details when a job is selected
+async function handleSelectJob(job: BackupJobStatus) {
+  jobsStore.setSelectedJob(job)
+  if (!job.metadata_output) {
+    await jobsStore.loadJobDetails(job.job_id)
+  }
 }
 
 async function handleFlushDatabase() {
@@ -450,7 +459,7 @@ async function handleFlushDatabase() {
         <div
           v-for="job in filteredJobs"
           :key="job.job_id"
-          @click="jobsStore.setSelectedJob(job)"
+          @click="handleSelectJob(job)"
           class="card-hover cursor-pointer p-4"
         >
           <div class="flex items-start justify-between gap-4">

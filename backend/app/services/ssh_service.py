@@ -38,6 +38,10 @@ DEFAULT_PAGINATION_PATTERNS = [
     re.compile(r"^\s*Press <space> to continue(?:, q to quit)?\s*$", re.IGNORECASE),
 ]
 DEFAULT_PAGINATION_RESPONSE = " "
+READ_CHUNK_SIZE = 4096
+READ_POLL_INTERVAL_SECONDS = 1.0
+LARGE_OUTPUT_TIMEOUT_THRESHOLD_BYTES = 256 * 1024
+LARGE_OUTPUT_INACTIVITY_TIMEOUT_SECONDS = 90
 
 PaginationRule = tuple[re.Pattern[str], str]
 
@@ -355,7 +359,10 @@ class SSHService:
 
             ### Read the next chunk of output with a short timeout to allow for prompt detection
             try:
-                chunk = await asyncio.wait_for(stream.read(256), timeout=min(remaining, 1.0))
+                chunk = await asyncio.wait_for(
+                    stream.read(READ_CHUNK_SIZE),
+                    timeout=min(remaining, READ_POLL_INTERVAL_SECONDS),
+                )
             except asyncio.TimeoutError:
                 ### No new bytes in this polling window; keep waiting until overall deadline
                 continue
@@ -365,6 +372,18 @@ class SSHService:
 
             ### Append the new chunk to the buffer and continue checking for patterns
             buffer += chunk
+
+            ### Large outputs on slower devices can pause for longer between chunks
+            if (
+                len(buffer) >= LARGE_OUTPUT_TIMEOUT_THRESHOLD_BYTES
+                and timeout_seconds < LARGE_OUTPUT_INACTIVITY_TIMEOUT_SECONDS
+            ):
+                timeout_seconds = LARGE_OUTPUT_INACTIVITY_TIMEOUT_SECONDS
+                logger.debug(
+                    "Extended prompt inactivity timeout to %ds for large output stream (%d bytes buffered)",
+                    timeout_seconds,
+                    len(buffer),
+                )
 
             ### Timeout tracks inactivity, not total command runtime
             inactivity_deadline = loop.time() + timeout_seconds
@@ -379,7 +398,7 @@ class SSHService:
         trailing = ""
         for _ in range(max_chunks):
             try:
-                chunk = await asyncio.wait_for(stream.read(256), timeout=idle_timeout)
+                chunk = await asyncio.wait_for(stream.read(READ_CHUNK_SIZE), timeout=idle_timeout)
             except asyncio.TimeoutError:
                 break
 
@@ -395,6 +414,7 @@ class SSHService:
         raw_output: str,
         command: str,
         prompt_patterns: list[re.Pattern[str]],
+        known_commands: list[str] | None = None,
     ) -> str:
         """Normalize interactive shell output and strip prompt/command echo."""
         ### Strip terminal control sequences and normalize line endings/backspaces.
@@ -437,8 +457,36 @@ class SSHService:
         while lines and SSHService._line_matches_prompt(lines[-1], prompt_patterns):
             lines.pop()
 
+        ### Remove trailing echoed command lines such as '<prompt>#show inventory'
+        command_candidates = [value.strip() for value in (known_commands or []) if value and value.strip()]
+        while lines and SSHService._line_matches_prompt_with_known_command(lines[-1], command_candidates):
+            lines.pop()
+
+        while lines and not lines[-1].strip():
+            lines.pop()
+
         ### Return only the cleaned command body for storage and post-processing.
         return "\n".join(lines).strip()
+
+    @staticmethod
+    def _line_matches_prompt_with_known_command(
+        line: str,
+        known_commands: list[str],
+    ) -> bool:
+        """Check whether a line ends with an echoed known command after a prompt marker."""
+        if not known_commands:
+            return False
+
+        normalized_line = ANSI_ESCAPE_RE.sub("", line).replace("\r", "").replace("\x08", "")
+        stripped_line = normalized_line.strip()
+        if not stripped_line:
+            return False
+
+        for known_command in known_commands:
+            if re.search(rf"[>#]\s*{re.escape(known_command)}\s*$", stripped_line):
+                return True
+
+        return False
 
     async def _execute_shell_command(
         self,
@@ -448,8 +496,18 @@ class SSHService:
         wait_for_prompt: bool,
         prompt_patterns: list[re.Pattern[str]],
         pagination_rules: list[PaginationRule],
+        known_commands: list[str] | None = None,
     ) -> str:
         """Execute a single command in an interactive shell session."""
+        ### Drain any stale prompt bytes before issuing the next command
+        stale_output = await self._read_trailing_output(process.stdout, idle_timeout=0.02, max_chunks=8)
+        if stale_output.strip():
+            logger.debug(
+                "Discarded %d stale shell byte(s) before command '%s' to avoid output desync",
+                len(stale_output),
+                command,
+            )
+
         ### Send the command to the shell
         process.stdin.write(f"{command}\n")
 
@@ -467,14 +525,47 @@ class SSHService:
         )
 
         ### Return normalized command output
-        return self._sanitize_command_output(raw, command, prompt_patterns)
+        return self._sanitize_command_output(raw, command, prompt_patterns, known_commands=known_commands)
+
+    @staticmethod
+    def _normalize_interactive_input_text(input_text: str) -> str:
+        """Normalize common escaped control-sequence forms for interactive input."""
+        if input_text in {"\\n", "\\r", "\\r\\n"}:
+            return input_text.encode("utf-8").decode("unicode_escape")
+        return input_text
+
+    @staticmethod
+    def _resolve_interactive_inputs(command_def: dict[str, Any]) -> list[str]:
+        """Resolve interactive input sequence for command steps.
+
+        Supported format:
+        - then: ["value1", "value2", ...]
+        """
+        ### Check if input is a list
+        then_value = command_def.get("then")
+        if not isinstance(then_value, list):
+            raise RuntimeError(
+                "Step failed: 'then' must be a YAML list. "
+                "Use 'then: [\"value1\", \"value2\", ...]'"
+            )
+
+        raw_inputs = ["" if value is None else str(value) for value in then_value]
+
+        if not raw_inputs:
+            raise RuntimeError("Step failed: interactive input sequence is empty")
+
+        ### Set max. length of 5 for now
+        ## TODO: Don't hardcode this?
+        if len(raw_inputs) > 5:
+            raise RuntimeError("Step failed: interactive input supports a maximum of 5 entries")
+
+        return [SSHService._normalize_interactive_input_text(value) for value in raw_inputs]
 
     async def _run_command_phase(
         self,
         process: asyncssh.SSHClientProcess,
         commands: list[dict[str, Any]],
         default_timeout: int,
-        password: str | None,
         prompt_patterns: list[re.Pattern[str]],
         pagination_rules: list[PaginationRule],
         capture_output: bool,
@@ -482,10 +573,9 @@ class SSHService:
     ) -> list[dict[str, Any]]:
         """Run one command phase and return captured output chunks.
 
-        Supported step types:
-        - command (default): send `command` and optionally wait for prompt
-        - send_input: send `input` text and optionally wait for prompt
-                    (if `input` is omitted, device password is sent)
+        Supported step modes:
+        - command: send `command` and optionally skip wait for prompt
+        - command + then: send `command`, then send up to five interactive inputs and optionally skip wait for prompt
 
         A chunk contains:
         - command: command string
@@ -494,11 +584,15 @@ class SSHService:
         - show_command_in_config: whether command header is embedded before output in config body
         """
         captured_outputs: list[dict[str, Any]] = []
+        phase_commands = [ # Save commands used in a list
+            str(step.get("command") or "").strip()
+            for step in commands
+            if str(step.get("command") or "").strip()
+        ]
 
         for command_def in commands:
-            ### Get type of the step
-            step_type = str(command_def.get("type") or "command")
-            step_type = step_type.strip().lower()
+            command = str(command_def.get("command") or "").strip()
+            has_then = "then" in command_def
 
             metadata = bool(command_def.get("metadata", False))
             wait_for_prompt = bool(command_def.get("wait_for_prompt", True))
@@ -510,23 +604,29 @@ class SSHService:
                     "cannot be used together with 'metadata: true'"
                 )
 
-            ### Fire send input steps
-            if step_type == "send_input":
-                try:
-                    ### Resolve input text for send_input steps
-                    ## If the step does not define explicit input, reuse resolved..
-                    ## ..device password for backward compatibility.
-                    if command_def.get("input") is None:
-                        if password is None or not str(password).strip():
-                            raise RuntimeError(
-                                "Step failed: send_input requires explicit 'input' when no device password is configured"
-                            )
-                        input_text = str(password)
-                    else:
-                        input_text = str(command_def.get("input"))
+            if has_then and not command:
+                raise RuntimeError(
+                    "Step failed: 'then' requires a non-empty 'command' in the same step"
+                )
 
-                    ### Send the resolved input as one line.
-                    process.stdin.write(f"{input_text}\n")
+            ### Fire interactive input steps (`command` + `then`)
+            if has_then:
+                try:
+                    ### Some devices require a command before interactive input (e.g. 'enable')
+                    process.stdin.write(f"{command}\n")
+                    await asyncio.sleep(0.1)
+
+                    interactive_inputs = self._resolve_interactive_inputs(command_def)
+
+                    ### Send all interactive inputs in sequence, then wait for prompt once
+                    for index, input_text in enumerate(interactive_inputs, start=1):
+                        if input_text.endswith(("\n", "\r")):
+                            process.stdin.write(input_text)
+                        else:
+                            process.stdin.write(f"{input_text}\n")
+
+                        if index < len(interactive_inputs):
+                            await asyncio.sleep(0.1)
 
                     ### Optionally wait for the prompt after sending input to ensure the device is ready for the next command
                     if wait_for_prompt:
@@ -541,17 +641,11 @@ class SSHService:
                         await asyncio.sleep(0.1)
                 except Exception as ex:
                     if required:
-                        raise RuntimeError("Step failed: send_input") from ex
-                    logger.warning("Optional step failed 'send_input': %s", ex)
+                        raise RuntimeError("Step failed: interactive input") from ex
+                    logger.warning("Optional interactive-input step failed: %s", ex)
                 continue
 
-            ### Raise error for unsupported step types
-            if step_type != "command":
-                ex = ValueError(f"Unsupported command step type '{step_type}'")
-                raise RuntimeError(str(ex)) from ex
-
             ### Fire command steps
-            command = str(command_def.get("command") or "").strip()
             if not command:
                 raise RuntimeError("Step failed: command is empty")
 
@@ -563,6 +657,7 @@ class SSHService:
                     wait_for_prompt=wait_for_prompt,
                     prompt_patterns=prompt_patterns,
                     pagination_rules=pagination_rules,
+                    known_commands=phase_commands,
                 )
                 if capture_output and output:
                     captured_outputs.append({
@@ -773,7 +868,6 @@ class SSHService:
         connection: asyncssh.SSHClientConnection,
         vendor_id: str,
         default_timeout: int,
-        password: str | None,
     ) -> tuple[str, str | None]:
         """Collect configuration and metadata from device via vendor-defined command phases."""
         ### Get command sets for the vendor (pre_backup, backup, post_backup)
@@ -804,89 +898,75 @@ class SSHService:
             process.stdin.write("\n")
 
             ### Wait for the initial prompt to ensure the shell is ready before sending commands
-            await self._read_until_patterns(process.stdout, prompt_patterns, default_timeout)
+            try:
+                await self._read_until_patterns(process.stdout, prompt_patterns, default_timeout)
+            except asyncio.TimeoutError:
+                logger.debug(
+                    "Initial prompt wait timed out for vendor '%s'; retrying once after additional newline",
+                    vendor_id,
+                )
+                process.stdin.write("\n")
+                await self._read_until_patterns(process.stdout, prompt_patterns, default_timeout)
 
-            ### Run pre_backup commands (required for session setup consistency)
+            ### Run commands
+            ## pre_backup
             await self._run_command_phase(
                 process=process,
                 commands=pre_backup_commands,
                 default_timeout=default_timeout,
-                password=password,
                 prompt_patterns=prompt_patterns,
                 pagination_rules=pagination_rules,
                 capture_output=False,
             )
 
+            ## backup
             captured_output = await self._run_command_phase(
                 process=process,
                 commands=backup_commands,
                 default_timeout=default_timeout,
-                password=password,
                 prompt_patterns=prompt_patterns,
                 pagination_rules=pagination_rules,
                 capture_output=True,
             )
 
+            ## post_backup
             await self._run_command_phase(
                 process=process,
                 commands=post_backup_commands,
                 default_timeout=default_timeout,
-                password=password,
                 prompt_patterns=prompt_patterns,
                 pagination_rules=pagination_rules,
                 capture_output=False,
+                required=False, # Set to false so backup capture can still succeed even if post_backup fails
             )
 
-            ### Request graceful shell exit first; require forced close as fallback
-            process.stdin.write("exit\n")
-
         finally:
-            ### Wait briefly for graceful shell exit, force close only when it hangs
-            wait_timeout_seconds = 1.5
-            shell_closed = False
+            ### Always force-close local shell handle; if already closed this isn't needed
+            forced_close_wait_timeout_seconds = 1.5
+            try:
+                close = getattr(process, "close", None)
+                if callable(close):
+                    close()
+                else:
+                    channel = getattr(process, "channel", None)
+                    if channel is None and hasattr(process, "stdin"):
+                        channel = getattr(process.stdin, "channel", None)
+                    if channel is not None:
+                        channel.close()
+            except Exception as ex:
+                logger.debug(
+                    "Forced shell close failed for vendor '%s' (%s: %s); continuing outer SSH connection cleanup",
+                    vendor_id,
+                    ex.__class__.__name__,
+                    ex,
+                )
 
-            wait = getattr(process, "wait", None)
-            if callable(wait):
+            wait_closed = getattr(process, "wait_closed", None)
+            if callable(wait_closed):
                 try:
-                    await asyncio.wait_for(wait(), timeout=wait_timeout_seconds)
-                    shell_closed = True
-                    logger.debug("Interactive shell exited cleanly for vendor '%s'", vendor_id)
-                except asyncio.TimeoutError:
-                    logger.debug("Interactive shell did not exit in %.1fs for vendor '%s'; forcing close", wait_timeout_seconds, vendor_id)
-                except Exception as ex:
-                    logger.debug(
-                        "Graceful shell-exit wait failed for vendor '%s' (%s: %s); proceeding with forced-close fallback",
-                        vendor_id,
-                        ex.__class__.__name__,
-                        ex,
-                    )
-
-            ### Force close section
-            if not shell_closed:
-                try:
-                    close = getattr(process, "close", None)
-                    if callable(close):
-                        close()
-                    else:
-                        channel = getattr(process, "channel", None)
-                        if channel is None and hasattr(process, "stdin"):
-                            channel = getattr(process.stdin, "channel", None)
-                        if channel is not None:
-                            channel.close()
-                except Exception as ex:
-                    logger.debug(
-                        "Forced shell close failed for vendor '%s' (%s: %s); continuing outer SSH connection cleanup",
-                        vendor_id,
-                        ex.__class__.__name__,
-                        ex,
-                    )
-
-                wait_closed = getattr(process, "wait_closed", None)
-                if callable(wait_closed):
-                    try:
-                        await asyncio.wait_for(wait_closed(), timeout=wait_timeout_seconds)
-                    except Exception:
-                        pass
+                    await asyncio.wait_for(wait_closed(), timeout=forced_close_wait_timeout_seconds)
+                except Exception:
+                    pass
 
         non_metadata_outputs: list[str] = []
         for chunk in captured_output:
@@ -1032,8 +1112,14 @@ class SSHService:
                     connection=connection,
                     vendor_id=vendor_id,
                     default_timeout=timeout_seconds,
-                    password=device_password,
                 )
+                if attempt > 1:
+                    logger.warning(
+                        "Config fetch for device '%s' succeeded on retry attempt %d/%d",
+                        device.device_name,
+                        attempt,
+                        max_attempts,
+                    )
                 return config, metadata_output
             except asyncio.TimeoutError as ex:
                 ### Log timeout error if SSH connection times out or if waiting for command output exceeds timeout

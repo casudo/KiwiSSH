@@ -15,14 +15,16 @@ export const backupApi = {
   async getJobs(
     deviceName?: string,
     status?: string,
-    limit: number = 5000,
+    limit: number = 200,
     offset: number = 0,
     jobId?: string,
+    includeMetadata: boolean = false,
   ): Promise<BackupJobsResponse> {
     const params: Record<string, string | number> = { limit, offset }
     if (deviceName) params.device_name = deviceName
     if (status) params.status = status
     if (jobId) params.job_id = jobId
+    if (includeMetadata) params.include_metadata = true
     const response = await api.get<BackupJobsResponse>("/backups/jobs", { params })
     return response.data
   },

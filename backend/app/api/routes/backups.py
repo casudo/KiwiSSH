@@ -1,11 +1,9 @@
 """Backup operation endpoints."""
 
-import asyncio
 import logging
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.core import get_settings
 from app.models.backup import BackupTriggerRequest, BackupTriggerResponse
 from app.services.backup_service import backup_service
 from app.services.source_service import source_service
@@ -16,55 +14,6 @@ from app.db.models import BackupJob
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
-
-
-async def _run_backup_in_background(
-    enabled_devices: list,
-    context_label: str,
-) -> None:
-    """Run backups in background.
-    
-    BackupService.backup_device() handles all job persistence:
-    """
-
-    logger.debug("Background backup started for %s (%d devices)", context_label, len(enabled_devices))
-    max_workers = max(1, int(get_settings().app.threads))
-    queue: asyncio.Queue = asyncio.Queue()
-    for device in enabled_devices:
-        queue.put_nowait(device)
-
-    async def worker() -> None:
-        while True:
-            try:
-                device = await queue.get()
-            except asyncio.CancelledError:
-                return
-
-            try:
-                result = await backup_service.backup_device(device)
-                logger.debug("Backup for %s completed with status: %s", device.device_name, result.status)
-            except Exception as e:
-                logger.error("Unexpected error backing up %s: %s", device.device_name, e)
-            finally:
-                queue.task_done()
-
-    workers = [asyncio.create_task(worker()) for _ in range(max_workers)]
-    try:
-        await queue.join()
-    finally:
-        for task in workers:
-            task.cancel()
-        await asyncio.gather(*workers, return_exceptions=True)
-
-    logger.debug("Background backup completed for %s", context_label)
-
-
-def _log_background_task_result(task: asyncio.Task) -> None:
-    """Log unhandled exceptions from fire-and-forget backup tasks."""
-    try:
-        task.result()
-    except Exception:
-        logger.exception("Background backup task failed")
 
 
 @router.post("/trigger", response_model=BackupTriggerResponse)
@@ -89,14 +38,31 @@ async def trigger_backup(
             job_id=None,
         )
 
-    device_names = [d.device_name for d in enabled_devices]
     context_label = f"group '{request.group}'" if request.group else "all enabled devices"
-    task = asyncio.create_task(_run_backup_in_background(enabled_devices, context_label))
-    task.add_done_callback(_log_background_task_result)
+    queue_source = f"api:group:{request.group}" if request.group else "api:all"
+    queued_devices, skipped_devices = await backup_service.queue_device_backups(
+        enabled_devices,
+        source=queue_source,
+    )
+    queue_depth = backup_service.get_backup_queue_depth()
+
+    if not queued_devices:
+        return BackupTriggerResponse(
+            message=(
+                f"No new backups queued for {context_label}. "
+                f"{len(skipped_devices)} device(s) are already queued or currently running."
+            ),
+            devices_queued=[],
+            job_id=None,
+        )
 
     return BackupTriggerResponse(
-        message=f"Backup job triggered for {context_label}. {len(device_names)} devices queued. Jobs will show 'in_progress' status immediately.",
-        devices_queued=device_names,
+        message=(
+            f"Queued {len(queued_devices)} backup(s) for {context_label}. "
+            f"Skipped {len(skipped_devices)} already queued/running device(s). "
+            f"Current queue depth: {queue_depth}."
+        ),
+        devices_queued=queued_devices,
         job_id=None,
     )
 
@@ -113,11 +79,19 @@ async def trigger_device_backup(
     if device is None:
         raise HTTPException(status_code=404, detail=f"Device '{device_name}' not found")
 
-    task = asyncio.create_task(_run_backup_in_background([device], f"device '{device_name}'"))
-    task.add_done_callback(_log_background_task_result)
+    queued = await backup_service.queue_device_backup(device, source=f"api:device:{device_name}")
+    if not queued:
+        return BackupTriggerResponse(
+            message=f"Backup for device {device_name} is already queued or currently running.",
+            devices_queued=[],
+            job_id=None,
+        )
 
     return BackupTriggerResponse(
-        message=f"Backup job triggered for device {device_name}. Job will show 'in_progress' status immediately.",
+        message=(
+            f"Queued backup for device {device_name}. "
+            f"Current queue depth: {backup_service.get_backup_queue_depth()}."
+        ),
         devices_queued=[device_name],
         job_id=None,
     )
@@ -128,8 +102,9 @@ async def get_backup_jobs(
     device_name: str | None = Query(None, description="Filter by partial device name"),
     job_id: str | None = Query(None, description="Filter by partial job ID"),
     status: str | None = Query(None, description="Filter by status (success, failed, no_changes)"),
-    limit: int = Query(5000, ge=1, le=50000, description="Maximum number of jobs to return"),
+    limit: int = Query(200, ge=1, le=5000, description="Maximum number of jobs to return"),
     offset: int = Query(0, ge=0, description="Number of jobs to skip before returning results"),
+    include_metadata: bool = Query(False, description="Include metadata_output in list response"),
     db: Session = Depends(get_db),
 ) -> dict:
     """Get backup job records from the database."""
@@ -179,7 +154,7 @@ async def get_backup_jobs(
                     "error_message": job.error_message,
                     "config_size_bytes": job.config_size_bytes,
                     "duration_seconds": job.duration_seconds,
-                    "metadata_output": job.metadata_output,
+                    "metadata_output": job.metadata_output if include_metadata else None,
                 }
                 for job in jobs
             ],
