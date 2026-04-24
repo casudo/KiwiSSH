@@ -135,6 +135,18 @@ class BackupJobService:
             desc(BackupJob.timestamp)
         ).first()
 
+    ### Helper method for config size validation
+    @staticmethod
+    def get_latest_completed_job(db: Session, device_name: str) -> BackupJob | None:
+        """Get the most recent completed backup job with known config size for a device."""
+        return db.query(BackupJob).filter(
+            BackupJob.device_name == device_name,
+            BackupJob.status.in_(["success", "no_changes"]),
+            BackupJob.config_size_bytes.isnot(None),
+        ).order_by(
+            desc(BackupJob.timestamp)
+        ).first()
+
     @staticmethod
     def get_latest_jobs_for_devices(db: Session, device_names: list[str]) -> dict[str, BackupJob]:
         """Get the most recent backup job for multiple devices in a single query.

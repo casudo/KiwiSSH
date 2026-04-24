@@ -6,6 +6,7 @@ to backup device configurations.
 
 import asyncio
 import logging
+import re
 import time
 import uuid
 from dataclasses import dataclass
@@ -28,6 +29,14 @@ class QueuedBackupItem:
     device: DeviceBase
     source: str # origin marker (e.g. api:group:<name>, api:device:<name>, scheduler:<name>)
     enqueued_at: float # timestamp to calculate queue wait time in workers
+
+### REGEX Patterns used in config validation 
+CLI_ERROR_PATTERNS = [
+    re.compile(r"^%\s*(?:Unrecognized command|Invalid input detected|Unknown command|Incomplete command)", re.IGNORECASE),
+    re.compile(r"Invalid input detected at '\^' marker", re.IGNORECASE),
+    re.compile(r"^\s*\^\s*$"),
+    re.compile(r"^\s*syntax error\b", re.IGNORECASE),
+]
 
 
 class BackupService:
@@ -327,6 +336,69 @@ class BackupService:
         except Exception as e:
             logger.warning("Failed to update job %s: %s", job_id, e)
 
+    ###### ========================================
+    ### Validate Config Section
+    @staticmethod
+    def _find_cli_error_signature(config: str) -> str | None:
+        """Return first matching CLI-error line if captured config looks invalid."""
+        normalized = config.replace("\r\n", "\n").replace("\r", "\n")
+        for line in normalized.split("\n"):
+            stripped = line.strip()
+            if not stripped:
+                continue
+            for pattern in CLI_ERROR_PATTERNS:
+                if pattern.search(stripped):
+                    return stripped
+        return None
+
+    @staticmethod
+    def _count_non_empty_lines(config: str) -> int:
+        """Count non-empty lines for quick config sanity checks."""
+        return sum(1 for line in config.replace("\r\n", "\n").replace("\r", "\n").split("\n") if line.strip())
+
+    def _get_latest_completed_config_size(self, device_name: str) -> int | None:
+        """Get previous successful/no-change config size for this device."""
+        try:
+            if database.SessionLocal is None:
+                return None
+
+            db = database.SessionLocal()
+            try:
+                previous_job = backup_job_service.get_latest_completed_job(db, device_name)
+                if previous_job is None or previous_job.config_size_bytes is None:
+                    return None
+                return int(previous_job.config_size_bytes)
+            finally:
+                db.close()
+        except Exception as ex:
+            logger.debug("Could not fetch previous config size for %s: %s", device_name, ex)
+            return None
+
+    def _validate_config_capture(self, device_name: str, config: str) -> int:
+        """Validate captured config quality before persisting it to git."""
+        config_size = len(config.encode("utf-8"))
+        non_empty_lines = self._count_non_empty_lines(config)
+
+        ### Raise error if CLI error patterns are detected
+        error_signature = self._find_cli_error_signature(config)
+        if error_signature:
+            raise RuntimeError(
+                f"Captured config appears invalid (CLI error detected): {error_signature}"
+            )
+
+        ### Raise error if config is suspiciously small compared to previous successful backup
+        previous_size = self._get_latest_completed_config_size(device_name)
+        if previous_size is not None and previous_size >= 8192: # Size in bytes
+            minimum_expected_size = max(1024, int(previous_size * 0.20)) # equals to at least 20% of previous size or 1KB, whichever is larger
+            if config_size < minimum_expected_size and non_empty_lines < 60:
+                raise RuntimeError(
+                    "Captured config is suspiciously small compared to previous successful backup "
+                    f"({config_size} bytes vs previous {previous_size} bytes)"
+                )
+
+        return config_size
+    ###### ========================================
+
     async def backup_device(
         self,
         device: DeviceBase,
@@ -369,6 +441,9 @@ class BackupService:
             config, metadata_output = await ssh_service.get_config(device)
             logger.debug(f"Got config for {device.device_name} ({len(config)} bytes)")
 
+            ### Validate config for obvious capture issues before saving to git
+            config_size = await asyncio.to_thread(self._validate_config_capture, device.device_name, config)
+
             ### Save config to git (using device's group)
             commit_hash, has_changes = await git_service.save_config(
                 device.device_name,
@@ -376,7 +451,6 @@ class BackupService:
                 group=device.group,
             )
 
-            config_size = len(config.encode("utf-8"))
             duration_seconds = max(0.0, time.perf_counter() - started_at)
 
             ### If no changes detected, return NO_CHANGES status
