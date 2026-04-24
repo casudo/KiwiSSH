@@ -4,7 +4,9 @@ This service handles Git-based configuration storage, including
 commits, history retrieval, and diff generation.
 """
 
+import asyncio
 import logging
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -27,6 +29,17 @@ class GitService:
     def __init__(self) -> None:
         self.settings = get_settings()
         self._repos: dict[str, Any] = {}  # Cache repos by group
+        self._repo_locks: dict[str, threading.RLock] = {}
+        self._repo_locks_guard = threading.Lock()
+
+    def _get_repo_lock(self, group: str) -> threading.RLock:
+        """Get per-group lock guarding GitPython repository access."""
+        with self._repo_locks_guard:
+            lock = self._repo_locks.get(group)
+            if lock is None:
+                lock = threading.RLock()
+                self._repo_locks[group] = lock
+            return lock
 
     @property
     def backups_base_dir(self) -> Path:
@@ -181,7 +194,7 @@ class GitService:
         self._repos[group] = repo
         return repo
 
-    async def save_config(
+    def _save_config_sync(
         self,
         device_name: str,
         config_content: str,
@@ -201,50 +214,68 @@ class GitService:
             Tuple of (git commit hash, has_changes)
             - has_changes=False means the config is identical to the last backup
         """
-        repo = self._ensure_repo(group)
-        repo_path = self._get_repo_path(group)
+        lock = self._get_repo_lock(group)
+        with lock:
+            repo = self._ensure_repo(group)
+            repo_path = self._get_repo_path(group)
 
-        ### Determine file path based on device info
-        config_file = repo_path / f"{device_name}.conf"
+            ### Determine file path based on device info
+            config_file = repo_path / f"{device_name}.conf"
 
-        ### Check if file exists and has identical content (no changes)
-        has_changes = True
-        if config_file.exists():
-            with open(config_file, "r", encoding="utf-8") as f:
-                existing_content = f.read()
-            if existing_content == config_content:
-                has_changes = False
+            ### Check if file exists and has identical content (no changes)
+            has_changes = True
+            if config_file.exists():
+                with open(config_file, "r", encoding="utf-8") as f:
+                    existing_content = f.read()
+                if existing_content == config_content:
+                    has_changes = False
 
-        ### Write config to file
-        with open(config_file, "w", encoding="utf-8") as f:
-            f.write(config_content)
+            ### Write config to file
+            with open(config_file, "w", encoding="utf-8") as f:
+                f.write(config_content)
 
-        ### Only commit if there are changes
-        if not has_changes:
-            ### Return a dummy hash and False to indicate no changes
-            return ("", False) # TODO: Why do we need the hash here?
+            ### Only commit if there are changes
+            if not has_changes:
+                ### Return a dummy hash and False to indicate no changes
+                return ("", False) # TODO: Why do we need the hash here?
 
-        ### Stage the file
-        repo.index.add([config_file.name])
+            ### Stage the file
+            repo.index.add([config_file.name])
 
-        ### Create commit message
-        if message is None:
-            message = self._render_commit_message(device_name=device_name, group=group)
+            ### Create commit message
+            if message is None:
+                message = self._render_commit_message(device_name=device_name, group=group)
 
-        ### Commit
-        actor = Actor("KiwiSSH Backup System", "backup@kiwissh.local")
-        commit = repo.index.commit(message, author=actor, committer=actor)
+            ### Commit
+            actor = Actor("KiwiSSH Backup System", "backup@kiwissh.local")
+            commit = repo.index.commit(message, author=actor, committer=actor)
 
-        if self._has_remote_target(group):
-            push_ok = await self.push_to_remote(group=group)
-            if not push_ok:
-                logger.warning(
-                    "Local commit created for %s but push to remote failed (group: %s)",
-                    device_name,
-                    group,
-                )
+            if self._has_remote_target(group):
+                push_ok = self._push_to_remote_sync(group=group)
+                if not push_ok:
+                    logger.warning(
+                        "Local commit created for %s but push to remote failed (group: %s)",
+                        device_name,
+                        group,
+                    )
 
-        return (commit.hexsha, True)
+            return (commit.hexsha, True)
+
+    async def save_config(
+        self,
+        device_name: str,
+        config_content: str,
+        group: str,
+        message: str | None = None,
+    ) -> tuple[str, bool]:
+        """Save configuration to git repository without blocking the event loop."""
+        return await asyncio.to_thread(
+            self._save_config_sync,
+            device_name,
+            config_content,
+            group,
+            message,
+        )
 
     async def get_config_history(
         self,
@@ -418,7 +449,7 @@ class GitService:
         """
         raise NotImplementedError("Latest commit retrieval not yet implemented")
 
-    async def push_to_remote(self, group: str | None = None) -> bool:
+    def _push_to_remote_sync(self, group: str | None = None) -> bool:
         """
         Push local commits to remote repository.
 
@@ -444,73 +475,75 @@ class GitService:
 
         ### Iterate over target groups and attempt push if remote is configured
         for group_name in target_groups:
-            repo = self._ensure_repo(group_name)
+            lock = self._get_repo_lock(group_name)
+            with lock:
+                repo = self._ensure_repo(group_name)
 
-            ### Step 0: Check remote target
-            try:
-                remote_url, branch_name = self._resolve_remote_target(group_name)
-            except ValueError as ex:
-                logger.warning("Remote push skipped for group %s: %s", group_name, ex)
-                continue
-
-            if not self._has_commits(repo):
-                logger.warning(
-                    "Remote push skipped for group %s because repository has no commits",
-                    group_name,
-                )
-                continue
-
-            ### Step 1: Push commits to remote and handle errors
-            try:
-                attempted_push = True
-                remote = self._ensure_origin_remote(repo, remote_url)
-
+                ### Step 0: Check remote target
                 try:
-                    current_branch = repo.active_branch.name
-                except TypeError:
-                    current_branch = None
-
-                ### Switch to target branch if not already on it
-                if current_branch != branch_name:
-                    repo.git.checkout("-B", branch_name)
-
-                push_results = remote.push(refspec=f"{branch_name}:{branch_name}")
-                if not push_results:
-                    overall_success = False
-                    logger.error("Remote push returned no result for group %s", group_name)
+                    remote_url, branch_name = self._resolve_remote_target(group_name)
+                except ValueError as ex:
+                    logger.warning("Remote push skipped for group %s: %s", group_name, ex)
                     continue
 
-                errors = [
-                    result.summary
-                    for result in push_results
-                    if self._push_result_has_error(result)
-                ]
+                if not self._has_commits(repo):
+                    logger.warning(
+                        "Remote push skipped for group %s because repository has no commits",
+                        group_name,
+                    )
+                    continue
 
-                if errors:
+                ### Step 1: Push commits to remote and handle errors
+                try:
+                    attempted_push = True
+                    remote = self._ensure_origin_remote(repo, remote_url)
+
+                    try:
+                        current_branch = repo.active_branch.name
+                    except TypeError:
+                        current_branch = None
+
+                    ### Switch to target branch if not already on it
+                    if current_branch != branch_name:
+                        repo.git.checkout("-B", branch_name)
+
+                    push_results = remote.push(refspec=f"{branch_name}:{branch_name}")
+                    if not push_results:
+                        overall_success = False
+                        logger.error("Remote push returned no result for group %s", group_name)
+                        continue
+
+                    errors = [
+                        result.summary
+                        for result in push_results
+                        if self._push_result_has_error(result)
+                    ]
+
+                    if errors:
+                        overall_success = False
+                        logger.error(
+                            "Remote push failed for group %s: %s",
+                            group_name,
+                            "; ".join(errors),
+                        )
+                        continue
+
+                    ### Relief..
+                    logger.info(
+                        "Successfully pushed group %s to remote branch %s",
+                        group_name,
+                        branch_name,
+                    )
+                except GitCommandError as ex:
                     overall_success = False
                     logger.error(
                         "Remote push failed for group %s: %s",
                         group_name,
-                        "; ".join(errors),
+                        ex,
                     )
-                    continue
-
-                ### Relief..
-                logger.info(
-                    "Successfully pushed group %s to remote branch %s",
-                    group_name,
-                    branch_name,
-                )
-            except GitCommandError as ex:
-                overall_success = False
-                logger.error(
-                    "Remote push failed for group %s: %s",
-                    group_name,
-                    ex,
-                )
-            except Exception as ex:
-                overall_success = False
-                logger.error("Remote push failed for group %s: %s", group_name, ex)
+                except Exception as ex:
+                    overall_success = False
+                    logger.error("Remote push failed for group %s: %s", group_name, ex)
 
         if not attempted_push:
             logger.info("Remote push skipped because no configured remotes had commits to push")
