@@ -177,41 +177,6 @@ class BackupJobService:
 
         return latest_jobs
 
-    @staticmethod
-    def get_device_jobs(db: Session, device_name: str, limit: int = 10) -> list[BackupJob]:
-        """Get backup job history for a device.
-
-        Args:
-            db: Database session
-            device_name: Name of the device
-            limit: Maximum number of records to return
-
-        Returns:
-            List of BackupJob records
-        """
-        return db.query(BackupJob).filter(
-            BackupJob.device_name == device_name
-        ).order_by(
-            desc(BackupJob.timestamp)
-        ).limit(limit).all()
-
-    @staticmethod
-    def get_failed_jobs(db: Session, limit: int = 50) -> list[BackupJob]:
-        """Get recent failed backup jobs.
-
-        Args:
-            db: Database session
-            limit: Maximum number of records to return
-
-        Returns:
-            List of failed BackupJob records
-        """
-        return db.query(BackupJob).filter(
-            BackupJob.status == "failed"
-        ).order_by(
-            desc(BackupJob.timestamp)
-        ).limit(limit).all()
-
 
 ### Singleton instance
 backup_job_service = BackupJobService()

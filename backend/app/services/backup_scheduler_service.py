@@ -51,39 +51,13 @@ class BackupSchedulerService:
             timezone=timezone,
         )
 
-    def get_device_schedule(self, device: DeviceBase) -> ScheduleConfig | None:
+    def _get_device_schedule(self, device: DeviceBase) -> ScheduleConfig | None:
         """Resolve device schedule with priority: app < group < node.
         
         Returns the resolved ScheduleConfig for the device, or None if no schedule is configured.
         """
         device_config = self.settings.get_device_config(device.group, device.device_name)
         return device_config.get("schedule")
-
-    def is_device_scheduled(self, device: DeviceBase) -> bool:
-        """Check if a device has a backup schedule configured.
-        
-        Args:
-            device: Device to check
-            
-        Returns:
-            True if the device has a schedule with a cron expression, False otherwise
-        """
-        if not device.enabled:
-            return False
-
-        schedule = self.get_device_schedule(device)
-        return schedule is not None and schedule.cron is not None
-
-    def get_all_scheduled_devices(self, devices: list[DeviceBase]) -> list[DeviceBase]:
-        """Get all devices that have backup scheduling enabled.
-        
-        Args:
-            devices: List of all devices
-            
-        Returns:
-            List of devices with scheduling enabled
-        """
-        return [device for device in devices if self.is_device_scheduled(device)]
 
     async def _trigger_device_backup(self, device: DeviceBase) -> None:
         """Trigger a backup for a device.
@@ -137,7 +111,7 @@ class BackupSchedulerService:
                     )
                     continue
 
-                schedule = self.get_device_schedule(device)
+                schedule = self._get_device_schedule(device)
                 if schedule and schedule.cron:
                     try:
                         ### Create timezone object
