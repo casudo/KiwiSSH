@@ -830,7 +830,15 @@ class SSHService:
             process.stdin.write("\n")
 
             ### Wait for the initial prompt to ensure the shell is ready before sending commands
-            await self._read_until_patterns(process.stdout, prompt_patterns, default_timeout)
+            try:
+                await self._read_until_patterns(process.stdout, prompt_patterns, default_timeout)
+            except asyncio.TimeoutError:
+                logger.debug(
+                    "Initial prompt wait timed out for vendor '%s'; retrying once after additional newline",
+                    vendor_id,
+                )
+                process.stdin.write("\n")
+                await self._read_until_patterns(process.stdout, prompt_patterns, default_timeout)
 
             ### Run commands
             ## pre_backup
