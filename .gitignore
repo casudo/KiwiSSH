@@ -2,7 +2,7 @@
 tests/
 tests_docker/
 docker-compose.yaml
-*.drawio
+*_Dev.drawio
 *.bkp
 
 ### Node ###
