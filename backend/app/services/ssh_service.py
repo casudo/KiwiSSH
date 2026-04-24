@@ -395,6 +395,7 @@ class SSHService:
         raw_output: str,
         command: str,
         prompt_patterns: list[re.Pattern[str]],
+        known_commands: list[str] | None = None,
     ) -> str:
         """Normalize interactive shell output and strip prompt/command echo."""
         ### Strip terminal control sequences and normalize line endings/backspaces.
@@ -437,8 +438,36 @@ class SSHService:
         while lines and SSHService._line_matches_prompt(lines[-1], prompt_patterns):
             lines.pop()
 
+        ### Remove trailing echoed command lines such as '<prompt>#show inventory'
+        command_candidates = [value.strip() for value in (known_commands or []) if value and value.strip()]
+        while lines and SSHService._line_matches_prompt_with_known_command(lines[-1], command_candidates):
+            lines.pop()
+
+        while lines and not lines[-1].strip():
+            lines.pop()
+
         ### Return only the cleaned command body for storage and post-processing.
         return "\n".join(lines).strip()
+
+    @staticmethod
+    def _line_matches_prompt_with_known_command(
+        line: str,
+        known_commands: list[str],
+    ) -> bool:
+        """Check whether a line ends with an echoed known command after a prompt marker."""
+        if not known_commands:
+            return False
+
+        normalized_line = ANSI_ESCAPE_RE.sub("", line).replace("\r", "").replace("\x08", "")
+        stripped_line = normalized_line.strip()
+        if not stripped_line:
+            return False
+
+        for known_command in known_commands:
+            if re.search(rf"[>#]\s*{re.escape(known_command)}\s*$", stripped_line):
+                return True
+
+        return False
 
     async def _execute_shell_command(
         self,
@@ -448,8 +477,18 @@ class SSHService:
         wait_for_prompt: bool,
         prompt_patterns: list[re.Pattern[str]],
         pagination_rules: list[PaginationRule],
+        known_commands: list[str] | None = None,
     ) -> str:
         """Execute a single command in an interactive shell session."""
+        ### Drain any stale prompt bytes before issuing the next command
+        stale_output = await self._read_trailing_output(process.stdout, idle_timeout=0.02, max_chunks=8)
+        if stale_output.strip():
+            logger.debug(
+                "Discarded %d stale shell byte(s) before command '%s' to avoid output desync",
+                len(stale_output),
+                command,
+            )
+
         ### Send the command to the shell
         process.stdin.write(f"{command}\n")
 
@@ -467,7 +506,7 @@ class SSHService:
         )
 
         ### Return normalized command output
-        return self._sanitize_command_output(raw, command, prompt_patterns)
+        return self._sanitize_command_output(raw, command, prompt_patterns, known_commands=known_commands)
 
     @staticmethod
     def _normalize_interactive_input_text(input_text: str) -> str:
@@ -526,6 +565,11 @@ class SSHService:
         - show_command_in_config: whether command header is embedded before output in config body
         """
         captured_outputs: list[dict[str, Any]] = []
+        phase_commands = [ # Save commands used in a list
+            str(step.get("command") or "").strip()
+            for step in commands
+            if str(step.get("command") or "").strip()
+        ]
 
         for command_def in commands:
             command = str(command_def.get("command") or "").strip()
@@ -590,6 +634,7 @@ class SSHService:
                     wait_for_prompt=wait_for_prompt,
                     prompt_patterns=prompt_patterns,
                     pagination_rules=pagination_rules,
+                    known_commands=phase_commands,
                 )
                 if capture_output and output:
                     captured_outputs.append({
