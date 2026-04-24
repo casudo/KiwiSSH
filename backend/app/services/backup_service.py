@@ -347,7 +347,7 @@ class BackupService:
             BackupRecord with backup status and job_id for tracking
         """
         ### Create in_progress job so UI can show backup status immediately
-        job_id = self._create_in_progress_job(device)
+        job_id = await asyncio.to_thread(self._create_in_progress_job, device)
         started_at = time.perf_counter()
         metadata_output: str | None = None
         
@@ -392,7 +392,7 @@ class BackupService:
                     duration_seconds=duration_seconds,
                     metadata_output=metadata_output,
                 )
-                self._update_job_final_status(job_id, result)
+                await asyncio.to_thread(self._update_job_final_status, job_id, result)
                 return result
 
             logger.info(
@@ -412,7 +412,7 @@ class BackupService:
                 duration_seconds=duration_seconds,
                 metadata_output=metadata_output,
             )
-            self._update_job_final_status(job_id, result)
+            await asyncio.to_thread(self._update_job_final_status, job_id, result)
             return result
 
         except Exception as e:
@@ -427,7 +427,7 @@ class BackupService:
                 duration_seconds=max(0.0, time.perf_counter() - started_at),
                 metadata_output=metadata_output,
             )
-            self._update_job_final_status(job_id, result)
+            await asyncio.to_thread(self._update_job_final_status, job_id, result)
             return result
 
     async def get_backup_status(self, job_id: str) -> dict:
