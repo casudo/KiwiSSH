@@ -496,6 +496,11 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 - Checks for device source: No duplicate hostnames, valid IPs, ... (What if multiple groups hold the same IP address range?)
 - Update ssh_service to use FQDN instead of IP to avoid?
 - Instead of manually configuring the versions in `main.ts` and `__init__.py`, use the docker image tag as version source. This would only work if the users uses KiwiSSH in Docker containers. How to handle it when used manually?
+- Add new vendors
+- When many backups are queued at the moment, the refresh on JobsView.vue still hungs
+- Switching pages on the frontend via pagination should scroll to the top for the next/previous page
+- Set default app.threads to 5/10 or 20?
+- Fix GitHub actions pipeline frontend image version
 
 **Mid-term:**
 
@@ -511,13 +516,20 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 - Update Ruff linter and formatter
 - Add Vue linter/formatter?
 - Update `use_test_config_if_enabled` to use the roots `/config` folder
+- Telnet support?
+- Update ssh_profile legacy with Synology NAS ssh settings "Low"
+- Display queue on job view page?
+- Show "Show full diff" button if the config diff view has too many changes
+- Set SSH password as encrypted SHA-512 value? Does OpenSSH support tha?
+- Show "backup time" when NO_CHANGES" in log line "No configuration changes detected for {device_name}"?
+- Show hint "Backup triggered: Backup for device {device_name} is already queued or currently running." when clicking the small trigger backup button on device list/card/compactcard item?
+- Implement option to set a device's `enable` password via config/env vars which then gets used in `pre_backup` section. Right now the `enable` password can only be set in the vendors YAML resulting in the same `enable` password for all devices using that vendor config which might not be the case for everyone
 
 **Long Term:**
 
-- Switch from package-level imports to absolute imports for better readability and maintainability.
-  - **Keep them:** cleaner imports, stable public package API. **Remove them:** more explicit imports, less indirection, but more verbose and tighter coupling to file layout.
 - Add CHANGELOG.md to keep track of changes and make it required for external PRs?
 - Notification System (Email, Slack, Webhook) ([#5](https://github.com/casudo/KiwiSSH/issues/5))
+  - Special notification IF git diff shows a minus or plus of 100 lines or more to quickly inform about major config changes
 - i18n localization support
 - Add yaak API collection
 - "Live Log" when pressing "Trigger Backup": Even if not "live live", show the log output as it comes in with nice visual animations and auto-scrolling
@@ -532,7 +544,7 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 - Swagger API documentation on GitHub Pages
 - Allow group passwords to bet set via env vars or other input
 - Better device simulation: Add a small script for user to run against actual hardware to create realistic CLI output samples for the vendor YAML file creation. Secrets and sensitive info should be redacted
-- Add Conventional Commits
+- Add Conventional Commits -> Add info in repo or how to apply it correctly?
 - Optional share anonymouse usage data for statistics (needs opt-in, privacy policy and telemetry server)
 - Add UI banner when new update is available
 
