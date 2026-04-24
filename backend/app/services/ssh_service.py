@@ -38,6 +38,10 @@ DEFAULT_PAGINATION_PATTERNS = [
     re.compile(r"^\s*Press <space> to continue(?:, q to quit)?\s*$", re.IGNORECASE),
 ]
 DEFAULT_PAGINATION_RESPONSE = " "
+READ_CHUNK_SIZE = 4096
+READ_POLL_INTERVAL_SECONDS = 1.0
+LARGE_OUTPUT_TIMEOUT_THRESHOLD_BYTES = 256 * 1024
+LARGE_OUTPUT_INACTIVITY_TIMEOUT_SECONDS = 90
 
 PaginationRule = tuple[re.Pattern[str], str]
 
@@ -355,7 +359,10 @@ class SSHService:
 
             ### Read the next chunk of output with a short timeout to allow for prompt detection
             try:
-                chunk = await asyncio.wait_for(stream.read(256), timeout=min(remaining, 1.0))
+                chunk = await asyncio.wait_for(
+                    stream.read(READ_CHUNK_SIZE),
+                    timeout=min(remaining, READ_POLL_INTERVAL_SECONDS),
+                )
             except asyncio.TimeoutError:
                 ### No new bytes in this polling window; keep waiting until overall deadline
                 continue
@@ -365,6 +372,18 @@ class SSHService:
 
             ### Append the new chunk to the buffer and continue checking for patterns
             buffer += chunk
+
+            ### Large outputs on slower devices can pause for longer between chunks
+            if (
+                len(buffer) >= LARGE_OUTPUT_TIMEOUT_THRESHOLD_BYTES
+                and timeout_seconds < LARGE_OUTPUT_INACTIVITY_TIMEOUT_SECONDS
+            ):
+                timeout_seconds = LARGE_OUTPUT_INACTIVITY_TIMEOUT_SECONDS
+                logger.debug(
+                    "Extended prompt inactivity timeout to %ds for large output stream (%d bytes buffered)",
+                    timeout_seconds,
+                    len(buffer),
+                )
 
             ### Timeout tracks inactivity, not total command runtime
             inactivity_deadline = loop.time() + timeout_seconds
@@ -379,7 +398,7 @@ class SSHService:
         trailing = ""
         for _ in range(max_chunks):
             try:
-                chunk = await asyncio.wait_for(stream.read(256), timeout=idle_timeout)
+                chunk = await asyncio.wait_for(stream.read(READ_CHUNK_SIZE), timeout=idle_timeout)
             except asyncio.TimeoutError:
                 break
 
