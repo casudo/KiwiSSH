@@ -604,13 +604,17 @@ class SSHService:
                     "cannot be used together with 'metadata: true'"
                 )
 
+            if has_then and not command:
+                raise RuntimeError(
+                    "Step failed: 'then' requires a non-empty 'command' in the same step"
+                )
+
             ### Fire interactive input steps (`command` + `then`)
             if has_then:
                 try:
                     ### Some devices require a command before interactive input (e.g. 'enable')
-                    if command:
-                        process.stdin.write(f"{command}\n")
-                        await asyncio.sleep(0.1)
+                    process.stdin.write(f"{command}\n")
+                    await asyncio.sleep(0.1)
 
                     interactive_inputs = self._resolve_interactive_inputs(command_def)
 

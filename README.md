@@ -359,7 +359,7 @@ commands:
       description: "Get running configuration"
     - command: "another command here" # another simple command
     - command: "enable" # interactive command
-      then: "<enable password>"
+      then: ["<enable password>"]
     - command: "logout" # another interactive command
       then:
         - "y"
