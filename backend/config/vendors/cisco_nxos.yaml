@@ -57,8 +57,8 @@ processing:
     patterns:
       - search: "^(snmp-server community).*$"
         replacement: "\\1<secret redacted>"
-      - search: "^(snmp-server user (\\S+) (\\S+) auth (\\S+)) (\\S+) (priv) (\\S+).*$"
-        replacement: "\\1<secret redacted>"
+      - search: '^(snmp-server user \S+ \S+ auth \S+) \S+ (priv \S+) \S+ $'
+        replacement: "\\1<secret redacted> \\2 <secret hidden> "
       - search: "^(snmp-server host.*? )\\S+( udp-port \\d+)?$"
         replacement: "\\1<secret redacted>"
       - search: "^(snmp-server mib community-map) \\S+ ?(.*)$"
