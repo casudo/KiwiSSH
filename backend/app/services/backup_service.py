@@ -140,21 +140,26 @@ class BackupService:
             active_workers = [worker for worker in self._queue_workers if not worker.done()]
             self._queue_workers = active_workers
 
-            ## -> If active workers match configured count, we're good. If not, restart workers to match new count
-            if active_workers and self._queue_worker_limit == configured_workers:
+            ## -> If we have enough active workers, just update the limit and return
+            active_count = len(active_workers)
+            if active_count >= configured_workers:
+                self._queue_worker_limit = active_count
                 return
 
-            ## -> If we have active workers but the concurrency config changed, stop all workers and start new ones with updated concurrency
-            if active_workers:
-                await self._stop_backup_queue_locked()
-
+            ## -> Create new workers to meet the configured count
+            missing_workers = configured_workers - active_count
+            start_index = active_count
+            self._queue_workers.extend(
+                asyncio.create_task(self._backup_queue_worker(start_index + index + 1))
+                for index in range(missing_workers)
+            )
             self._queue_worker_limit = configured_workers
-            self._queue_workers = [
-                asyncio.create_task(self._backup_queue_worker(index + 1))
-                for index in range(configured_workers)
-            ]
 
-            logger.info("Started global backup queue with %d worker(s)", configured_workers)
+            logger.info(
+                "Ensured global backup queue workers: %d active (target: %d)",
+                len(self._queue_workers),
+                configured_workers,
+            )
 
     async def start_backup_queue(self) -> None:
         """Start backup queue workers proactively (used during app startup)."""
