@@ -4,7 +4,7 @@ pydantic==2.12.5
 pydantic-settings==2.13.1
 python-dotenv==1.2.2
 asyncssh==2.22.0
-gitpython==3.1.46
+gitpython==3.1.47
 ruff==0.15.7
 sqlalchemy==2.0.48
 psycopg[binary]==3.3.3
