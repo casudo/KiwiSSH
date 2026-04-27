@@ -49,6 +49,8 @@ processing:
     - "^\\s*RX packets:.*$"
     - "^\\s*TX packets:.*$"
     - "^\\s*RX bytes:.*$"
+    - '^mgmt\.cfgversion=.*$'
+    - '^unifi\.version=.*$'
 
   ### Lines that mark config boundaries
   ## If either boundary is missing, keep from/to the file edge.
