@@ -3,6 +3,7 @@
 | Vendor       | OS/Device Type        | YAML file                                                                | Notes                               |
 | ------------ | --------------------- | ------------------------------------------------------------------------ | ----------------------------------- |
 | A10 Networks | A10 ACOS              | [a10_acos.yaml](/config/vendors/a10_acos.yaml)                           |                                     |
+| Arista       | EOS                   | [arista_eos.yaml](/config/vendors/arista_eos.yaml)                       |                                     |
 | Cisco        | AireOS                | [cisco_aireos.yaml](/config/vendors/cisco_aireos.yaml)                   | [AireOS](#cisco-aireos)             |
 | Cisco        | IOS                   | [cisco_ios.yaml](/config/vendors/cisco_ios.yaml)                         |                                     |
 | Cisco        | NXOS                  | [cisco_nxos.yaml](/config/vendors/cisco_nxos.yaml)                       |                                     |

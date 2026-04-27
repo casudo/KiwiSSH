@@ -1,0 +1,75 @@
+### Arista EOS Vendor Configuration
+## Instructions for backing up Arista EOS devices
+
+vendor:
+  id: "arista_eos"
+  name: "Arista EOS"
+  description: "Arista EOS devices"
+
+### Session-level behavior
+session:
+  comment_prefix: "! "
+  prompt: '^.+[#>]$'
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Pre-backup commands (prepare the session) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  pre_backup: 
+    - command: enable
+      then: [""] # <- set enable password here if needed
+    - command: "terminal length 0"
+
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "show inventory | no more"
+      metadata: true
+    - command: "show running-config | no-more | exclude ! Time:"
+      show_command_in_config: true
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "exit"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  ### Lines to strip from captured config (regex patterns)
+  strip_patterns:
+    # - "^(Current configuration).*$"
+    # - "^(Configuration last updated at).*$"
+    # - "^(Configuration last saved at).*$"
+    # - "^(Configuration last synchronized at).*$"
+
+  ### Lines that mark config boundaries
+  ## If either boundary is missing, keep from/to the file edge.
+  # config_start: "^# unifi$"
+  # config_end: "^# misc$"
+
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      - search: '^(snmp-server community).*'
+        replacement: '\1<secret redacted>'
+      - search: '(secret \w+) (\S+).*'
+        replacement: '\1<secret redacted>'
+      - search: '(password \d+) (\S+).*'
+        replacement: '\1<secret redacted>'
+      - search: '^(enable (?:secret|password)).*'
+        replacement: '\1<secret redacted>'
+      - search: '^(service unsupported-transceiver).*'
+        replacement: '\1<secret redacted>'
+      - search: '^(tacacs-server key \d+).*'
+        replacement: '\1<secret redacted>'
+      - search: '^(radius-server .+ key \d) \S+'
+        replacement: '\1<secret redacted>'
+      - search: '( {6}key) (\h+ 7) (\h+).*'
+        replacement: '\1<secret redacted>'
+      - search: '(localized|auth (md5|sha\d{0,3})|priv (des|aes\d{0,3})) \S+'
+        replacement: '\1<secret redacted>'
