@@ -545,7 +545,6 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 - Swagger API documentation on GitHub Pages
 - Allow group passwords to bet set via env vars or other input
 - Better device simulation: Add a small script for user to run against actual hardware to create realistic CLI output samples for the vendor YAML file creation. Secrets and sensitive info should be redacted
-- Add Conventional Commits -> Add info in repo or how to apply it correctly?
 - Optional share anonymouse usage data for statistics (needs opt-in, privacy policy and telemetry server)
 - Add UI banner when new update is available
 
