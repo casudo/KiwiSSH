@@ -5,6 +5,7 @@
 | A10 Networks | A10 ACOS              | [a10_acos.yaml](/backend/config/vendors/a10_acos.yaml)                           |                                     |
 | Arista       | EOS                   | [arista_eos.yaml](/backend/config/vendors/arista_eos.yaml)                       |                                     |
 | Aruba        | AOS-CX                | [aruba_aoscx.yaml](/backend/backend/config/vendors/aruba_aoscx.yaml)             | [AOS-CX](#hpe-aruba-networking)     |
+| Aruba        | AOS-W                 | [aruba_aosw.yaml](/backend/config/vendors/aruba_aosw.yaml)                       | [AOS-W](#hpe-aruba-networking)      |
 | Cisco        | AireOS                | [cisco_aireos.yaml](/backend/config/vendors/cisco_aireos.yaml)                   | [AireOS](#cisco-aireos)             |
 | Cisco        | IOS                   | [cisco_ios.yaml](/backend/config/vendors/cisco_ios.yaml)                         |                                     |
 | Cisco        | NXOS                  | [cisco_nxos.yaml](/backend/config/vendors/cisco_nxos.yaml)                       |                                     |
@@ -51,6 +52,12 @@ To avoid this, enable the redaction feature inside the vendor YAML file (`redact
 ## HPE Aruba Networking
 
 HPE Aruba offers various networking devices with different operating systems.
+
+### HPE Aruba Networking Wireless Operating System 8 (AOS 8)
+
+[AOS 8](https://arubanetworking.hpe.com/techdocs/ArubaDocPortal/content/cons-aos-home.htm) runs on WLAN controllers (mobility controllers) and controller-managed access points.
+
+Use [aruba_aosw.yaml](/backend/config/vendors/aruba_aosw.yaml).
 
 ### HPE Aruba Networking CX Switch Operating System (AOS-CX)
 
