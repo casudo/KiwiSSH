@@ -521,7 +521,6 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 - Add Vue linter/formatter?
 - Telnet support? SCP support?
 - Update ssh_profile legacy with Synology NAS ssh settings "Low"
-- Show "Show full diff" button if the config diff view has too many changes
 - Set SSH password as encrypted SHA-512 value? Does OpenSSH support tha?
 - Show "backup time" when NO_CHANGES" in log line "No configuration changes detected for {device_name}"?
 
