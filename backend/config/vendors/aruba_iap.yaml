@@ -1,0 +1,85 @@
+### HPE Aruba Networking Vendor Configuration
+## Instructions for backing up HPE Aruba Networking devices
+
+vendor:
+  id: "aruba_iap"
+  name: "HPE Aruba Networking"
+  description: "Aruba IAP, Instant Controller"
+
+### Session-level behavior
+session:
+  comment_prefix: "# "
+  prompt: '^ ?[\w:.@-]+[#>] $'
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Pre-backup commands (prepare the session) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  pre_backup:
+    - command: "enable"
+      then: [""] # enter enable password
+
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "show version"
+      metadata: true
+    - command: "show active status"
+      metadata: true
+    - command: "show aps"
+      metadata: true
+    - command: "show running-config no-encrypt"
+      show_command_in_config: true
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "exit" # enable exit
+    - command: "exit" # logout
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  ### Lines to strip from captured config (regex patterns)
+  # strip_patterns:
+  #   - '^controller config \d+$'
+  #   - '^Building Configuration'
+
+  ### Lines that mark config boundaries
+  ## If either boundary is missing, keep from/to the file edge.
+  # config_start: "^# unifi$"
+  # config_end: "^# misc$"
+
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      - search: 'ipsec (\S+)$'
+        replacement: 'ipsec <secret removed>'
+      - search: 'community (\S+)$'
+        replacement: 'community <secret removed>'
+      - search: '^(snmp-server host [\d.]+ version 2c) \S+ (.*)$'
+        replacement: '\1 <secret removed> \2'
+      - search: 'mgmt-user (\S+) (root|guest-provisioning|network-operations|read-only|location-api-mgmt) (\S+)$'
+        replacement: 'mgmt-user \1 \2 <secret removed>'
+      - search: 'mgmt-user (\S+) (\S+)( (read-only|guest-mgmt))?$'
+        replacement: 'mgmt-user \1 <secret removed> \3'
+      - search: 'key (\S+)$'
+        replacement: 'key <secret removed>'
+      - search: '^(hash-mgmt-user .* password \S+) \S+( usertype .*)?$'
+        replacement: '\1 <secret removed>\2'
+      - search: 'user (\S+) (\S+) (\S+)$'
+        replacement: 'user \1 <secret removed> \3'
+      - search: 'mgmt-user (\S+) (root|guest-provisioning|network-operations|read-only|location-api-mgmt) (\S+)\s?$'
+        replacement: 'mgmt-user \1 \2 <secret removed>'
+      - search: 'mgmt-user (\S+) (\S+)( (read-only|guest-mgmt))?\s?$'
+        replacement: 'mgmt-user \1 <secret removed> \3'
+      - search: 'wpa-passphrase (\S+)$'
+        replacement: 'wpa-passphrase <secret removed>'
+      - search: 'bkup-passwords (\S+)$'
+        replacement: 'bkup-passwords <secret removed>'
+      - search: 'virtual-controller-key (\S+)$'
+        replacement: 'virtual-controller-key <secret removed>'

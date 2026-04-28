@@ -1,27 +1,28 @@
 # Supported OS/Device Types
 
-| Vendor       | OS/Device Type        | YAML file                                                                        | Notes                               |
-| ------------ | --------------------- | -------------------------------------------------------------------------------- | ----------------------------------- |
-| A10 Networks | A10 ACOS              | [a10_acos.yaml](/backend/config/vendors/a10_acos.yaml)                           |                                     |
-| Arista       | EOS                   | [arista_eos.yaml](/backend/config/vendors/arista_eos.yaml)                       |                                     |
-| Aruba        | AOS-CX                | [aruba_aoscx.yaml](/backend/backend/config/vendors/aruba_aoscx.yaml)             | [AOS-CX](#hpe-aruba-networking)     |
-| Aruba        | AOS-W                 | [aruba_aosw.yaml](/backend/config/vendors/aruba_aosw.yaml)                       | [AOS-W](#hpe-aruba-networking)      |
-| Cisco        | AireOS                | [cisco_aireos.yaml](/backend/config/vendors/cisco_aireos.yaml)                   | [AireOS](#cisco-aireos)             |
-| Cisco        | IOS                   | [cisco_ios.yaml](/backend/config/vendors/cisco_ios.yaml)                         |                                     |
-| Cisco        | NXOS                  | [cisco_nxos.yaml](/backend/config/vendors/cisco_nxos.yaml)                       |                                     |
-| Fortinet     | FortiGate             | [fortinet_fortigate.yaml](/backend/config/vendors/fortinet_fortigate.yaml)       | [FortiGate](#fortinet-device-types) |
-| Fortinet     | FortiOS               | [fortinet_fortios.yaml](/backend/config/vendors/fortinet_fortios.yaml)           | [FortiOS](#fortinet-device-types)   |
-| HP           | ProCurve              | [hp_procurve.yaml](/backend/config/vendors/hp_procurve.yaml)                     |                                     |
-| Juniper      | JunOS                 | [juniper_junos.yaml](/backend/config/vendors/juniper_junos.yaml)                 | [JunOS](#juniper-junos)             |
-| OpenWRT      |                       | [openwrt.yaml](/backend/config/vendors/openwrt.yaml)                             |                                     |
-| OPNsense     |                       | [opnsense.yaml](/backend/config/vendors/opnsense.yaml)                           |                                     |
-| Palo Alto    | PanOS                 | [paloalto_panos.yaml](/backend/config/vendors/paloalto_panos.yaml)               |                                     |
-| Perle        | IOLAN Console Servers | [perle_iolan.yaml](/backend/config/vendors/perle_iolan.yaml)                     |                                     |
-| pfSense      |                       | [pfsense.yaml](/backend/config/vendors/pfsense.yaml)                             |                                     |
-| SONiC        | Enterprise SONiC      | [sonic_enterprise.yaml](/backend/config/vendors/sonic_enterprise.yaml)           |                                     |
-| TrueNAS      |                       | [truenas.yaml](/backend/config/vendors/truenas.yaml)                             | [TrueNAS](#truenas)                 |
-| Ubiquiti     | UniFi                 | [ubiquiti_unifi.yaml](/backend/config/vendors/ubiquiti_unifi.yaml)               | [Ubiquiti](#ubiquiti)               |
-| Watchguard   | FirewareOS            | [watchguard_firewareos.yaml](/backend/config/vendors/watchguard_firewareos.yaml) |                                     |
+| Vendor       | OS/Device Type        | YAML file                                                                        | Notes                                  |
+| ------------ | --------------------- | -------------------------------------------------------------------------------- | -------------------------------------- |
+| A10 Networks | A10 ACOS              | [a10_acos.yaml](/backend/config/vendors/a10_acos.yaml)                           |                                        |
+| Arista       | EOS                   | [arista_eos.yaml](/backend/config/vendors/arista_eos.yaml)                       |                                        |
+| Aruba        | AOS-CX                | [aruba_aoscx.yaml](/backend/backend/config/vendors/aruba_aoscx.yaml)             | [AOS-CX](#hpe-aruba-networking)        |
+| Aruba        | AOS-W                 | [aruba_aosw.yaml](/backend/config/vendors/aruba_aosw.yaml)                       | [AOS-W](#hpe-aruba-networking)         |
+| Aruba        | IAP/Instant           | [aruba_iap.yaml](/backend/config/vendors/aruba_iap.yaml)                         | [Aruba Instant](#hpe-aruba-networking) |
+| Cisco        | AireOS                | [cisco_aireos.yaml](/backend/config/vendors/cisco_aireos.yaml)                   | [AireOS](#cisco-aireos)                |
+| Cisco        | IOS                   | [cisco_ios.yaml](/backend/config/vendors/cisco_ios.yaml)                         |                                        |
+| Cisco        | NXOS                  | [cisco_nxos.yaml](/backend/config/vendors/cisco_nxos.yaml)                       |                                        |
+| Fortinet     | FortiGate             | [fortinet_fortigate.yaml](/backend/config/vendors/fortinet_fortigate.yaml)       | [FortiGate](#fortinet-device-types)    |
+| Fortinet     | FortiOS               | [fortinet_fortios.yaml](/backend/config/vendors/fortinet_fortios.yaml)           | [FortiOS](#fortinet-device-types)      |
+| HP           | ProCurve              | [hp_procurve.yaml](/backend/config/vendors/hp_procurve.yaml)                     |                                        |
+| Juniper      | JunOS                 | [juniper_junos.yaml](/backend/config/vendors/juniper_junos.yaml)                 | [JunOS](#juniper-junos)                |
+| OpenWRT      |                       | [openwrt.yaml](/backend/config/vendors/openwrt.yaml)                             |                                        |
+| OPNsense     |                       | [opnsense.yaml](/backend/config/vendors/opnsense.yaml)                           |                                        |
+| Palo Alto    | PanOS                 | [paloalto_panos.yaml](/backend/config/vendors/paloalto_panos.yaml)               |                                        |
+| Perle        | IOLAN Console Servers | [perle_iolan.yaml](/backend/config/vendors/perle_iolan.yaml)                     |                                        |
+| pfSense      |                       | [pfsense.yaml](/backend/config/vendors/pfsense.yaml)                             |                                        |
+| SONiC        | Enterprise SONiC      | [sonic_enterprise.yaml](/backend/config/vendors/sonic_enterprise.yaml)           |                                        |
+| TrueNAS      |                       | [truenas.yaml](/backend/config/vendors/truenas.yaml)                             | [TrueNAS](#truenas)                    |
+| Ubiquiti     | UniFi                 | [ubiquiti_unifi.yaml](/backend/config/vendors/ubiquiti_unifi.yaml)               | [Ubiquiti](#ubiquiti)                  |
+| Watchguard   | FirewareOS            | [watchguard_firewareos.yaml](/backend/config/vendors/watchguard_firewareos.yaml) |                                        |
 
 ---
 
@@ -52,6 +53,14 @@ To avoid this, enable the redaction feature inside the vendor YAML file (`redact
 ## HPE Aruba Networking
 
 HPE Aruba offers various networking devices with different operating systems.
+
+### HPE Aruba Networking Instant Mode (Aruba Instant)
+
+[Aruba Instant](https://arubanetworking.hpe.com/techdocs/ArubaDocPortal/content/cons-instant-home.htm) runs on IAPs (Instant Access points).
+
+KiwiSSH uses [aruba_iap.yaml](/backend/config/vendors/aruba_iap.yaml). When run on the virtual WLAN controller, it will also collect the list of the WLAN-AP linked to the controller.
+
+The aosw model for AOS 8 used to be used for Aruba Instant, but it does not work as well and may stop working in the future.
 
 ### HPE Aruba Networking Wireless Operating System 8 (AOS 8)
 
