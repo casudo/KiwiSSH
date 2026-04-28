@@ -7,6 +7,7 @@
 | Aruba        | AOS-CX                | [aruba_aoscx.yaml](/backend/backend/config/vendors/aruba_aoscx.yaml)             | [AOS-CX](#hpe-aruba-networking)        |
 | Aruba        | AOS-W                 | [aruba_aosw.yaml](/backend/config/vendors/aruba_aosw.yaml)                       | [AOS-W](#hpe-aruba-networking)         |
 | Aruba        | IAP/Instant           | [aruba_iap.yaml](/backend/config/vendors/aruba_iap.yaml)                         | [Aruba Instant](#hpe-aruba-networking) |
+| Casa         | Casa                  | [casa_casa.yaml](/backend/config/vendors/casa_casa.yaml)                         |                                        |
 | Cisco        | AireOS                | [cisco_aireos.yaml](/backend/config/vendors/cisco_aireos.yaml)                   | [AireOS](#cisco-aireos)                |
 | Cisco        | IOS                   | [cisco_ios.yaml](/backend/config/vendors/cisco_ios.yaml)                         |                                        |
 | Cisco        | NXOS                  | [cisco_nxos.yaml](/backend/config/vendors/cisco_nxos.yaml)                       |                                        |
