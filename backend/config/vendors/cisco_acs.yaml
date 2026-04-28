@@ -21,7 +21,7 @@ commands:
   pre_backup:
     - command: "terminal length 0"
     - command: "enable"
-      then: [""] # send ena pw
+      then: ["{{ enable_password }}"]
   
 
   ### Main backup command(s)

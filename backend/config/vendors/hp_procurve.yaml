@@ -27,7 +27,7 @@ commands:
     # - command: "enable"
       # then:
       #   - "<enable user>"
-      #   - "<enable password>"
+      #   - "{{ enable_password }}"
 
   ### Main backup command(s)
   ## Commands whose output becomes the stored configuration
