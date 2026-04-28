@@ -4,12 +4,17 @@
 vendor:
   id: "sonic_enterprise"
   name: "SONiC Enterprise"
-  description: "SONiC Enterprise devices"
+  description: "Tested on SONiC-OS-4.4.2-Enterprise_Base"
 
 ### Session-level behavior
 session:
   comment_prefix: "# "
   prompt: '^(?:[\w.-]+@[\w.-]+:[~\w\/-]+\$|[\w.-]+#)\s*$' # matches both sonic-cli and linux terminal
+  pagination:
+    enabled: true
+    patterns:
+      - pattern: '^--more--\s*$'
+        response: " "
 
 ### Commands to execute for backup
 ## Supported step types in command phases:
@@ -19,19 +24,25 @@ commands:
   ### Pre-backup commands (prepare the session) (OPTIONAL)
   ## Command outputs aren't saved in stored configuration
   pre_backup: 
+    - command: "sonic-cli"
+    - command: "configure terminal"
     - command: "terminal length 0"
 
   ### Main backup command(s)
   ## Commands whose output becomes the stored configuration
   backup:
-    - command: "show running-configuration"
     - command: "show version"
+      metadata: true
     - command: "show platform syseeprom"
+      metadata: true
+    - command: "show running-configuration"
 
   ### Post-backup commands (cleanup) (OPTIONAL)
   ## Command outputs aren't saved in stored configuration
   post_backup:
-    - command: "exit"
+    - command: "exit" # exit config mode
+    - command: "exit" # exit sonic-cli 
+    - command: "exit" # logout
 
 ### Configuration processing rules
 ## Processing reduces diff noise and trims non-config boilerplate
