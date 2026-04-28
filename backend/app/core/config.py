@@ -494,7 +494,7 @@ class Settings(BaseSettings):
     config_dir: Path = Field(default=Path("/config"))
 
     ### Testing
-    local_test_mode: bool = Field(default=False, description="Use tests/config and tests/sources for local testing")
+    local_test_mode: bool = Field(default=False, description="Use /config for local testing")
 
     ### Configuration sections (loaded from YAML)
     app: AppConfig = Field(default_factory=AppConfig)
@@ -516,14 +516,9 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def use_test_config_if_enabled(self) -> "Settings":
-        """If LOCAL_TEST_MODE=true, use tests/config for local testing."""
+        """If LOCAL_TEST_MODE=true, use /config for local testing."""
         if self.local_test_mode:
-            project_root = Path(__file__).parent.parent.parent.parent
-
-            ### Use test config directory
-            test_config_dir = project_root / "tests" / "config"
-            if test_config_dir.exists():
-                self.config_dir = test_config_dir.resolve()
+            self.config_dir = Path("/config")
 
         return self
 
