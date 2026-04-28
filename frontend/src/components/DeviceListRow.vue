@@ -14,7 +14,9 @@ type TriggerFeedbackState = "idle" | "loading" | "success" | "error"
 
 const favoritesStore = useFavoritesStore()
 const triggerFeedback = ref<TriggerFeedbackState>("idle")
+const triggerFeedbackMessage = ref<string>("")
 let triggerFeedbackTimer: number | undefined
+let triggerFeedbackMessageTimer: number | undefined
 const isFavorite = computed(() => {
   if (!props.device) return false
   return favoritesStore.isFavorite(props.device.device_name)
@@ -36,9 +38,28 @@ function setTriggerFeedback(state: TriggerFeedbackState, resetAfterMs: number = 
   }
 }
 
+function setTriggerFeedbackMessage(message: string, resetAfterMs: number = 0) {
+  triggerFeedbackMessage.value = message
+
+  if (triggerFeedbackMessageTimer !== undefined) {
+    window.clearTimeout(triggerFeedbackMessageTimer)
+    triggerFeedbackMessageTimer = undefined
+  }
+
+  if (resetAfterMs > 0) {
+    triggerFeedbackMessageTimer = window.setTimeout(() => {
+      triggerFeedbackMessage.value = ""
+      triggerFeedbackMessageTimer = undefined
+    }, resetAfterMs)
+  }
+}
+
 onBeforeUnmount(() => {
   if (triggerFeedbackTimer !== undefined) {
     window.clearTimeout(triggerFeedbackTimer)
+  }
+  if (triggerFeedbackMessageTimer !== undefined) {
+    window.clearTimeout(triggerFeedbackMessageTimer)
   }
 })
 
@@ -60,8 +81,9 @@ async function handleTriggerBackup(e: Event) {
   setTriggerFeedback("loading")
 
   try {
-    await backupApi.triggerDevice(props.device.device_name)
+    const response = await backupApi.triggerDevice(props.device.device_name)
     setTriggerFeedback("success", 2500)
+    setTriggerFeedbackMessage(`Backup triggered: ${response.message}`, 10000)
   } catch (error) {
     setTriggerFeedback("error", 4000)
     console.error("Failed to trigger backup:", error)
@@ -106,7 +128,8 @@ async function handleTriggerBackup(e: Event) {
       <!-- Actions -->
       <div class="flex justify-center">
         <span v-if="isHeader" class="font-semibold text-gray-700 dark:text-gray-300">Actions</span>
-        <div v-else class="flex items-center gap-2">
+        <div v-else class="flex flex-col items-center gap-1">
+          <div class="flex items-center gap-2">
           <!-- Favorite Button -->
           <button
             @click="handleToggleFavorite"
@@ -147,6 +170,10 @@ async function handleTriggerBackup(e: Event) {
                     : "▶"
             }}
           </button>
+          </div>
+          <span v-if="triggerFeedbackMessage" class="text-[11px] text-gray-500 dark:text-gray-400 text-center">
+            {{ triggerFeedbackMessage }}
+          </span>
         </div>
       </div>
     </div>

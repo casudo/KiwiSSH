@@ -527,7 +527,7 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 - Show "Show full diff" button if the config diff view has too many changes
 - Set SSH password as encrypted SHA-512 value? Does OpenSSH support tha?
 - Show "backup time" when NO_CHANGES" in log line "No configuration changes detected for {device_name}"?
-- Show hint "Backup triggered: Backup for device {device_name} is already queued or currently running." when clicking the small trigger backup button on device list/card/compactcard item?
+
 **Long Term:**
 
 - Add CHANGELOG.md to keep track of changes and make it required for external PRs?

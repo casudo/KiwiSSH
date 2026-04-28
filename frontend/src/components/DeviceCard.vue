@@ -15,7 +15,9 @@ type TriggerFeedbackState = "idle" | "loading" | "success" | "error"
 const favoritesStore = useFavoritesStore()
 const devicesStore = useDevicesStore()
 const triggerFeedback = ref<TriggerFeedbackState>("idle")
+const triggerFeedbackMessage = ref<string>("")
 let triggerFeedbackTimer: number | undefined
+let triggerFeedbackMessageTimer: number | undefined
 const isFavorite = computed(() => favoritesStore.isFavorite(props.device.device_name))
 const vendorName = computed(() => devicesStore.getVendorName(props.device.vendor))
 
@@ -35,9 +37,28 @@ function setTriggerFeedback(state: TriggerFeedbackState, resetAfterMs: number = 
   }
 }
 
+function setTriggerFeedbackMessage(message: string, resetAfterMs: number = 0) {
+  triggerFeedbackMessage.value = message
+
+  if (triggerFeedbackMessageTimer !== undefined) {
+    window.clearTimeout(triggerFeedbackMessageTimer)
+    triggerFeedbackMessageTimer = undefined
+  }
+
+  if (resetAfterMs > 0) {
+    triggerFeedbackMessageTimer = window.setTimeout(() => {
+      triggerFeedbackMessage.value = ""
+      triggerFeedbackMessageTimer = undefined
+    }, resetAfterMs)
+  }
+}
+
 onBeforeUnmount(() => {
   if (triggerFeedbackTimer !== undefined) {
     window.clearTimeout(triggerFeedbackTimer)
+  }
+  if (triggerFeedbackMessageTimer !== undefined) {
+    window.clearTimeout(triggerFeedbackMessageTimer)
   }
 })
 
@@ -58,8 +79,9 @@ async function handleTriggerBackup(e: Event) {
   setTriggerFeedback("loading")
 
   try {
-    await backupApi.triggerDevice(props.device.device_name)
+    const response = await backupApi.triggerDevice(props.device.device_name)
     setTriggerFeedback("success", 2500)
+    setTriggerFeedbackMessage(`Backup triggered: ${response.message}`, 10000)
   } catch (error) {
     setTriggerFeedback("error", 4000)
     console.error("Failed to trigger backup:", error)
@@ -118,6 +140,10 @@ async function handleTriggerBackup(e: Event) {
         </button>
       </div>
     </div>
+
+    <p v-if="triggerFeedbackMessage" class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+      {{ triggerFeedbackMessage }}
+    </p>
 
     <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600 dark:text-gray-300">
       <span class="flex items-center">
