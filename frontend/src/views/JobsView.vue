@@ -135,15 +135,22 @@ function handleStatusFilterChange() {
   void loadJobsPage()
 }
 
+function scrollToTop() {
+  if (typeof window === "undefined") return
+  window.scrollTo({ top: 0, behavior: "smooth" })
+}
+
 function goToPreviousPage() {
   if (currentPage.value <= 1) return
   currentPage.value -= 1
+  scrollToTop()
   void loadJobsPage()
 }
 
 function goToNextPage() {
   if (currentPage.value >= totalPages.value) return
   currentPage.value += 1
+  scrollToTop()
   void loadJobsPage()
 }
 

@@ -503,7 +503,6 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 - Instead of manually configuring the versions in `main.ts` and `__init__.py`, use the docker image tag as version source. This would only work if the users uses KiwiSSH in Docker containers. How to handle it when used manually?
 - Add new vendors
 - When many backups are queued at the moment, the refresh on JobsView.vue still hungs
-- Switching pages on the frontend via pagination should scroll to the top for the next/previous page
 - Set default app.threads to 5/10 or 20?
 - Fix GitHub actions pipeline frontend image version
 
