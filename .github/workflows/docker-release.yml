@@ -28,14 +28,36 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate image names and version
+      - name: Generate image names and versions
         id: meta
         run: |
           BASE="ghcr.io/${GITHUB_REPOSITORY,,}"
-          VERSION="${{ github.event.release.tag_name }}"
+          FRONTEND_VERSION=$(python - <<'PY'
+          import re
+          from pathlib import Path
+
+          text = Path("frontend/src/main.ts").read_text()
+          match = re.search(r"FRONTEND_VERSION\s*=\s*['\"]([^'\"]+)['\"]", text)
+          if not match:
+            raise SystemExit("Frontend version not found")
+          print(match.group(1))
+          PY
+          )
+          BACKEND_VERSION=$(python - <<'PY'
+          import re
+          from pathlib import Path
+
+          text = Path("backend/app/__init__.py").read_text()
+          match = re.search(r"__version__\s*=\s*['\"]([^'\"]+)['\"]", text)
+          if not match:
+            raise SystemExit("Backend version not found")
+          print(match.group(1))
+          PY
+          )
           echo "frontend=${BASE}-frontend" >> $GITHUB_OUTPUT
           echo "backend=${BASE}-backend" >> $GITHUB_OUTPUT
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "frontend_version=$FRONTEND_VERSION" >> $GITHUB_OUTPUT
+          echo "backend_version=$BACKEND_VERSION" >> $GITHUB_OUTPUT
 
       # -----------------
       # Build frontend
@@ -48,7 +70,7 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ${{ steps.meta.outputs.frontend }}:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.frontend }}:${{ steps.meta.outputs.frontend_version }}
             ${{ steps.meta.outputs.frontend }}:latest
 
       # -----------------
@@ -62,5 +84,5 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ${{ steps.meta.outputs.backend }}:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.backend }}:${{ steps.meta.outputs.backend_version }}
             ${{ steps.meta.outputs.backend }}:latest
