@@ -1,0 +1,58 @@
+### Citrix NetScaler Virtual Appliance Vendor Configuration
+## Instructions for backing up Citrix NetScaler Virtual Appliance devices
+
+vendor:
+  id: "citrix_netscaler"
+  name: "Citrix Systems"
+  description: "NetScaler Virtual Appliance devices"
+
+### Session-level behavior
+session:
+  comment_prefix: "# "
+  prompt: '^(.*[\w.-]*>\s?)$'
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Pre-backup commands (prepare the session) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  pre_backup: []
+
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "show version"
+      metadata: true
+    - command: "show hardware"
+      metadata: true
+    - command: "show partition"
+      metadata: true
+    - command: "show run"
+      show_command_in_config: true
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "exit"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  ### Lines to strip from captured config (regex patterns)
+  # strip_patterns:
+  #   - 'Uptime:.*'
+  #   - 'Time:.*'
+
+  ### Lines that mark config boundaries
+  ## If either boundary is missing, keep from/to the file edge.
+  # config_start: "^# unifi$"
+  # config_end: "^# misc$"
+
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      - search: '\w+\s(-encrypted)'
+        replacement: '<secret hidden> \1'
