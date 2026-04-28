@@ -1,0 +1,86 @@
+name: Bug report
+description: Report a problem in KiwiSSH
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill out the fields below so we can reproduce and fix it.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened?
+      placeholder: Short description of the issue.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Provide clear steps so we can reproduce the behavior.
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What happened instead?
+    validations:
+      required: true
+
+  - type: input
+    id: app_version
+    attributes:
+      label: Application version
+      description: Release tag or application version (if known).
+
+  - type: input
+    id: backend_version
+    attributes:
+      label: Backend version
+      description: Backend image version (if known).
+
+  - type: input
+    id: frontend_version
+    attributes:
+      label: Frontend version
+      description: Frontend image version (if known).
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment method
+      options:
+        - Docker
+        - Bare metal
+        - Other
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment details
+      description: OS, browser, and any relevant environment info.
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and screenshots
+      description: Paste relevant logs, stack traces, or screenshots.
+      render: shell
