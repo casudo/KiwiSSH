@@ -497,7 +497,6 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 
 **Short Term:**
 
-- More logging
 - Checks for device source: No duplicate hostnames, valid IPs, ... (What if multiple groups hold the same IP address range?)
 - Update ssh_service to use FQDN instead of IP to avoid?
 - Instead of manually configuring the versions in `main.ts` and `__init__.py`, use the docker image tag as version source. This would only work if the users uses KiwiSSH in Docker containers. How to handle it when used manually?
@@ -508,20 +507,14 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 
 **Mid-term:**
 
-- Customizable theme
-- Publish Image to Docker hub?
-- Login Screen, User management and RBAC
 - Implement backup job log rotation and retention policies (e.g. delete logs if line >10000 or older than 90 days)
 - Add visual popup when opening JobView.vue if the page load takes longer than 2 seconds to inform the user that the page is still loading and to prevent them from thinking the UI is frozen
 - Pentests
 - Rework Pydantic models (required vs optional fields, default values, validators, etc.)
-- Rework `tests/`. Include real mock device CLI outputs and uniform sources CSV. Exclude `tests/backups` in .gitignoore. These files can be then freely used by any maintainer to test things out
-- Bug report and Feature request template
 - Update Ruff linter and formatter
 - Add Vue linter/formatter?
 - Telnet support? SCP support?
 - Update ssh_profile legacy with Synology NAS ssh settings "Low"
-- Set SSH password as encrypted SHA-512 value? Does OpenSSH support tha?
 - Show "backup time" when NO_CHANGES" in log line "No configuration changes detected for {device_name}"?
 
 **Long Term:**
@@ -530,21 +523,13 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 - Notification System (Email, Slack, Webhook) ([#5](https://github.com/casudo/KiwiSSH/issues/5))
   - Special notification IF git diff shows a minus or plus of 100 lines or more to quickly inform about major config changes
 - i18n localization support
-- Add yaak API collection
-- "Live Log" when pressing "Trigger Backup": Even if not "live live", show the log output as it comes in with nice visual animations and auto-scrolling
 - New Update available notification in the UI
-- GitHub Wiki for usage?
-- Demo version with pre-filled config and mock device sources for users to try out without setting up their own environment (should reset after a certain time or when the user clicks a reset button)
-- Migrate /favorites endpoint to /devices?
-- For better readibility, add a folder "database" to backend/app/services and place the database related services (backup_job_service, favorite_service) in there (where should source_service.py life?).
 - Fix logging strings to use lazy formatting instead of f-strings ([Ruff G004](https://docs.astral.sh/ruff/rules/logging-f-string/)) (Add to ruff.toml)
-- Visual diagram of the architecture and how the different components interact with each other (e.g., config loading, backup execution flow, etc.)
-- As part of renaming change the theme colors to green-ish
 - Swagger API documentation on GitHub Pages
 - Allow group passwords to bet set via env vars or other input
-- Better device simulation: Add a small script for user to run against actual hardware to create realistic CLI output samples for the vendor YAML file creation. Secrets and sensitive info should be redacted
 - Optional share anonymouse usage data for statistics (needs opt-in, privacy policy and telemetry server)
 - Add UI banner when new update is available
+- Login Screen, User management and RBAC
 
 ---
 
