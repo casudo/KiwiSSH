@@ -26,6 +26,7 @@ export const useJobsStore = defineStore("jobs", () => {
   const totalInProgressJobs = ref(0)
   const totalNoChangesJobs = ref(0)
   const avgDurationSeconds = ref<number | null>(null)
+  const queueDepth = ref<number | null>(null)
   const lastQuery = ref<JobsQueryState>({
     limit: 200,
     offset: 0,
@@ -107,6 +108,7 @@ export const useJobsStore = defineStore("jobs", () => {
       avgDurationSeconds.value = typeof response.avg_duration_seconds === "number"
         ? response.avg_duration_seconds
         : null
+      queueDepth.value = typeof response.queue_depth === "number" ? response.queue_depth : null
       const statusTotals = response.status_totals
       if (statusTotals) {
         totalSuccessJobs.value = statusTotals.success || 0
@@ -270,6 +272,7 @@ export const useJobsStore = defineStore("jobs", () => {
     totalInProgressJobs,
     totalNoChangesJobs,
     avgDurationSeconds,
+    queueDepth,
     // Getters
     inProgressJobs,
     inProgressCount,

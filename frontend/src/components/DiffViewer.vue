@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, ref, watch } from "vue"
 
 interface DiffSegment {
   text: string
@@ -25,6 +25,25 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
+const MAX_DIFF_LINES = 100
+const showFullDiff = ref(false)
+
+const diffLines = computed(() => (props.diffContent ? props.diffContent.split("\n") : []))
+const diffLineCount = computed(() => diffLines.value.length)
+const isLargeDiff = computed(() => diffLineCount.value > MAX_DIFF_LINES)
+const visibleDiffLines = computed(() => (
+  isLargeDiff.value && !showFullDiff.value
+    ? diffLines.value.slice(0, MAX_DIFF_LINES)
+    : diffLines.value
+))
+
+watch(
+  () => props.diffContent,
+  () => {
+    showFullDiff.value = false
+  },
+)
 
 function buildInlineSegments(
   removedText: string,
@@ -113,7 +132,7 @@ const parsedDiff = computed((): DiffRow[] => {
     return rows
   }
 
-  const lines = props.diffContent.split("\n")
+  const lines = visibleDiffLines.value
   let leftLineNum = 1
   let rightLineNum = 1
 
@@ -264,6 +283,19 @@ function getLineClass(type: string): string {
         <span class="text-red-600 dark:text-red-400 font-medium">-{{ linesRemoved }}</span>
         <span class="text-gray-600 dark:text-gray-400">removed</span>
       </span>
+    </div>
+
+    <div v-if="isLargeDiff" class="flex flex-wrap items-center gap-3 text-sm">
+      <p class="text-orange-600 dark:text-orange-400">
+        Large diff detected ({{ diffLineCount }} lines).
+        <span v-if="!showFullDiff">Showing first {{ MAX_DIFF_LINES }} lines.</span>
+      </p>
+      <button
+        @click="showFullDiff = !showFullDiff"
+        class="btn btn-secondary py-1 px-3 text-sm"
+      >
+        {{ showFullDiff ? "Hide full diff" : "Show full diff" }}
+      </button>
     </div>
 
     <!-- Side-by-side diff viewer -->

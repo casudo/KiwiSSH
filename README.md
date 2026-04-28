@@ -257,6 +257,7 @@ KiwiSSH will always store the device configurations in local git repositories to
 | --- | ----------- | -------- | ------------- |
 | `groups.<group>.username` | The username for SSH authentication for devices in this group. | **Yes** | - |
 | `groups.<group>.password` | The password for SSH authentication for devices in this group (optional when `ssh_key_file` is used). | No | - |
+| `groups.<group>.enable_password` | Optional enable password for devices in this group. Vendor YAML `then` values can reference it with `{{ enable_password }}`. | No | - |
 | `groups.<group>.ssh_key_file` | The private key file path for SSH authentication for devices in this group (alternative to password). | No | - |
 | `groups.<group>.ssh_profile` | The SSH profile to use for devices in this group. This is used to determine the SSH options to use when connecting to the devices. | **Yes** | - |
 | `groups.<group>.ssh_port` | SSH port for devices in this group. | No | `22` |
@@ -283,6 +284,7 @@ KiwiSSH will always store the device configurations in local git repositories to
 | --- | ----------- | -------- | ------------- |
 | `nodes.<device_name>.username` | The username for SSH authentication for this device. | No | `groups.<group>.username` |
 | `nodes.<device_name>.password` | The password for SSH authentication for this device. | No | `groups.<group>.password` |
+| `nodes.<device_name>.enable_password` | Optional enable password for this device. This overrides `groups.<group>.enable_password` and can be referenced from vendor YAML `then` values with `{{ enable_password }}`. | No | `groups.<group>.enable_password` |
 | `nodes.<device_name>.ssh_key_file` | The private key file path for SSH authentication for this device. | No | `groups.<group>.ssh_key_file` |
 | `nodes.<device_name>.ssh_profile` | The SSH profile to use for this device. This is used to determine the SSH options to use when connecting to the device. | No | `groups.<group>.ssh_profile` |
 | `nodes.<device_name>.ssh_port` | SSH port override for this device. | No | `groups.<group>.ssh_port` or `22` |
@@ -303,6 +305,9 @@ KiwiSSH will always store the device configurations in local git repositories to
 > Found at `/config/vendors`
 
 Vendor YAML files define how KiwiSSH interacts with each device CLI and how captured output is processed before it is saved.
+
+> [!IMPORTANT]
+> Only the `{{ enable_password }}` placeholder is supported, and only in `then` values. If it resolves to an empty string (`""`), KiwiSSH sends Enter.
 
 > [!TIP]
 > You can create your own vendor YAML file by copying one of the existing ones and modifying it according to the CLI output of your devices. If you want to contribute your vendor file to the project, please create a Pull Request with the new vendor YAML file in the `config/vendors` folder.
@@ -359,7 +364,7 @@ commands:
       description: "Get running configuration"
     - command: "another command here" # another simple command
     - command: "enable" # interactive command
-      then: ["<enable password>"]
+      then: ["{{ enable_password }}"]
     - command: "logout" # another interactive command
       then:
         - "y"
@@ -371,7 +376,7 @@ You can use the following keys for each command step:
 | Key | Description | Required | Default Value |
 | --- | ----------- | -------- | ------------- |
 | `command` | Directly run the command on the device. | **Yes** | - |
-| `then` | Optional interactive input sequence to send after `command`. Must be a YAML list (`then: ["value1", "value2", ...]`) with up to 5 entries. | No | - |
+| `then` | Optional interactive input sequence to send after `command`. Must be a YAML list (`then: ["value1", "value2", ...]`) with up to 5 entries. Empty strings are sent as Enter. String values may use `{{ enable_password }}` to inject the device enable password. | No | - |
 | `description` | A brief description of the command. | No | - |
 | `metadata` | If set to true, the output of this command will be saved as comment-prefixed metadata block in the backup job log. This is useful for adding important information to the backup job log. | No | `false` |
 | `wait_for_prompt` | If set to false, KiwiSSH will not wait for the command prompt to return after running this command before proceeding to the next step. Use with caution. | No | `true` |
@@ -498,7 +503,6 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 - Instead of manually configuring the versions in `main.ts` and `__init__.py`, use the docker image tag as version source. This would only work if the users uses KiwiSSH in Docker containers. How to handle it when used manually?
 - Add new vendors
 - When many backups are queued at the moment, the refresh on JobsView.vue still hungs
-- Switching pages on the frontend via pagination should scroll to the top for the next/previous page
 - Set default app.threads to 5/10 or 20?
 - Fix GitHub actions pipeline frontend image version
 
@@ -515,15 +519,10 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 - Bug report and Feature request template
 - Update Ruff linter and formatter
 - Add Vue linter/formatter?
-- Update `use_test_config_if_enabled` to use the roots `/config` folder
-- Telnet support?
+- Telnet support? SCP support?
 - Update ssh_profile legacy with Synology NAS ssh settings "Low"
-- Display queue on job view page?
-- Show "Show full diff" button if the config diff view has too many changes
 - Set SSH password as encrypted SHA-512 value? Does OpenSSH support tha?
 - Show "backup time" when NO_CHANGES" in log line "No configuration changes detected for {device_name}"?
-- Show hint "Backup triggered: Backup for device {device_name} is already queued or currently running." when clicking the small trigger backup button on device list/card/compactcard item?
-- Implement option to set a device's `enable` password via config/env vars which then gets used in `pre_backup` section. Right now the `enable` password can only be set in the vendors YAML resulting in the same `enable` password for all devices using that vendor config which might not be the case for everyone
 
 **Long Term:**
 
@@ -544,7 +543,6 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 - Swagger API documentation on GitHub Pages
 - Allow group passwords to bet set via env vars or other input
 - Better device simulation: Add a small script for user to run against actual hardware to create realistic CLI output samples for the vendor YAML file creation. Secrets and sensitive info should be redacted
-- Add Conventional Commits -> Add info in repo or how to apply it correctly?
 - Optional share anonymouse usage data for statistics (needs opt-in, privacy policy and telemetry server)
 - Add UI banner when new update is available
 

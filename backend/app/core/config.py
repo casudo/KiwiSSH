@@ -199,6 +199,7 @@ class GroupConfig(BaseModel):
     """Device group configuration."""
     username: str
     password: str | None = None
+    enable_password: str | None = None
     ssh_key_file: str | None = None
     ssh_profile: str
     ssh_port: int | None = Field(default=None, ge=1, le=65535)
@@ -258,11 +259,21 @@ class GroupConfig(BaseModel):
         text = str(value).strip()
         return text or None
 
+    @field_validator("enable_password", mode="before")
+    @classmethod
+    def normalize_group_enable_password(cls, value: str | None) -> str | None:
+        """Normalize optional enable password and convert blanks to None."""
+        if value is None:
+            return None
+        text = str(value).strip()
+        return text or None
+
 
 class NodeConfig(BaseModel):
     """Per-device configuration overrides."""
     username: str | None = None
     password: str | None = None
+    enable_password: str | None = None
     ssh_key_file: str | None = None
     ssh_profile: str | None = None
     ssh_port: int | None = Field(default=None, ge=1, le=65535)
@@ -277,6 +288,15 @@ class NodeConfig(BaseModel):
     @classmethod
     def normalize_node_auth_text(cls, value: str | None) -> str | None:
         """Normalize optional auth strings and convert blanks to None."""
+        if value is None:
+            return None
+        text = str(value).strip()
+        return text or None
+
+    @field_validator("enable_password", mode="before")
+    @classmethod
+    def normalize_node_enable_password(cls, value: str | None) -> str | None:
+        """Normalize optional enable password and convert blanks to None."""
         if value is None:
             return None
         text = str(value).strip()
@@ -474,7 +494,7 @@ class Settings(BaseSettings):
     config_dir: Path = Field(default=Path("/config"))
 
     ### Testing
-    local_test_mode: bool = Field(default=False, description="Use tests/config and tests/sources for local testing")
+    local_test_mode: bool = Field(default=False, description="Use /config for local testing")
 
     ### Configuration sections (loaded from YAML)
     app: AppConfig = Field(default_factory=AppConfig)
@@ -496,14 +516,9 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def use_test_config_if_enabled(self) -> "Settings":
-        """If LOCAL_TEST_MODE=true, use tests/config for local testing."""
+        """If LOCAL_TEST_MODE=true, use /config for local testing."""
         if self.local_test_mode:
-            project_root = Path(__file__).parent.parent.parent.parent
-
-            ### Use test config directory
-            test_config_dir = project_root / "tests" / "config"
-            if test_config_dir.exists():
-                self.config_dir = test_config_dir.resolve()
+            self.config_dir = Path("/config")
 
         return self
 
@@ -647,6 +662,7 @@ class Settings(BaseSettings):
             device_config.update({
                 "username": group_config.username,
                 "password": group_config.password,
+                "enable_password": group_config.enable_password,
                 "ssh_key_file": group_config.ssh_key_file,
                 "ssh_profile": group_config.ssh_profile,
                 "vendor": group_config.vendor,
@@ -691,6 +707,8 @@ class Settings(BaseSettings):
                 device_config["username"] = node_config.username
             if node_config.password is not None:
                 device_config["password"] = node_config.password
+            if node_config.enable_password is not None:
+                device_config["enable_password"] = node_config.enable_password
             if node_config.ssh_key_file is not None:
                 device_config["ssh_key_file"] = node_config.ssh_key_file
 

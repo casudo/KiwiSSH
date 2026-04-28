@@ -2,7 +2,7 @@
 
 Thanks for your potential interest in contributing to KiwiSSH! There are several ways you can help improve the project, whether it's through code contributions, documentation, bug reports, or feature requests.
 
-# Table of Contents <!-- omit in toc -->
+## Table of Contents <!-- omit in toc -->
 
 - [Code of Conduct](#code-of-conduct)
 - [Development](#development)
@@ -10,6 +10,7 @@ Thanks for your potential interest in contributing to KiwiSSH! There are several
     - [Local](#local)
     - [Build Docker image yourself](#build-docker-image-yourself)
   - [Swagger API Documentation](#swagger-api-documentation)
+- [Commits](#commits)
 
 ---
 
@@ -62,3 +63,11 @@ To run KiwiSSH on your local machine without Docker, follow these steps:
 ### Swagger API Documentation
 
 The API documentation is available at `http://<IP>:8000/docs` when the backend is running. You can use this interface to explore and test the API endpoints.
+
+## Commits
+
+When contributing code, please follow these guidelines for commits:
+
+- [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format
+- ruff for Python linting and formatting
+- markdownlint for markdown linting

@@ -155,6 +155,23 @@ function handlePageSizeChange() {
   currentPage.value = 1 // Reset to first page when page size changes
 }
 
+function scrollToTop() {
+  if (typeof window === "undefined") return
+  window.scrollTo({ top: 0, behavior: "smooth" })
+}
+
+function goToPreviousHistoryPage() {
+  if (currentPage.value <= 1) return
+  currentPage.value -= 1
+  scrollToTop()
+}
+
+function goToNextHistoryPage() {
+  if (currentPage.value >= totalPages.value) return
+  currentPage.value += 1
+  scrollToTop()
+}
+
 async function loadDiff() {
   if (!selectedFromCommit.value || !selectedToCommit.value) return
 
@@ -507,14 +524,14 @@ function formatFileSize(bytes: number): string {
             </span>
             <div class="flex gap-2">
               <button
-                @click="currentPage = Math.max(1, currentPage - 1)"
+                @click="goToPreviousHistoryPage"
                 :disabled="currentPage === 1"
                 class="btn btn-secondary py-1 px-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 ← Previous
               </button>
               <button
-                @click="currentPage = Math.min(totalPages, currentPage + 1)"
+                @click="goToNextHistoryPage"
                 :disabled="currentPage === totalPages"
                 class="btn btn-secondary py-1 px-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >

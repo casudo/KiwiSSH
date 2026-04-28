@@ -25,6 +25,7 @@ interface Stats {
   vendors: number
   sshProfiles: number
   backupJobs: number
+  queueDepth: number
 }
 
 const stats = computed((): Stats => ({
@@ -34,6 +35,7 @@ const stats = computed((): Stats => ({
   vendors: configuredVendorCount.value || devicesStore.uniqueVendors.length,
   sshProfiles: configuredProfileCount.value || devicesStore.uniqueSshProfiles.length,
   backupJobs: jobsStore.totalJobs,
+  queueDepth: jobsStore.queueDepth ?? 0,
 }))
 
 const favoriteDevices = computed(() => {
@@ -98,12 +100,13 @@ onMounted(async () => {
     </div>
 
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-6 mb-8">
       <StatCard title="Total Devices" :value="stats.total" color="kiwissh" />
       <StatCard title="Enabled" :value="stats.enabled" color="green" />
       <StatCard title="Groups" :value="stats.groups" color="gray" />
       <StatCard title="Vendors" :value="stats.vendors" color="blue" />
       <StatCard title="SSH Profiles" :value="stats.sshProfiles" color="purple" />
+      <StatCard title="Queue Depth" :value="stats.queueDepth" color="yellow" />
       <StatCard title="Backup Job Log Lines" :value="stats.backupJobs" color="orange" />
     </div>
 

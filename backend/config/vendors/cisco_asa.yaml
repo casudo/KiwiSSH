@@ -20,7 +20,7 @@ commands:
   ## Command outputs aren't saved in stored configuration
   pre_backup:
     - command: "enable"
-      then: [""] # send ena pw
+      then: ["{{ enable_password }}"]
     - command: "terminal pager 0"
   
 

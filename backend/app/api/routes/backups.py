@@ -144,6 +144,7 @@ async def get_backup_jobs(
             "offset": offset,
             "avg_duration_seconds": float(avg_duration_value) if avg_duration_value is not None else None,
             "status_totals": status_totals,
+            "queue_depth": backup_service.get_backup_queue_depth(),
             "jobs": [
                 {
                     "job_id": job.id,

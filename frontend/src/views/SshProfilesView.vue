@@ -137,6 +137,23 @@ function handlePageSizeChange() {
   currentPage.value = 1
 }
 
+function scrollToTop() {
+  if (typeof window === "undefined") return
+  window.scrollTo({ top: 0, behavior: "smooth" })
+}
+
+function goToPreviousPage() {
+  if (currentPage.value <= 1) return
+  currentPage.value -= 1
+  scrollToTop()
+}
+
+function goToNextPage() {
+  if (currentPage.value >= totalPages.value) return
+  currentPage.value += 1
+  scrollToTop()
+}
+
 watch(searchQuery, () => {
   currentPage.value = 1
 })
@@ -364,14 +381,14 @@ onMounted(async () => {
         </span>
         <div class="flex gap-2">
           <button
-            @click="currentPage = Math.max(1, currentPage - 1)"
+            @click="goToPreviousPage"
             :disabled="currentPage === 1"
             class="btn btn-secondary py-1 px-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             ← Previous
           </button>
           <button
-            @click="currentPage = Math.min(totalPages, currentPage + 1)"
+            @click="goToNextPage"
             :disabled="currentPage === totalPages"
             class="btn btn-secondary py-1 px-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >

@@ -20,7 +20,7 @@ commands:
   ## Command outputs aren't saved in stored configuration
   pre_backup:
     - command: "enable"
-      then: [""] # enter enable password
+      then: ["{{ enable_password }}"]
     - command: "terminal length 0"
 
   ### Main backup command(s)

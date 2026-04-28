@@ -535,11 +535,15 @@ class SSHService:
         return input_text
 
     @staticmethod
-    def _resolve_interactive_inputs(command_def: dict[str, Any]) -> list[str]:
+    def _resolve_interactive_inputs(
+        command_def: dict[str, Any],
+        enable_password: str | None,
+    ) -> list[str]:
         """Resolve interactive input sequence for command steps.
 
         Supported format:
         - then: ["value1", "value2", ...]
+        - Use "{{ enable_password }}" to inject per-device enable password
         """
         ### Check if input is a list
         then_value = command_def.get("then")
@@ -549,7 +553,20 @@ class SSHService:
                 "Use 'then: [\"value1\", \"value2\", ...]'"
             )
 
-        raw_inputs = ["" if value is None else str(value) for value in then_value]
+        raw_inputs: list[str] = []
+        for value in then_value:
+            ### Nothing configured -> send Enter
+            if value is None:
+                raw_inputs.append("")
+                continue
+
+            ### If placeholder var -> inject enable password (or send Enter if not set)
+            text_value = str(value)
+            if text_value.strip() == "{{ enable_password }}":
+                raw_inputs.append(enable_password or "")
+                continue
+
+            raw_inputs.append(text_value)
 
         if not raw_inputs:
             raise RuntimeError("Step failed: interactive input sequence is empty")
@@ -569,6 +586,7 @@ class SSHService:
         prompt_patterns: list[re.Pattern[str]],
         pagination_rules: list[PaginationRule],
         capture_output: bool,
+        enable_password: str | None,
         required: bool = True,
     ) -> list[dict[str, Any]]:
         """Run one command phase and return captured output chunks.
@@ -584,7 +602,8 @@ class SSHService:
         - show_command_in_config: whether command header is embedded before output in config body
         """
         captured_outputs: list[dict[str, Any]] = []
-        phase_commands = [ # Save commands used in a list
+        ### Save commands used in a list
+        phase_commands = [
             str(step.get("command") or "").strip()
             for step in commands
             if str(step.get("command") or "").strip()
@@ -616,7 +635,7 @@ class SSHService:
                     process.stdin.write(f"{command}\n")
                     await asyncio.sleep(0.1)
 
-                    interactive_inputs = self._resolve_interactive_inputs(command_def)
+                    interactive_inputs = self._resolve_interactive_inputs(command_def, enable_password)
 
                     ### Send all interactive inputs in sequence, then wait for prompt once
                     for index, input_text in enumerate(interactive_inputs, start=1):
@@ -868,6 +887,7 @@ class SSHService:
         connection: asyncssh.SSHClientConnection,
         vendor_id: str,
         default_timeout: int,
+        enable_password: str | None,
     ) -> tuple[str, str | None]:
         """Collect configuration and metadata from device via vendor-defined command phases."""
         ### Get command sets for the vendor (pre_backup, backup, post_backup)
@@ -917,6 +937,7 @@ class SSHService:
                 prompt_patterns=prompt_patterns,
                 pagination_rules=pagination_rules,
                 capture_output=False,
+                enable_password=enable_password,
             )
 
             ## backup
@@ -927,6 +948,7 @@ class SSHService:
                 prompt_patterns=prompt_patterns,
                 pagination_rules=pagination_rules,
                 capture_output=True,
+                enable_password=None,
             )
 
             ## post_backup
@@ -937,6 +959,7 @@ class SSHService:
                 prompt_patterns=prompt_patterns,
                 pagination_rules=pagination_rules,
                 capture_output=False,
+                enable_password=None,
                 required=False, # Set to false so backup capture can still succeed even if post_backup fails
             )
 
@@ -1031,6 +1054,8 @@ class SSHService:
         """Get device configuration plus optional metadata via local simulator or real SSH."""
         ### Get device config
         device_config = self.settings.get_device_config(device.group, device.device_name)
+        enable_password_raw = str(device_config.get("enable_password") or "").strip()
+        enable_password = enable_password_raw if enable_password_raw else None
 
         ### Filter for required SSH config values
         timeout_seconds = int(device_config["timeout"])
@@ -1112,6 +1137,7 @@ class SSHService:
                     connection=connection,
                     vendor_id=vendor_id,
                     default_timeout=timeout_seconds,
+                    enable_password=enable_password,
                 )
                 if attempt > 1:
                     logger.warning(
