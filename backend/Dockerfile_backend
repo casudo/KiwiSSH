@@ -20,7 +20,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /code/backend
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git openssh-client ca-certificates nano tree \
+    git openssh-client ca-certificates nano tree nc \
  && rm -rf /var/lib/apt/lists/*
 
 ### Create a non-privileged user
