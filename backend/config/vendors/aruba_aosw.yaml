@@ -2,14 +2,23 @@
 ## Instructions for backing up HPE Aruba Networking devices
 
 vendor:
-  id: "aruba_aoscx"
+  id: "aruba_aosw"
   name: "HPE Aruba Networking"
-  description: "HPE Aruba AOS-CX devices"
+  description: "AOSW Aruba Wireless, IAP, Instant Controller and Mobility Access Switches"
+
+  # Used in Alcatel OAW-4750 WLAN controller
+  # Also Dell controllers
+
+  # HPE Aruba Switches should use a different model as the software is based on the HP Procurve line.
+
+  # Support for IAP & Instant Controller tested with 115, 205, 215 & 325 running 6.4.4.8-4.2.4.5_57965
+  # Support for Mobility Access Switches tested with S2500-48P & S2500-24P running 7.4.1.4_54199 and S2500-24P running 7.4.1.7_57823
+  # All IAPs connected to a Instant Controller will have the same config output. Only the controller needs to be monitored.
 
 ### Session-level behavior
 session:
-  comment_prefix: "! "
-  prompt: '^[\w\s.-]+[#>] $'
+  comment_prefix: "# "
+  prompt: '^\(?[\w:.@-]+\)? ?[*^]?(\[[\w\/]+\] ?)?[#>] ?$'
 
 ### Commands to execute for backup
 ## Supported step types in command phases:
@@ -21,18 +30,21 @@ commands:
   pre_backup:
     - command: "enable"
       then: [""] # enter enable password
-    - command: "terminal length 0"
+    - command: "no paging"
+    - command: "encrypt disable"
 
   ### Main backup command(s)
   ## Commands whose output becomes the stored configuration
   backup:
     - command: "show version"
       metadata: true
-    - command: "show module"
+    - command: "show inventory"
       metadata: true
-    - command: "show interface transceiver"
+    - command: "show slots"
       metadata: true
-    - command: "show system"
+    - command: "show license"
+      metadata: true
+    - command: "show license passphrase"
       metadata: true
     - command: "show running-config"
       show_command_in_config: true
@@ -40,7 +52,8 @@ commands:
   ### Post-backup commands (cleanup) (OPTIONAL)
   ## Command outputs aren't saved in stored configuration
   post_backup:
-    - command: "exit"
+    - command: "exit" # exit enable
+    - command: "exit" # logout
 
 ### Configuration processing rules
 ## Processing reduces diff noise and trims non-config boilerplate
@@ -55,22 +68,38 @@ processing:
   # config_end: "^# misc$"
 
   ### Secret masking. When enabled=false, no redaction is applied.
-  redaction:
-    enabled: false
-    patterns:
-      - search: '^(user .* group .*(?: ciphertext)?) \S+'
-        replacement: '\1<secret redacted>'
-      - search: '^(snmp-server community) \S+(.*)'
-        replacement: '\1 <secret redacted> \2'
-      - search: '^(snmp-server host \S+) \S+(.*)'
-        replacement: '\1 <secret redacted> \2'
-      - search: '^(snmpv3 user).*?(auth (?:md5|sha(?:\d{1,3})?) auth-pass ciphertext).*?(priv (?:des|aes(?:\d{1,3})?) priv-pass ciphertext).*'
-        replacement: '\1 <user> \2 <auth-pass> \3 <priv-pass>'
-      - search: '^(radius-server host \S+ key(?: ciphertext)?) \S+ (.*)'
-        replacement: '\1 <secret redacted> \2'
-      - search: '^(radius-server key).*'
-        replacement: '\1 <secret redacted>'
-      - search: '^(tacacs-server host \S+ key) \S+(.*)'
-        replacement: '\1 <secret redacted> \2'
-      - search: '^(tacacs-server key).*'
-        replacement: '\1 <secret redacted>'
+redaction:
+  enabled: false
+  patterns:
+    - search: '^(secret) \S+\s?$'
+      replacement: '\1 <secret removed>'
+    - search: '^(enable secret) \S+\s?$'
+      replacement: '\1 <secret removed>'
+    - search: '^(PRE-SHARE) \S+\s?$'
+      replacement: '\1 <secret removed>'
+    - search: '^(ipsec) \S+\s?$'
+      replacement: '\1 <secret removed>'
+    - search: '^(community) \S+\s?$'
+      replacement: '\1 <secret removed>'
+    - search: '( sha) \S+'
+      replacement: '\1 <secret removed>'
+    - search: '( des) \S+'
+      replacement: '\1 <secret removed>'
+    - search: '^(mobility-manager \S+ user \S+) \S+'
+      replacement: '\1 <secret removed>'
+    - search: '^(mgmt-user \S+ (?:root|guest-provisioning|network-operations|read-only|location-api-mgmt)) \S+\s?$'
+      replacement: '\1 <secret removed>'
+    - search: '^(mgmt-user \S+) \S+( (?:read-only|guest-mgmt))?\s?$'
+      replacement: '\1 <secret removed>\2'
+    - search: '^(key) \S+\s?$'
+      replacement: '\1 <secret removed>'
+    - search: '^(vrrp-passphrase) \S+\s?$'
+      replacement: '\1 <secret removed>'
+    - search: '^(wpa-passphrase) \S+\s?$'
+      replacement: '\1 <secret removed>'
+    - search: '^(bkup-passwords) \S+\s?$'
+      replacement: '\1 <secret removed>'
+    - search: '^(ap-console-password) \S+\s?$'
+      replacement: '\1 <secret removed>'
+    - search: '^(virtual-controller-key) \S+\s?$'
+      replacement: '\1 <secret removed>'
