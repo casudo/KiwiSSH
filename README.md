@@ -520,10 +520,8 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 - Bug report and Feature request template
 - Update Ruff linter and formatter
 - Add Vue linter/formatter?
-- Update `use_test_config_if_enabled` to use the roots `/config` folder
-- Telnet support?
+- Telnet support? SCP support?
 - Update ssh_profile legacy with Synology NAS ssh settings "Low"
-- Display queue on job view page?
 - Show "Show full diff" button if the config diff view has too many changes
 - Set SSH password as encrypted SHA-512 value? Does OpenSSH support tha?
 - Show "backup time" when NO_CHANGES" in log line "No configuration changes detected for {device_name}"?

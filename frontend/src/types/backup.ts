@@ -67,6 +67,7 @@ export interface BackupJobsResponse {
   limit: number
   offset: number
   avg_duration_seconds?: number | null
+  queue_depth?: number
   status_totals?: {
     pending: number
     in_progress: number

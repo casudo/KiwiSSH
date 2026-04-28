@@ -258,7 +258,7 @@ async function handleFlushDatabase() {
     </div>
 
     <!-- Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-7 gap-4 mb-6">
       <div class="card">
         <div class="flex items-center justify-between">
           <div>
@@ -284,6 +284,15 @@ async function handleFlushDatabase() {
             <p class="text-2xl font-bold text-blue-600">{{ jobsStore.inProgressCount }}</p>
           </div>
           <div class="text-3xl text-blue-300 dark:text-blue-500">⏳</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Queue Depth</p>
+            <p class="text-2xl font-bold text-purple-600">{{ jobsStore.queueDepth ?? "-" }}</p>
+          </div>
+          <div class="text-3xl text-purple-300 dark:text-purple-500">📥</div>
         </div>
       </div>
       <div class="card">
