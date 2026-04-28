@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: ✋ I have a question or need support
+    url: https://github.com/casudo/KiwiSSH/discussions
+    about: If it's not a bug or feature request, please ask in our GitHub Discussions and we will get back to you.
