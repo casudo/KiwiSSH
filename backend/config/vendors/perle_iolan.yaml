@@ -4,7 +4,7 @@
 vendor:
   id: "perle_iolan"
   name: "Perle IOLAN Console Servers"
-  description: "Perle IOLAN Console Servers"
+  description: "Tested on Perle IOLAN SCRx Console Servers v8.1"
 
 ### Session-level behavior
 session:
@@ -25,9 +25,13 @@ commands:
   ## Commands whose output becomes the stored configuration
   backup:
     - command: "show version verbose"
+      metadata: true
     - command: "show system hardware"
-    - command: "show interfaces transceiver"
+      metadata: true
+    - command: "show interfaces summary"
+      metadata: true
     - command: "show running-config"
+      show_command_in_config: true
 
   ### Post-backup commands (cleanup) (OPTIONAL)
   ## Command outputs aren't saved in stored configuration
@@ -38,10 +42,8 @@ commands:
 ## Processing reduces diff noise and trims non-config boilerplate
 processing:
   ### Lines to strip from captured config (regex patterns)
-  # strip_patterns:
-  #   - "^\\s*RX packets:.*$"
-  #   - "^\\s*TX packets:.*$"
-  #   - "^\\s*RX bytes:.*$"
+  strip_patterns:
+    - '^version.*$'
 
   ### Lines that mark config boundaries
   ## If either boundary is missing, keep from/to the file edge.
@@ -51,18 +53,6 @@ processing:
   ### Secret masking. When enabled=false, no redaction is applied.
   redaction:
     enabled: false
-    # patterns:
-    #   - search: "^(snmp-server community).*$"
-    #     replacement: "\\1<secret redacted>"
-    #   - search: "^(snmp-server user (\\S+) (\\S+) auth (\\S+)) (\\S+) (priv) (\\S+).*$"
-    #     replacement: "\\1<secret redacted>"
-    #   - search: "^(snmp-server host.*? )\\S+( udp-port \\d+)?$"
-    #     replacement: "\\1<secret redacted>"
-    #   - search: "^(snmp-server mib community-map) \\S+ ?(.*)$"
-    #     replacement: "\\1<secret redacted>"
-    #   - search: "^(password \\d+) (\\S+)$"
-    #     replacement: "\\1<secret redacted>"
-    #   - search: "^(radius-server .*key(?: \\d+)?) \\S+$"
-    #     replacement: "\\1<secret redacted>"
-    #   - search: "^(tacacs-server .*key(?: \\d+)?) \\S+$"
-    #     replacement: "\\1<secret redacted>"
+    patterns:
+      - search: '^(username\s+\S+\s+privilege\s+\d+\s+secret\s+\d+\s)\s+\S+$'
+        replacement: '\1<secret redacted>'
