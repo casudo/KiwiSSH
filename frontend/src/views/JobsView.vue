@@ -272,7 +272,11 @@ async function handleFlushDatabase() {
             <p class="text-sm text-gray-500 dark:text-gray-400">Total Jobs</p>
             <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ jobsStore.totalJobs }}</p>
           </div>
-          <div class="text-3xl text-gray-300 dark:text-gray-500">📊</div>
+          <div class="text-3xl text-gray-300 dark:text-gray-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18M9 17V9m4 8V7m4 10V11" />
+            </svg>
+          </div>
         </div>
       </div>
       <div class="card">
@@ -281,7 +285,12 @@ async function handleFlushDatabase() {
             <p class="text-sm text-gray-500 dark:text-gray-400">Avg Backup Time</p>
             <p class="text-2xl font-bold text-indigo-600">{{ formatDuration(jobsStore.avgDurationSeconds) }}</p>
           </div>
-          <div class="text-3xl text-indigo-300 dark:text-indigo-500">🕒</div>
+          <div class="text-3xl text-indigo-300 dark:text-indigo-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 48 48" fill="currentColor">
+              <path d="M24,6A18,18,0,1,1,6,24,18.1,18.1,0,0,1,24,6m0-4A22,22,0,1,0,46,24,21.9,21.9,0,0,0,24,2Z"/>
+              <path d="M34,32a1.7,1.7,0,0,1-1-.3L22,25.1V14a2,2,0,0,1,4,0v8.9l9,5.4a1.9,1.9,0,0,1,.7,2.7A1.9,1.9,0,0,1,34,32Z"/>
+            </svg>
+          </div>
         </div>
       </div>
       <div class="card">
@@ -290,7 +299,11 @@ async function handleFlushDatabase() {
             <p class="text-sm text-gray-500 dark:text-gray-400">In Progress</p>
             <p class="text-2xl font-bold text-blue-600">{{ jobsStore.inProgressCount }}</p>
           </div>
-          <div class="text-3xl text-blue-300 dark:text-blue-500">⏳</div>
+          <div class="text-3xl text-blue-300 dark:text-blue-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 16 16" fill="currentColor">
+              <path fill-rule="evenodd" d="M3,0 C2.44772,0 2,0.447715 2,1 C2,1.55228 2.44772,2 3,2 L3,3.17157 C3,3.96722 3.31607,4.73028 3.87868,5.29289 L6.58579,8 L3.87868,10.7071 C3.31607,11.2697 3,12.0328 3,12.8284 L3,14 C2.44772,14 2,14.4477 2,15 C2,15.5523 2.44772,16 3,16 L13,16 C13.5523,16 14,15.5523 14,15 C14,14.4477 13.5523,14 13,14 L13,12.8284 C13,12.0328 12.6839,11.2697 12.1213,10.7071 L9.41421,8 L12.1213,5.29289 C12.6839,4.73028 13,3.96722 13,3.17157 L13,2 C13.5523,2 14,1.55228 14,1 C14,0.447715 13.5523,0 13,0 L3,0 Z M11,2 L5,2 L5,3.17157 C5,3.43679 5.10536,3.69114 5.29289,3.87868 L5.41421,4 L10.5858,4 L10.7071,3.87868 C10.8946,3.69114 11,3.43679 11,3.17157 L11,2 Z M8,9.41421 L5.29289,12.1213 C5.10536,12.3089 5,12.5632 5,12.8284 L5,14 L11,14 L11,12.8284 C11,12.5632 10.8946,12.3089 10.7071,12.1213 L8,9.41421 Z"/>
+            </svg>
+          </div>
         </div>
       </div>
       <div class="card">
@@ -299,7 +312,13 @@ async function handleFlushDatabase() {
             <p class="text-sm text-gray-500 dark:text-gray-400">Queue Depth</p>
             <p class="text-2xl font-bold text-purple-600">{{ jobsStore.queueDepth ?? "-" }}</p>
           </div>
-          <div class="text-3xl text-purple-300 dark:text-purple-500">📥</div>
+          <div class="text-3xl text-purple-300 dark:text-purple-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M48.718 37.163L54.764 40.186C55.1344 40.3711 55.446 40.6556 55.6637 41.0078C55.8815 41.36 55.9968 41.7659 55.9968 42.18C55.9968 42.5941 55.8815 43 55.6637 43.3522C55.446 43.7044 55.1344 43.9889 54.764 44.174L33 55.062C32.6898 55.2182 32.3473 55.2995 32 55.2995C31.6527 55.2995 31.3102 55.2182 31 55.062L9.23601 44.174C8.86559 43.9889 8.55404 43.7044 8.33629 43.3522C8.11854 43 8.0032 42.5941 8.0032 42.18C8.0032 41.7659 8.11854 41.36 8.33629 41.0078C8.55404 40.6556 8.86559 40.3711 9.23601 40.186L15.282 37.163"/>
+              <path d="M48.718 27.129L54.763 30.149C55.1334 30.3341 55.445 30.6186 55.6627 30.9708C55.8805 31.323 55.9958 31.7289 55.9958 32.143C55.9958 32.5571 55.8805 32.963 55.6627 33.3152C55.445 33.6674 55.1334 33.9519 54.763 34.137L48.718 37.16L33 45.029C32.6896 45.1846 32.3472 45.2655 32 45.2655C31.6528 45.2655 31.3104 45.1846 31 45.029L15.28 37.163L9.235 34.14C8.86458 33.9549 8.55303 33.6704 8.33528 33.3182C8.11753 32.966 8.0022 32.5601 8.0022 32.146C8.0022 31.7319 8.11753 31.326 8.33528 30.9738C8.55303 30.6216 8.86458 30.3371 9.235 30.152L15.28 27.129"/>
+              <path d="M31 9.235L9.23299 20.12C8.86262 20.3052 8.55113 20.5899 8.33343 20.9422C8.11573 21.2945 8.00043 21.7004 8.00043 22.1145C8.00043 22.5286 8.11573 22.9345 8.33343 23.2868C8.55113 23.6391 8.86262 23.9238 9.23299 24.109L31 34.994C31.3097 35.1489 31.6512 35.2295 31.9975 35.2295C32.3438 35.2295 32.6853 35.1489 32.995 34.994L54.767 24.109C55.1374 23.9238 55.4489 23.6391 55.6666 23.2868C55.8843 22.9345 55.9996 22.5286 55.9996 22.1145C55.9996 21.7004 55.8843 21.2945 55.6666 20.9422C55.4489 20.5899 55.1374 20.3052 54.767 20.12L33 9.235C32.6897 9.07914 32.3472 8.99797 32 8.99797C31.6527 8.99797 31.3103 9.07914 31 9.235Z"/>
+            </svg>
+          </div>
         </div>
       </div>
       <div class="card">
@@ -308,7 +327,11 @@ async function handleFlushDatabase() {
             <p class="text-sm text-gray-500 dark:text-gray-400">Successful</p>
             <p class="text-2xl font-bold text-green-600">{{ jobsStore.successCount }}</p>
           </div>
-          <div class="text-3xl text-green-300 dark:text-green-500">✓</div>
+          <div class="text-3xl text-green-300 dark:text-green-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m6 2.25a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
         </div>
       </div>
       <div class="card">
@@ -317,7 +340,11 @@ async function handleFlushDatabase() {
             <p class="text-sm text-gray-500 dark:text-gray-400">No Changes</p>
             <p class="text-2xl font-bold text-yellow-600">{{ jobsStore.noChangesCount }}</p>
           </div>
-          <div class="text-3xl text-yellow-300 dark:text-yellow-500">→</div>
+          <div class="text-3xl text-yellow-300 dark:text-yellow-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12m-4.5 4.5H21m-4.5-13.5L21 7.5m0 0L16.5 12m4.5-4.5H3" />
+            </svg>
+          </div>
         </div>
       </div>
       <div class="card">
@@ -326,7 +353,11 @@ async function handleFlushDatabase() {
             <p class="text-sm text-gray-500 dark:text-gray-400">Failed</p>
             <p class="text-2xl font-bold text-red-600">{{ jobsStore.failureCount }}</p>
           </div>
-          <div class="text-3xl text-red-300 dark:text-red-500">✕</div>
+          <div class="text-3xl text-red-300 dark:text-red-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
         </div>
       </div>
     </div>
