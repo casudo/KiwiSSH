@@ -1,0 +1,76 @@
+### HPE Aruba Networking Vendor Configuration
+## Instructions for backing up HPE Aruba Networking devices
+
+vendor:
+  id: "aruba_aoscx"
+  name: "HPE Aruba Networking"
+  description: "HPE Aruba AOS-CX devices"
+
+### Session-level behavior
+session:
+  comment_prefix: "! "
+  prompt: '^[\w\s.-]+[#>] $'
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Pre-backup commands (prepare the session) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  pre_backup:
+    - command: "enable"
+      then: [""] # enter enable password
+    - command: "terminal length 0"
+
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "show version"
+      metadata: true
+    - command: "show module"
+      metadata: true
+    - command: "show interface transceiver"
+      metadata: true
+    - command: "show system"
+      metadata: true
+    - command: "show running-config"
+      show_command_in_config: true
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "exit"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  ### Lines to strip from captured config (regex patterns)
+  # strip_patterns:
+  #   - '^version.*$'
+
+  ### Lines that mark config boundaries
+  ## If either boundary is missing, keep from/to the file edge.
+  # config_start: "^# unifi$"
+  # config_end: "^# misc$"
+
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      - search: '^(user .* group .*(?: ciphertext)?) \S+'
+        replacement: '\1<secret redacted>'
+      - search: '^(snmp-server community) \S+(.*)'
+        replacement: '\1 <secret redacted> \2'
+      - search: '^(snmp-server host \S+) \S+(.*)'
+        replacement: '\1 <secret redacted> \2'
+      - search: '^(snmpv3 user).*?(auth (?:md5|sha(?:\d{1,3})?) auth-pass ciphertext).*?(priv (?:des|aes(?:\d{1,3})?) priv-pass ciphertext).*'
+        replacement: '\1 <user> \2 <auth-pass> \3 <priv-pass>'
+      - search: '^(radius-server host \S+ key(?: ciphertext)?) \S+ (.*)'
+        replacement: '\1 <secret redacted> \2'
+      - search: '^(radius-server key).*'
+        replacement: '\1 <secret redacted>'
+      - search: '^(tacacs-server host \S+ key) \S+(.*)'
+        replacement: '\1 <secret redacted> \2'
+      - search: '^(tacacs-server key).*'
+        replacement: '\1 <secret redacted>'
