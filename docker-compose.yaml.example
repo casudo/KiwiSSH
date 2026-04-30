@@ -15,11 +15,10 @@ services:
       ### Optional: Mount source file if used
       # - /PATH_TO_CONFIG/devices.csv:/config/sources/devices.csv
       ### Optional: Mount your own custom vendor files or ssh_profiles to the /config folder
-      # - /PATH_TO_CONFIG/config:/config
-      # - /PATH_TO_CONFIG/config/custom_ssh_profiles.yaml:/config/ssh_profiles.yaml
       # - /PATH_TO_CONFIG/config/vendors/customer_aaa_ciscoios.yaml:/config/vendors/customer_aaa_ciscoios.yaml
-    ### Optional: mount SSH material for remote git pushes or device login (needs to be uid:gid 1000:1000)
-      # - /PATH_TO_CONFIG/ssh_material:/home/kiwissh/.ssh/
+      # - /PATH_TO_CONFIG/config/ssh_profiles.yaml:/config/ssh_profiles.yaml
+      ### Optional: mount SSH material for remote git pushes or device login (needs to be uid:gid 1000:1000)
+      # - /PATH_TO_CONFIG/ssh_material:/home/kiwissh/.ssh
 
   frontend:
     container_name: kiwissh_frontend

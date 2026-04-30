@@ -161,7 +161,7 @@ class SourceService:
         return list(self._devices_cache.values())
 
     async def load_devices(self) -> list[DeviceBase]:
-        """Load devices from configured source (PostgreSQL preferred, CSV fallback)."""
+        """Load devices from configured source."""
 
         if self.settings.sources.postgres:
             return await self.load_devices_from_postgres()

@@ -132,7 +132,7 @@ async def get_device(device_name: str, db: Session = Depends(get_db)) -> dict:
 
 @router.post("/reload")
 async def reload_devices() -> dict:
-    """Reload devices from source file."""
+    """Reload devices from source."""
     source_service.invalidate_cache()
     devices = await source_service.get_all_devices()
 
