@@ -41,6 +41,12 @@ def configure_logging(debug: bool = False) -> None:
             "asyncssh": {
                 "level": "WARNING",  # Suppress verbose AsyncSSH connection/session DEBUG + INFO logs
             },
+            "git": {
+                "level": "INFO",  # Suppress noisy GitPython DEBUG logs
+            },
+            "git.cmd": {
+                "level": "INFO",  # Suppress noisy GitPython command DEBUG logs
+            },
         },
         "root": {
             "level": level,
