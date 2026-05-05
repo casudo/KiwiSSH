@@ -313,7 +313,15 @@ class SSHService:
                 if tail_lines and self._line_matches_prompt(tail_lines[-1], patterns):
                     ### Collect any trailing bytes that arrive immediately after prompt detection
                     ### This reduces output bleed into the next command on some devices
-                    buffer += await self._read_trailing_output(stream)
+                    if len(buffer) >= LARGE_OUTPUT_TIMEOUT_THRESHOLD_BYTES:
+                        ### Allow a longer quiet window to catch late chunks from large outputs
+                        idle_timeout = 0.2
+                        max_chunks = 64
+                    buffer += await self._read_trailing_output(
+                        stream,
+                        idle_timeout=idle_timeout,
+                        max_chunks=max_chunks,
+                    )
                     return buffer
 
                 ### Handle pagination prompts by sending the response for the matching pagination rule
