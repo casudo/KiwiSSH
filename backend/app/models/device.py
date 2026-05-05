@@ -25,6 +25,7 @@ class DeviceBase(BaseModel):
     vendor: str = Field(..., min_length=1, max_length=255)
     group: str = Field(..., min_length=1, max_length=255)
     ssh_profile: str = Field(..., min_length=1, max_length=255)
+    port: int = Field(..., ge=1, le=65535)
     enabled: bool = True
 
 

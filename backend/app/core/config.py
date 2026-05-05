@@ -201,8 +201,7 @@ class GroupConfig(BaseModel):
     password: str | None = None
     enable_password: str | None = None
     ssh_key_file: str | None = None
-    ssh_profile: str
-    ssh_port: int | None = Field(default=None, ge=1, le=65535)
+    port: int | None = Field(default=None, ge=1, le=65535)
     vendor: str
     jumphost: GroupJumphostConfig | None = None
     timeout: int | None = Field(default=None, ge=1)
@@ -276,7 +275,7 @@ class NodeConfig(BaseModel):
     enable_password: str | None = None
     ssh_key_file: str | None = None
     ssh_profile: str | None = None
-    ssh_port: int | None = Field(default=None, ge=1, le=65535)
+    port: int | None = Field(default=None, ge=1, le=65535)
     vendor: str | None = None
     jumphost: NodeJumphostConfig | None = None
     timeout: int | None = Field(default=None, ge=1)
@@ -649,7 +648,7 @@ class Settings(BaseSettings):
         """
         ### Step 0: Start with application-level defaults
         device_config = {
-            "ssh_port": 22,
+            "port": 22,
             "timeout": self.app.timeout,
             "retry": self.app.retry,
             "schedule": self.app.schedule,
@@ -686,8 +685,8 @@ class Settings(BaseSettings):
                 device_config["retry"] = group_config.retry
             if group_config.schedule and group_config.schedule.cron is not None:
                 device_config["schedule"] = group_config.schedule
-            if group_config.ssh_port is not None:
-                device_config["ssh_port"] = group_config.ssh_port
+            if group_config.port is not None:
+                device_config["port"] = group_config.port
 
         ### Step 2: Apply node-specific overrides
         ### NOTE: Group cannot be overridden here - must be changed in source
@@ -695,8 +694,8 @@ class Settings(BaseSettings):
             node_config = self.nodes[device_name]
             if node_config.ssh_profile is not None:
                 device_config["ssh_profile"] = node_config.ssh_profile
-            if node_config.ssh_port is not None:
-                device_config["ssh_port"] = node_config.ssh_port
+            if node_config.port is not None:
+                device_config["port"] = node_config.port
             if node_config.vendor is not None:
                 device_config["vendor"] = node_config.vendor
             if node_config.timeout is not None:

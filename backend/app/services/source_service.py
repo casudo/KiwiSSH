@@ -58,7 +58,7 @@ class SourceService:
             device_name=device_name,
             ip_address=str(row.get("ip_address", "")).strip(),
             vendor=device_config["vendor"],
-            ssh_profile=device_config["ssh_profile"],
+            port=int(device_config.get("port") or 22),
             enabled=enabled,
         )
         self._devices_cache[device.device_name] = device
