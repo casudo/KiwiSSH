@@ -499,12 +499,8 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 
 - Checks for device source: No duplicate hostnames, valid IPs, ... (What if multiple groups hold the same IP address range?)
 - Update ssh_service to use FQDN instead of IP to avoid?
-- Instead of manually configuring the versions in `main.ts` and `__init__.py`, use the docker image tag as version source. This would only work if the users uses KiwiSSH in Docker containers. How to handle it when used manually?
 - Add new vendors
-- When many backups are queued at the moment, the refresh on JobsView.vue still hungs
-- Set default app.threads to 5/10 or 20?
-- Fix GitHub actions pipeline frontend image version
-
+  
 **Mid-term:**
 
 - Implement backup job log rotation and retention policies (e.g. delete logs if line >10000 or older than 90 days)
@@ -519,7 +515,6 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 
 **Long Term:**
 
-- Add CHANGELOG.md to keep track of changes and make it required for external PRs?
 - Notification System (Email, Slack, Webhook) ([#5](https://github.com/casudo/KiwiSSH/issues/5))
   - Special notification IF git diff shows a minus or plus of 100 lines or more to quickly inform about major config changes
 - i18n localization support
