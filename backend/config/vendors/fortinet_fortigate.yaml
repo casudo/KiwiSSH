@@ -67,8 +67,8 @@ processing:
     patterns:
       - search: "^(#private-encryption-key=).+"
         replacement: "\\1<secret hidden>"
-      - search: "^(set .+ ENC ).*$"
-        replacement: "\\1<secret hidden>"
+      - search: '(set\b.*?\bENC\s+).+'
+        replacement: '\1<secret-hidden>'
       - search: "^(set .*secret) .+$"
         replacement: "\\1<secret hidden>"
       - search: "(set (?:passwd|password|key|group-password|auth-password-l1|auth-password-l2|rsso|history0|history1)) .+"
