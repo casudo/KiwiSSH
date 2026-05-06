@@ -899,7 +899,7 @@ class SSHService:
     ) -> tuple[str, str | None]:
         """Collect configuration and metadata from device via vendor-defined command phases."""
         ### Get command sets for the vendor (pre_backup, backup, post_backup)
-        command_sets = vendor_service.get_backup_commands(vendor_id)
+        command_sets = vendor_service.get_backup_commands(vendor_id, protocol="ssh")
         backup_commands = command_sets.get("backup")
         if not backup_commands:
             raise ValueError(f"Vendor '{vendor_id}' has no backup commands configured")
@@ -1058,10 +1058,12 @@ class SSHService:
     async def get_config(
         self,
         device: DeviceBase,
+        *,
+        device_config: dict[str, Any] | None = None,
     ) -> tuple[str, str | None]:
         """Get device configuration plus optional metadata via SSH or local simulator."""
         ### Get device config
-        device_config = self.settings.get_device_config(device.group, device.device_name)
+        device_config = device_config or self.settings.get_device_config(device.group, device.device_name)
         enable_password_raw = str(device_config.get("enable_password") or "").strip()
         enable_password = enable_password_raw if enable_password_raw else None
 

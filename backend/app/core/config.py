@@ -240,6 +240,7 @@ class GroupConfig(BaseModel):
     password: str | None = None
     enable_password: str | None = None
     ssh_key_file: str | None = None
+    ssh_profile: str | None = None
     port: int | None = Field(default=None, ge=1, le=65535)
     protocol: str | None = None
     vendor: str
@@ -269,13 +270,13 @@ class GroupConfig(BaseModel):
 
     @field_validator("ssh_profile", mode="before")
     @classmethod
-    def validate_group_ssh_profile(cls, ssh_profile: str | None) -> str:
-        """Require a non-empty SSH profile per group."""
+    def normalize_group_ssh_profile(cls, ssh_profile: str | None) -> str | None:
+        """Normalize optional SSH profile and reject blanks."""
         if ssh_profile is None:
-            raise ValueError("ssh_profile is required")
+            return None
         text = str(ssh_profile).strip()
         if not text:
-            raise ValueError("ssh_profile must be a non-empty string")
+            raise ValueError("ssh_profile must be a non-empty string when provided")
         return text
 
     @field_validator("vendor", mode="before")
@@ -294,6 +295,15 @@ class GroupConfig(BaseModel):
     def validate_protocol(cls, value: str | None) -> str | None:
         """Normalize optional protocol override."""
         return _normalize_protocol(value, allow_none=True)
+
+    @model_validator(mode="after")
+    def validate_group_protocol(self) -> "GroupConfig":
+        """Require ssh_profile unless protocol is explicitly telnet."""
+        if self.protocol == "telnet":
+            return self
+        if not self.ssh_profile:
+            raise ValueError("ssh_profile is required for SSH protocol")
+        return self
     
     @field_validator("password", mode="before")
     @classmethod
