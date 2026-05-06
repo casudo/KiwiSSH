@@ -47,6 +47,10 @@ class SourceService:
 
         device_config = self.settings.get_device_config(group, device_name)
 
+        resolved_ssh_profile = str(device_config.get("ssh_profile") or "").strip()
+        if not resolved_ssh_profile and str(device_config.get("protocol")) == "telnet":
+            resolved_ssh_profile = "telnet"
+
         enabled_raw = row.get("enabled", True)
         if isinstance(enabled_raw, bool):
             enabled = enabled_raw
@@ -58,7 +62,9 @@ class SourceService:
             device_name=device_name,
             ip_address=str(row.get("ip_address", "")).strip(),
             vendor=device_config["vendor"],
-            ssh_profile=device_config["ssh_profile"],
+            ssh_profile=resolved_ssh_profile,
+            protocol=str(device_config.get("protocol")).strip().lower(),
+            port=int(device_config.get("port") or 22),
             enabled=enabled,
         )
         self._devices_cache[device.device_name] = device

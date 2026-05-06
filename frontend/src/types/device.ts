@@ -15,6 +15,8 @@ export interface Device {
   vendor: string
   group: string
   ssh_profile: string
+  protocol: string
+  port: number
   enabled: boolean
   status: DeviceStatus
   last_backup: string | null

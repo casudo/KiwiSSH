@@ -27,6 +27,8 @@ interface GroupInfo {
   count: number
   devices: string[]
   remoteUrl: string | null
+  protocol?: string
+  port?: number
 }
 
 const configuredGroups = ref<GroupWithConfig[]>([])
@@ -35,12 +37,19 @@ const allGroups = computed((): GroupInfo[] => {
   // If we have configured groups from API, use only those
   if (configuredGroups.value.length > 0) {
     return configuredGroups.value
-      .map(group => ({
-        name: group.name,
-        count: (devicesStore.devicesByGroup[group.name] || []).length,
-        devices: (devicesStore.devicesByGroup[group.name] || []).map(d => d.device_name),
-        remoteUrl: group.git_remote_url,
-      }))
+      .map(group => {
+        const config = group.config as Record<string, unknown>
+        const protocol = typeof config.protocol === "string" ? config.protocol : undefined
+        const port = typeof config.port === "number" ? config.port : undefined
+        return {
+          name: group.name,
+          count: (devicesStore.devicesByGroup[group.name] || []).length,
+          devices: (devicesStore.devicesByGroup[group.name] || []).map(d => d.device_name),
+          remoteUrl: group.git_remote_url,
+          protocol,
+          port,
+        }
+      })
       .sort((a, b) => b.count - a.count)
   }
   
@@ -59,6 +68,18 @@ const selectedGroupInfo = computed((): GroupInfo | null => {
     return null
   }
   return allGroups.value.find(group => group.name === selectedGroup.value) || null
+})
+const selectedGroupProtocolLabel = computed(() => {
+  const protocol = selectedGroupInfo.value?.protocol
+  if (!protocol) {
+    return "Default"
+  }
+  const normalized = String(protocol).trim()
+  return normalized ? normalized.toUpperCase() : "Default"
+})
+const selectedGroupPortLabel = computed(() => {
+  const port = selectedGroupInfo.value?.port
+  return typeof port === "number" ? String(port) : "Default"
 })
 
 const filteredGroups = computed((): GroupInfo[] => {
@@ -429,6 +450,12 @@ onMounted(async () => {
               <div>
                 <span class="text-gray-600 dark:text-gray-400">Local Repository:</span>
                 <p class="font-mono text-gray-900 dark:text-gray-100 text-xs mt-1">backups/{{ selectedGroup }}/</p>
+              </div>
+              <div>
+                <span class="text-gray-600 dark:text-gray-400">Protocol:</span>
+                <p class="font-medium text-gray-900 dark:text-gray-100">
+                  {{ selectedGroupProtocolLabel }} ({{ selectedGroupPortLabel }})
+                </p>
               </div>
               <div>
                 <span class="text-gray-600 dark:text-gray-400">Total Devices:</span>

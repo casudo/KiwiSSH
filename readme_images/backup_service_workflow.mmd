@@ -1,0 +1,288 @@
+flowchart TB
+
+  %% ---------------------------
+  %% Startup and lifecycle
+  %% ---------------------------
+  subgraph APP[FastAPI Lifespan]
+    A0[App startup]
+    A1[Clear settings and source caches]
+    A2[Load all devices from source_service]
+    A3[Initialize app database]
+    A4[Mark stuck jobs failed at startup recovery]
+    A5[Start global backup queue workers]
+    A6[Start APScheduler for device schedules]
+
+    A0 --> A1 --> A2 --> A3 --> A4 --> A5 --> A6
+  end
+
+  subgraph SHUTDOWN[FastAPI Shutdown]
+    Z0[App shutdown]
+    Z1[Stop APScheduler]
+    Z2[Stop backup queue workers]
+    Z3[Cancel workers, drain queue, clear dedupe set]
+
+    Z0 --> Z1 --> Z2 --> Z3
+  end
+
+  %% ---------------------------
+  %% Trigger sources
+  %% ---------------------------
+  subgraph TRIGGERS[Backup Trigger Sources]
+    T0[/POST /api/v1/backups/trigger/]
+    T1[/POST /api/v1/backups/trigger/{device_name}/]
+    T2[APScheduler cron fire]
+
+    T3[Resolve devices from source_service]
+    T4[Filter enabled devices]
+    T5[Queue batch backups]
+    T6[Queue single device backup]
+
+    T0 --> T3 --> T4 --> T5
+    T1 --> T6
+    T2 --> T6
+  end
+
+  %% ---------------------------
+  %% Source loading
+  %% ---------------------------
+  subgraph SRC[Device Source Service]
+    S0{Cache loaded?}
+    S1[Load devices from PostgreSQL source]
+    S2[Load devices from CSV source]
+    S3[Build DeviceBase records]
+
+    S0 -- no + postgres configured --> S1 --> S3
+    S0 -- no + csv configured --> S2 --> S3
+    S0 -- yes --> S3
+  end
+
+  T3 --> S0
+  T6 --> S0
+  A2 --> S0
+
+  %% ---------------------------
+  %% Queue internals
+  %% ---------------------------
+  subgraph QUEUE[Global Backup Queue Internals]
+    Q0[_ensure_backup_queue_workers]
+    Q1[Worker count = app.threads]
+    Q2[Create FIFO asyncio queue if missing]
+    Q3[Start N worker tasks]
+
+    Q4[Acquire queue_state_lock]
+    Q5{Device already in queued_or_running set?}
+    Q6[Skip enqueue as duplicate]
+    Q7[Add device to queued_or_running set]
+    Q8[Enqueue QueuedBackupItem device, source, enqueued_at]
+    Q9[Queue depth qsize increases]
+
+    Q10[Worker loop waits for queue item]
+    Q11[Compute queue_wait_seconds]
+    Q12[Call backup_device device, queue_wait, source]
+    Q13[Finally: discard dedupe and task_done]
+
+    Q0 --> Q1 --> Q2 --> Q3
+    Q0 --> Q4 --> Q5
+    Q5 -- yes --> Q6
+    Q5 -- no --> Q7 --> Q8 --> Q9
+    Q8 --> Q10 --> Q11 --> Q12 --> Q13
+  end
+
+  T5 --> Q0
+  T6 --> Q0
+  A5 --> Q0
+
+  %% ---------------------------
+  %% backup_device pipeline
+  %% ---------------------------
+  subgraph PIPE[backup_service.backup_device Pipeline]
+    B0[Create in_progress job record]
+    B1{Database SessionLocal available?}
+    B2[Create BackupJob status in_progress]
+    B3[Proceed with job_id None]
+
+    B4[Acquire SSH fetch semaphore]
+    B5[ssh_service.get_config]
+
+    B6[Validate config capture quality]
+    B7{CLI error signature detected?}
+    B8[Fail backup invalid CLI output]
+
+    B9[Load latest completed config size baseline]
+    B10{Baseline exists and baseline >= 8192 bytes?}
+    B11{Capture too small and less than 60 non-empty lines?}
+    B12[Fail backup suspiciously small]
+
+    B13[git_service.save_config]
+    B14{Config changed?}
+    B15[No changes status]
+    B16[Commit config to group git repo]
+    B17{Remote configured for group?}
+    B18[Push remote best effort]
+
+    B19[Build SUCCESS BackupRecord]
+    B20[Build NO_CHANGES BackupRecord]
+    B21[Build FAILED BackupRecord]
+
+    B22[Map BackupStatus to DB job status]
+    B23[Update job final status and metrics]
+
+    B0 --> B1
+    B1 -- yes --> B2 --> B4
+    B1 -- no --> B3 --> B4
+
+    B4 --> B5 --> B6
+    B6 --> B7
+    B7 -- yes --> B8 --> B21
+    B7 -- no --> B9 --> B10
+    B10 -- no --> B13
+    B10 -- yes --> B11
+    B11 -- yes --> B12 --> B21
+    B11 -- no --> B13
+
+    B13 --> B14
+    B14 -- no --> B15 --> B20
+    B14 -- yes --> B16 --> B17
+    B17 -- yes --> B18 --> B19
+    B17 -- no --> B19
+
+    B19 --> B22 --> B23
+    B20 --> B22 --> B23
+    B21 --> B22 --> B23
+  end
+
+  Q12 --> B0
+
+  %% ---------------------------
+  %% ssh_service.get_config detail
+  %% ---------------------------
+  subgraph SSH[ssh_service.get_config and Vendor Command Phases]
+    H0{local_test_mode enabled?}
+    H1[Read config from local_ssh_simulator]
+    H2[Apply vendor processing rules]
+
+    H3[Resolve merged device config timeout, retry, vendor, profile, auth, jumphost]
+    H4[Retry loop attempts 1..retry+1]
+    H5{Jumphost configured?}
+    H6[Open jumphost SSH connection]
+    H7[Open device SSH connection]
+
+    H8[Open interactive shell process]
+    H9[Wait initial prompt]
+    H10[Run pre_backup command phase]
+    H11[Run backup command phase and capture output]
+    H12[Run post_backup phase required false]
+    H13[Force close shell handle and wait_closed]
+
+    H14[Assemble non-metadata backup output]
+    H15[Apply strip and boundary and redaction rules]
+    H16[Build metadata section from metadata true chunks]
+    H17{include_metadata_in_config enabled?}
+    H18[Return config plus metadata section prepended]
+    H19[Return config and separate metadata_output]
+
+    H20[On timeout or exception close connections]
+    H21{Attempts left?}
+    H22[Sleep 250ms and retry]
+    H23[Raise last exception]
+
+    H0 -- yes --> H1 --> H2 --> H19
+    H0 -- no --> H3 --> H4 --> H5
+    H5 -- yes --> H6 --> H7
+    H5 -- no --> H7
+
+    H7 --> H8 --> H9 --> H10 --> H11 --> H12 --> H13 --> H14 --> H15 --> H16 --> H17
+    H17 -- yes --> H18
+    H17 -- no --> H19
+
+    H4 --> H20
+    H20 --> H21
+    H21 -- yes --> H22 --> H4
+    H21 -- no --> H23
+  end
+
+  B5 --> H0
+  H19 --> B6
+  H18 --> B6
+  H23 --> B21
+
+  %% ---------------------------
+  %% Git storage detail
+  %% ---------------------------
+  subgraph GIT[git_service.save_config]
+    G0[Ensure per-group repo exists and is initialized]
+    G1[Read existing device .conf]
+    G2{Content identical?}
+    G3[Return has_changes false]
+    G4[Write file and stage index]
+    G5[Render commit message from template hierarchy]
+    G6[Commit as KiwiSSH Backup System actor]
+    G7{Remote target available?}
+    G8[Push to remote and warn on push failure]
+    G9[Return commit hash and has_changes true]
+
+    G0 --> G1 --> G2
+    G2 -- yes --> G3
+    G2 -- no --> G4 --> G5 --> G6 --> G7
+    G7 -- yes --> G8 --> G9
+    G7 -- no --> G9
+  end
+
+  B13 --> G0
+  G3 --> B15
+  G9 --> B19
+
+  %% ---------------------------
+  %% Jobs and UI query path
+  %% ---------------------------
+  subgraph JOBS[Backup Jobs Read API]
+    J0[/GET /api/v1/backups/jobs/]
+    J1[Apply filters device_name job_id status]
+    J2[Compute status_totals and avg_duration]
+    J3[Return paginated job list]
+
+    J0 --> J1 --> J2 --> J3
+  end
+
+  B23 --> J0
+
+  %% ---------------------------
+  %% Trigger response path
+  %% ---------------------------
+  subgraph RESP[Trigger Endpoint Responses]
+    R0[Count queued and skipped devices]
+    R1[Read current queue depth]
+    R2[Return message with queued skipped and depth]
+
+    R0 --> R1 --> R2
+  end
+
+  T5 --> R0
+  T6 --> R0
+
+  %% ---------------------------
+  %% Status legend
+  %% ---------------------------
+  subgraph LEGEND[Backup Job Status Mapping]
+    L0[pending or in_progress on startup]
+    L1[startup recovery marks as failed]
+    L2[in_progress during active backup]
+    L3[success when commit created]
+    L4[no_changes when config unchanged]
+    L5[failed on SSH or validation or git exception]
+
+    L0 --> L1
+    L2 --> L3
+    L2 --> L4
+    L2 --> L5
+  end
+
+  classDef phase fill:#f1f5f9,stroke:#334155,stroke-width:1px,color:#0f172a;
+  classDef decision fill:#fff7ed,stroke:#c2410c,stroke-width:1px,color:#7c2d12;
+  classDef success fill:#ecfdf5,stroke:#15803d,stroke-width:1px,color:#14532d;
+  classDef failure fill:#fef2f2,stroke:#b91c1c,stroke-width:1px,color:#7f1d1d;
+
+  class A0,A1,A2,A3,A4,A5,A6,Z0,Z1,Z2,Z3,T0,T1,T2,T3,T4,T5,T6,S0,S1,S2,S3,Q0,Q1,Q2,Q3,Q4,Q6,Q7,Q8,Q9,Q10,Q11,Q12,Q13,B0,B2,B3,B4,B5,B6,B8,B9,B12,B13,B15,B16,B18,B19,B20,B21,B22,B23,H1,H2,H3,H4,H6,H7,H8,H9,H10,H11,H12,H13,H14,H15,H16,H18,H19,H20,H22,H23,G0,G1,G3,G4,G5,G6,G8,G9,J0,J1,J2,J3,R0,R1,R2,L0,L1,L2,L3,L4,L5 phase;
+  class Q5,B1,B7,B10,B11,H0,H5,H17,H21,G2,G7 decision;
+  class B19,B20,G9,L3,L4 success;
+  class B21,H23,L1,L5 failure;

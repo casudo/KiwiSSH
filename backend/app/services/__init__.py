@@ -2,6 +2,7 @@
 
 from app.services.source_service import SourceService, source_service
 from app.services.ssh_service import SSHService, ssh_service
+from app.services.telnet_service import TelnetService, telnet_service
 from app.services.git_service import GitService, git_service
 from app.services.backup_service import BackupService, backup_service
 from app.services.vendor_service import VendorService, vendor_service

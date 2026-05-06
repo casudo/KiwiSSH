@@ -163,8 +163,9 @@ Full available options:
 | --- | ----------- | -------- | ------------- |
 | `app.debug` | If set to true, the application will run in debug mode, which enables more verbose logging | No | `false` |
 | `app.threads` | The maximum number of concurrent SSH sessions for backups. | No | `20` |
-| `app.timeout` | The global SSH timeout in seconds. This can be overridden for specific groups or nodes. | No | `30` |
-| `app.retry` | The global SSH retry count, which defines how many additional attempts should be made after the first failed attempt. This can also be overridden for specific groups or nodes. | No | `3` |
+| `app.timeout` | The global connection timeout in seconds. This can be overridden for specific groups or nodes. | No | `30` |
+| `app.retry` | The global retry count, which defines how many additional attempts should be made after the first failed attempt. This can also be overridden for specific groups or nodes. | No | `3` |
+| `app.protocol` | Default protocol for device connections (`ssh` or `telnet`). | No | `ssh` |
 | `app.api.host` | The host on which the API server will run. Should be set to 0.0.0.0 when running in Docker. | No | `127.0.0.1` |
 | `app.api.port` | The port on which the API server will run. | No | `8000` |
 | `app.api.cors_origins` | A list of allowed CORS origins for the API server. | No | `["http://localhost:5173", "http://127.0.0.1:5173"]` |
@@ -260,7 +261,8 @@ KiwiSSH will always store the device configurations in local git repositories to
 | `groups.<group>.enable_password` | Optional enable password for devices in this group. Vendor YAML `then` values can reference it with `{{ enable_password }}`. | No | - |
 | `groups.<group>.ssh_key_file` | The private key file path for SSH authentication for devices in this group (alternative to password). | No | - |
 | `groups.<group>.ssh_profile` | The SSH profile to use for devices in this group. This is used to determine the SSH options to use when connecting to the devices. | **Yes** | - |
-| `groups.<group>.ssh_port` | SSH port for devices in this group. | No | `22` |
+| `groups.<group>.protocol` | Protocol to use for devices in this group (`ssh` or `telnet`). | No | Global `app.protocol` |
+| `groups.<group>.port` | Protocol port for devices in this group. | No | `22` (or `23` when `protocol: telnet`) |
 | `groups.<group>.vendor` | The vendor of the devices in this group. This is used to determine the CLI commands to run for fetching the configuration. | **Yes** | - |
 | `groups.<group>.jumphost.hostname` | Jumphost hostname or IP for this group. If set, devices in this group are reached through this jumphost. | **Yes**, if `jumphost` | - |
 | `groups.<group>.jumphost.port` | Jumphost SSH port. | No | `22` |
@@ -287,7 +289,8 @@ KiwiSSH will always store the device configurations in local git repositories to
 | `nodes.<device_name>.enable_password` | Optional enable password for this device. This overrides `groups.<group>.enable_password` and can be referenced from vendor YAML `then` values with `{{ enable_password }}`. | No | `groups.<group>.enable_password` |
 | `nodes.<device_name>.ssh_key_file` | The private key file path for SSH authentication for this device. | No | `groups.<group>.ssh_key_file` |
 | `nodes.<device_name>.ssh_profile` | The SSH profile to use for this device. This is used to determine the SSH options to use when connecting to the device. | No | `groups.<group>.ssh_profile` |
-| `nodes.<device_name>.ssh_port` | SSH port override for this device. | No | `groups.<group>.ssh_port` or `22` |
+| `nodes.<device_name>.protocol` | Protocol override for this device (`ssh` or `telnet`). | No | `groups.<group>.protocol` or Global `app.protocol` |
+| `nodes.<device_name>.port` | Port override for this device. | No | `groups.<group>.port` or `22` (or `23` when `protocol: telnet`) |
 | `nodes.<device_name>.vendor` | The vendor of this device. This is used to determine the CLI commands to run for fetching the configuration. | No | `groups.<group>.vendor` |
 | `nodes.<device_name>.jumphost.hostname` | Node-level jumphost hostname/IP override. | **Yes**, if `jumphost` | `groups.<group>.jumphost.hostname` |
 | `nodes.<device_name>.jumphost.port` | Node-level jumphost SSH port override. | No | `groups.<group>.jumphost.port` or `22` |
@@ -321,7 +324,7 @@ Each vendor file contains these top-level sections:
 
 - `vendor`: metadata (`id`, `name`, `description`)
 - `session`: session-level output settings (`comment_prefix`, `prompt`, `pagination`, `include_metadata_in_config`)
-- `commands`: command phases (`pre_backup`, `backup`, `post_backup`)
+- `commands`: command phases (`pre_backup`, `backup`, `post_backup`); you can nest protocol-specific overrides under `commands.ssh` or `commands.telnet`
 - `processing`: optional output cleanup/redaction rules
 
 Each segment is explained in detail below.
@@ -415,7 +418,7 @@ SSH profiles define reusable options for SSH connections. Assign a profile via `
 > `ignore` skips known-host validation (mapped to `known_hosts: None` in AsyncSSH)
 > `auto_add` currently falls back to `ignore` and logs a warning
 > Device and jumphost connections can use separate profiles (`ssh_profile` for devices, `jumphost.ssh_profile` for jumphosts)
-> SSH port and timeout are configured in group/node/app settings, not in SSH profiles
+> Port and timeout are configured in group/node/app settings, not in SSH profiles
 
 You can create your own SSH profile by adding a new entry to the `ssh_profiles.yaml` file. Each profile should have a unique name.
 

@@ -30,6 +30,16 @@ const isFavorite = computed(() => favoritesStore.isFavorite(deviceName.value))
 const vendorName = computed(() => 
   devicesStore.selectedDevice ? devicesStore.getVendorName(devicesStore.selectedDevice.vendor) : ""
 )
+const deviceProtocol = computed(() => (devicesStore.selectedDevice?.protocol || "ssh").toLowerCase())
+const protocolLabel = computed(() => (deviceProtocol.value === "telnet" ? "Telnet" : "SSH"))
+const showSshProfile = computed(() => deviceProtocol.value !== "telnet")
+const devicePort = computed(() => {
+  const port = devicesStore.selectedDevice?.port
+  if (typeof port === "number") {
+    return port
+  }
+  return deviceProtocol.value === "telnet" ? 23 : 22
+})
 
 const backupHistory = ref<BackupEntry[]>([])
 const historyLoading = ref(false)
@@ -340,7 +350,7 @@ function formatFileSize(bytes: number): string {
         </div>
 
         <!-- Device details -->
-        <div class="mt-6 grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div class="mt-6 grid grid-cols-2 md:grid-cols-6 gap-4">
           <div>
             <dt class="text-sm text-gray-500 dark:text-gray-400">Group</dt>
             <dd class="font-medium text-gray-900 dark:text-gray-100">{{ devicesStore.selectedDevice.group }}</dd>
@@ -350,6 +360,10 @@ function formatFileSize(bytes: number): string {
             <dd class="font-medium text-gray-900 dark:text-gray-100">{{ vendorName }}</dd>
           </div>
           <div>
+            <dt class="text-sm text-gray-500 dark:text-gray-400">Protocol</dt>
+            <dd class="font-medium text-gray-900 dark:text-gray-100">{{ protocolLabel }} ({{ devicePort }})</dd>
+          </div>
+          <div v-if="showSshProfile">
             <dt class="text-sm text-gray-500 dark:text-gray-400">SSH Profile</dt>
             <dd class="font-medium text-gray-900 dark:text-gray-100">{{ devicesStore.selectedDevice.ssh_profile }}</dd>
           </div>

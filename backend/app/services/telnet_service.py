@@ -1,53 +1,43 @@
-"""SSH connection service using asyncssh."""
+"""Telnet connection service using telnetlib3."""
 
 import asyncio
 import logging
 import re
-from pathlib import Path
+import inspect
 from typing import Any
 
-import asyncssh
+import telnetlib3
 
 from app.core import get_settings
 from app.models.device import DeviceBase
 from app.services.vendor_service import vendor_service
 from app.services.local_ssh_simulator import local_ssh_simulator
+from app.services.ssh_service import (
+    ANSI_ESCAPE_RE,
+    DEFAULT_PAGINATION_PATTERNS,
+    DEFAULT_PAGINATION_RESPONSE,
+    GENERIC_PROMPT_PATTERNS,
+    LARGE_OUTPUT_INACTIVITY_TIMEOUT_SECONDS,
+    LARGE_OUTPUT_TIMEOUT_THRESHOLD_BYTES,
+    READ_CHUNK_SIZE,
+    READ_POLL_INTERVAL_SECONDS,
+)
 
 logger = logging.getLogger(__name__)
 
-ANSI_ESCAPE_RE = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
-
-### Generic prompt detection used for all vendors as default
-## Matches common prompt shapes like:
-## - hostname#
-## - hostname>
-## - hostname(config)#
-## - [user@host ~]#
-## Notes:
-## - Excludes '=' to avoid matching config assignment lines
-GENERIC_PROMPT_PATTERNS = [
-        re.compile(r"[^\r\n=]*[A-Za-z0-9][^\r\n=]*[>#]\s*$"),
-    ]
-
-### Generic pagination patterns to handle common pagination for all vendors as default
-DEFAULT_PAGINATION_PATTERNS = [
-    re.compile(r"^\s*--\s*More\s*--\s*(?:\(\d+%\))?\s*$", re.IGNORECASE),
-    re.compile(r"^\s*---\s*\(more(?: \d+%)?\)\s*---\s*$", re.IGNORECASE),
-    re.compile(r"^\s*More:\s*<space>,\s*Quit:\s*q,\s*One line:\s*<return>\s*$", re.IGNORECASE),
-    re.compile(r"^\s*Press any key to continue(?: or q to quit)?\s*$", re.IGNORECASE),
-    re.compile(r"^\s*Press <space> to continue(?:, q to quit)?\s*$", re.IGNORECASE),
+LOGIN_USERNAME_PATTERNS = [
+    re.compile(r"(?:login|username)\s*[:>]\s*$", re.IGNORECASE),
+    re.compile(r"user\s*name\s*[:>]\s*$", re.IGNORECASE),
 ]
-DEFAULT_PAGINATION_RESPONSE = " "
-READ_CHUNK_SIZE = 4096
-READ_POLL_INTERVAL_SECONDS = 1.0
-LARGE_OUTPUT_TIMEOUT_THRESHOLD_BYTES = 256 * 1024
-LARGE_OUTPUT_INACTIVITY_TIMEOUT_SECONDS = 90
+LOGIN_PASSWORD_PATTERNS = [
+    re.compile(r"password\s*[:>]\s*$", re.IGNORECASE),
+]
 
 PaginationRule = tuple[re.Pattern[str], str]
 
 
-class SSHService:
-    """Service for SSH connections to network devices."""
+class TelnetService:
+    """Service for Telnet connections to network devices."""
 
     def __init__(self) -> None:
         self.settings = get_settings()
@@ -60,6 +50,12 @@ class SSHService:
         """Check whether a line matches any configured prompt pattern."""
         normalized_line = ANSI_ESCAPE_RE.sub("", line).replace("\r", "").replace("\x08", "")
         return any(pattern.fullmatch(normalized_line) for pattern in patterns)
+
+    @staticmethod
+    def _line_matches_any(line: str, patterns: list[re.Pattern[str]]) -> bool:
+        """Check whether a line matches any configured regex patterns."""
+        normalized_line = ANSI_ESCAPE_RE.sub("", line).replace("\r", "").replace("\x08", "")
+        return any(pattern.search(normalized_line) for pattern in patterns)
 
     def _get_prompt_patterns(self, vendor_id: str) -> list[re.Pattern[str]]:
         """Get prompt patterns from vendor session config with generic fallback."""
@@ -208,44 +204,96 @@ class SSHService:
                 return response
         return None
 
-    def _get_ssh_options(self, profile_name: str) -> dict[str, Any]:
-        """Get SSH options from profile and map known_hosts policy."""
-        profile = self.settings.get_ssh_profile(profile_name)
-        if not isinstance(profile, dict):
-            raise ValueError(f"SSH profile '{profile_name}' not found")
+    @staticmethod
+    async def _write(writer: Any, data: str) -> None:
+        """Write data to the Telnet session.
 
-        policy = str(profile.get("known_hosts_policy", "ignore")).lower().strip()
-        if policy == "strict":
-            known_hosts: str | None = str(Path.home() / ".ssh" / "known_hosts")
-        else:
-            if policy == "auto_add":
-                logger.warning(
-                    "known_hosts_policy 'auto_add' is not implemented; falling back to 'ignore'"
-                )
-                ### TODO: Implement auto_add
-            known_hosts = None # None is AsyncSSH's way of disabling host key checks aka ignore mode
+        Args:
+            writer (Any): The Telnet writer object.
+            data (str): The data to write, typically a command or response.
 
-        ### Map configured SSH profile options to asyncssh.connect kwargs
-        return {
-            "kex_algs": profile.get("kex_algorithms"),
-            "encryption_algs": profile.get("ciphers"),
-            "server_host_key_algs": profile.get("host_key_algorithms"),
-            "known_hosts": known_hosts,
-        }
+        Raises:
+            ConnectionError: If the Telnet protocol is closed.
+        """
+        try:
+            writer.write(data)
+            drain = getattr(writer, "drain", None)
+            if callable(drain):
+                await drain()
+        except Exception as ex:
+            raise ConnectionError("Telnet protocol is closed") from ex
 
     @staticmethod
-    def _resolve_client_key_path(ssh_key_file: str | None) -> str | None:
-        """Resolve and normalize configured SSH key file path for AsyncSSH."""
-        if ssh_key_file is None:
-            return None
+    def _build_open_connection_kwargs(
+        host: str,
+        port: int,
+        timeout: int,
+        loop: asyncio.AbstractEventLoop,
+    ) -> dict[str, Any]:
+        """Build telnetlib3.open_connection kwargs with signature guards."""
+        kwargs: dict[str, Any] = {
+            "host": host,
+            "port": port,
+            "encoding": "utf-8",
+        }
 
-        normalized = str(ssh_key_file).strip()
-        if not normalized:
-            return None
+        try:
+            signature = inspect.signature(telnetlib3.open_connection)
+            params = signature.parameters
+        except (TypeError, ValueError):
+            params = {}
 
-        ### Expand '~' for local/bare-metal usage while preserving absolute paths..
-        ## ..used inside containers (for example '/home/kiwissh/.ssh/id_ed25519')
-        return str(Path(normalized).expanduser())
+        if "connect_minwait" in params:
+            kwargs["connect_minwait"] = 0.2
+        if "connect_maxwait" in params:
+            kwargs["connect_maxwait"] = max(1, timeout)
+        if "loop" in params:
+            kwargs["loop"] = loop
+
+        return kwargs
+
+    @staticmethod
+    async def _safe_wait_closed(writer: Any, timeout: float) -> None:
+        """Wait for writer close, skipping futures bound to a different loop."""
+        wait_closed = getattr(writer, "wait_closed", None)
+        if not callable(wait_closed):
+            return
+
+        try:
+            result = wait_closed()
+        except Exception:
+            return
+
+        try:
+            running_loop = asyncio.get_running_loop()
+        except RuntimeError:
+            running_loop = None
+
+        if isinstance(result, asyncio.Future):
+            ### Avoid cross-loop futures which raise "attached to a different loop"
+            if running_loop is not None and result.get_loop() is not running_loop:
+                return
+            try:
+                await asyncio.wait_for(result, timeout=timeout)
+            except RuntimeError as ex:
+                if "attached to a different loop" in str(ex):
+                    return
+                raise
+            except Exception:
+                return
+            return
+
+        if inspect.iscoroutine(result):
+            ### Some telnetlib3 versions return a coroutine instead of a Future
+            try:
+                await asyncio.wait_for(result, timeout=timeout)
+            except RuntimeError as ex:
+                if "attached to a different loop" in str(ex):
+                    return
+                raise
+            except Exception:
+                return
+            return
 
     @staticmethod
     def _build_metadata_section(
@@ -282,11 +330,11 @@ class SSHService:
 
     async def _read_until_patterns(
         self,
-        stream: asyncssh.SSHReader,
+        reader: Any,
         patterns: list[re.Pattern[str]],
         timeout: int,
         *,
-        stdin: Any | None = None,
+        writer: Any | None = None,
         pagination_rules: list[PaginationRule] | None = None,
     ) -> str:
         """Read stream until one of the patterns appears or timeout is reached."""
@@ -313,12 +361,15 @@ class SSHService:
                 if tail_lines and self._line_matches_prompt(tail_lines[-1], patterns):
                     ### Collect any trailing bytes that arrive immediately after prompt detection
                     ### This reduces output bleed into the next command on some devices
+
+                    idle_timeout = 0.05
+                    max_chunks = 16
                     if len(buffer) >= LARGE_OUTPUT_TIMEOUT_THRESHOLD_BYTES:
-                        ### Allow a longer quiet window to catch late chunks from large outputs
+                        # Allow a longer quiet window to catch late chunks from large outputs.
                         idle_timeout = 0.2
                         max_chunks = 64
                     buffer += await self._read_trailing_output(
-                        stream,
+                        reader,
                         idle_timeout=idle_timeout,
                         max_chunks=max_chunks,
                     )
@@ -333,8 +384,8 @@ class SSHService:
                     )
 
                 if matched_pagination_response is not None:
-                    if stdin is not None:
-                        stdin.write(matched_pagination_response)
+                    if writer is not None:
+                        await self._write(writer, matched_pagination_response)
 
                     ### After sending pagination continuation, wait another full timeout window
                     inactivity_deadline = loop.time() + timeout_seconds
@@ -368,7 +419,7 @@ class SSHService:
             ### Read the next chunk of output with a short timeout to allow for prompt detection
             try:
                 chunk = await asyncio.wait_for(
-                    stream.read(READ_CHUNK_SIZE),
+                    reader.read(READ_CHUNK_SIZE),
                     timeout=min(remaining, READ_POLL_INTERVAL_SECONDS),
                 )
             except asyncio.TimeoutError:
@@ -398,7 +449,7 @@ class SSHService:
 
     @staticmethod
     async def _read_trailing_output(
-        stream: asyncssh.SSHReader,
+        reader: Any,
         idle_timeout: float = 0.05,
         max_chunks: int = 16,
     ) -> str:
@@ -406,7 +457,7 @@ class SSHService:
         trailing = ""
         for _ in range(max_chunks):
             try:
-                chunk = await asyncio.wait_for(stream.read(READ_CHUNK_SIZE), timeout=idle_timeout)
+                chunk = await asyncio.wait_for(reader.read(READ_CHUNK_SIZE), timeout=idle_timeout)
             except asyncio.TimeoutError:
                 break
 
@@ -462,12 +513,12 @@ class SSHService:
             lines.pop()
 
         ### Remove generic prompt lines from the end of the output.
-        while lines and SSHService._line_matches_prompt(lines[-1], prompt_patterns):
+        while lines and TelnetService._line_matches_prompt(lines[-1], prompt_patterns):
             lines.pop()
 
         ### Remove trailing echoed command lines such as '<prompt>#show inventory'
         command_candidates = [value.strip() for value in (known_commands or []) if value and value.strip()]
-        while lines and SSHService._line_matches_prompt_with_known_command(lines[-1], command_candidates):
+        while lines and TelnetService._line_matches_prompt_with_known_command(lines[-1], command_candidates):
             lines.pop()
 
         while lines and not lines[-1].strip():
@@ -498,7 +549,8 @@ class SSHService:
 
     async def _execute_shell_command(
         self,
-        process: asyncssh.SSHClientProcess,
+        reader: Any,
+        writer: Any,
         command: str,
         timeout: int,
         wait_for_prompt: bool,
@@ -506,9 +558,9 @@ class SSHService:
         pagination_rules: list[PaginationRule],
         known_commands: list[str] | None = None,
     ) -> str:
-        """Execute a single command in an interactive shell session."""
+        """Execute a single command in an interactive Telnet session."""
         ### Drain any stale prompt bytes before issuing the next command
-        stale_output = await self._read_trailing_output(process.stdout, idle_timeout=0.02, max_chunks=8)
+        stale_output = await self._read_trailing_output(reader, idle_timeout=0.02, max_chunks=8)
         if stale_output.strip():
             logger.debug(
                 "Discarded %d stale shell byte(s) before command '%s' to avoid output desync",
@@ -516,19 +568,18 @@ class SSHService:
                 command,
             )
 
-        ### Send the command to the shell
-        process.stdin.write(f"{command}\n")
+        ### Send the command to the Telnet session
+        await self._write(writer, f"{command}\n")
 
         if not wait_for_prompt:
             await asyncio.sleep(0.1)
             return ""
 
-        ### Wait until shell responds with a prompt again (shell is ready again)
         raw = await self._read_until_patterns(
-            process.stdout,
+            reader,
             prompt_patterns,
             timeout,
-            stdin=process.stdin,
+            writer=writer,
             pagination_rules=pagination_rules,
         )
 
@@ -584,11 +635,12 @@ class SSHService:
         if len(raw_inputs) > 5:
             raise RuntimeError("Step failed: interactive input supports a maximum of 5 entries")
 
-        return [SSHService._normalize_interactive_input_text(value) for value in raw_inputs]
+        return [TelnetService._normalize_interactive_input_text(value) for value in raw_inputs]
 
     async def _run_command_phase(
         self,
-        process: asyncssh.SSHClientProcess,
+        reader: Any,
+        writer: Any,
         commands: list[dict[str, Any]],
         default_timeout: int,
         prompt_patterns: list[re.Pattern[str]],
@@ -640,7 +692,7 @@ class SSHService:
             if has_then:
                 try:
                     ### Some devices require a command before interactive input (e.g. 'enable')
-                    process.stdin.write(f"{command}\n")
+                    await self._write(writer, f"{command}\n")
                     await asyncio.sleep(0.1)
 
                     interactive_inputs = self._resolve_interactive_inputs(command_def, enable_password)
@@ -648,9 +700,9 @@ class SSHService:
                     ### Send all interactive inputs in sequence, then wait for prompt once
                     for index, input_text in enumerate(interactive_inputs, start=1):
                         if input_text.endswith(("\n", "\r")):
-                            process.stdin.write(input_text)
+                            await self._write(writer, input_text)
                         else:
-                            process.stdin.write(f"{input_text}\n")
+                            await self._write(writer, f"{input_text}\n")
 
                         if index < len(interactive_inputs):
                             await asyncio.sleep(0.1)
@@ -658,10 +710,10 @@ class SSHService:
                     ### Optionally wait for the prompt after sending input to ensure the device is ready for the next command
                     if wait_for_prompt:
                         await self._read_until_patterns(
-                            process.stdout,
+                            reader,
                             prompt_patterns,
                             default_timeout,
-                            stdin=process.stdin,
+                            writer=writer,
                             pagination_rules=pagination_rules,
                         )
                     else:
@@ -678,7 +730,8 @@ class SSHService:
 
             try:
                 output = await self._execute_shell_command(
-                    process=process,
+                    reader=reader,
+                    writer=writer,
                     command=command,
                     timeout=default_timeout,
                     wait_for_prompt=wait_for_prompt,
@@ -815,91 +868,81 @@ class SSHService:
         processed = processed.strip("\n")
         return f"{processed}\n"
 
-    async def connect(
+    async def _login(
         self,
-        host: str,
+        reader: Any,
+        writer: Any,
         username: str,
-        *,
-        ssh_profile: str,
-        password: str | None = None,
-        ssh_key_file: str | None = None,
-        port: int = 22,
-        timeout: int | None = None,
-        tunnel: asyncssh.SSHClientConnection | None = None,
-        connection_label: str | None = None,
-    ) -> asyncssh.SSHClientConnection:
-        """Establish SSH connection using password and/or client key authentication."""
-        ### Normalize required values early to provide clear error messages
-        normalized_host = str(host).strip()
-        normalized_username = str(username).strip()
-        normalized_password = str(password).strip() if password is not None else ""
-        normalized_key_file = self._resolve_client_key_path(ssh_key_file)
+        password: str,
+        prompt_patterns: list[re.Pattern[str]],
+        timeout: int,
+    ) -> None:
+        """Handle basic Telnet login prompts (username/password)."""
+        ### Send a 'enter' to the session so the device prints a banner or prompt
+        await self._write(writer, "\n")
+        loop = asyncio.get_running_loop()
+        timeout_seconds = max(1, int(timeout))
+        inactivity_deadline = loop.time() + timeout_seconds
+        buffer = ""
+        ### Track whether we've already sent credentials to avoid repeats
+        sent_username = False
+        sent_password = False
 
-        if not normalized_host:
-            raise ValueError("SSH host must be a non-empty string")
-        if not normalized_username:
-            raise ValueError("SSH username must be a non-empty string")
+        while True:
+            tail = buffer[-4096:]
+            tail_lines = tail.split("\n")
+            while tail_lines and not tail_lines[-1].strip():
+                tail_lines.pop()
 
-        ### Enforce at least one auth method
-        if not normalized_password and not normalized_key_file:
-            raise ValueError("SSH connection requires either password or ssh_key_file")
+            ### If we hit a shell prompt, we're successfully logged in
+            if tail_lines and self._line_matches_prompt(tail_lines[-1], prompt_patterns):
+                return
 
-        ssh_options = self._get_ssh_options(ssh_profile)
+            ### Send username on username prompts
+            if tail_lines and not sent_username and self._line_matches_any(tail_lines[-1], LOGIN_USERNAME_PATTERNS):
+                await self._write(writer, f"{username}\n")
+                sent_username = True
+                buffer = ""
+                inactivity_deadline = loop.time() + timeout_seconds
+                continue
 
-        ### Build asyncssh.connect kwargs
-        ## IMPORTANT: keep known_hosts=None for ignore mode. If omitted, AsyncSSH falls back..
-        ## ..to strict host-key checks against ~/.ssh/known_hosts
-        connect_kwargs: dict[str, Any] = {
-            "host": normalized_host,
-            "port": int(port),
-            "username": normalized_username,
-            "known_hosts": ssh_options.get("known_hosts"),
-            "preferred_auth": ["keyboard-interactive", "password", "publickey"],
-        }
+            ### Send password on password prompts
+            if tail_lines and not sent_password and self._line_matches_any(tail_lines[-1], LOGIN_PASSWORD_PATTERNS):
+                await self._write(writer, f"{password}\n")
+                sent_password = True
+                buffer = ""
+                inactivity_deadline = loop.time() + timeout_seconds
+                continue
 
-        ### Add password auth only when configured
-        if normalized_password:
-            connect_kwargs["password"] = normalized_password
+            remaining = inactivity_deadline - loop.time()
+            if remaining <= 0:
+                raise asyncio.TimeoutError("Timed out waiting for Telnet login prompt")
 
-        ### Add key-based auth when a key file is configured
-        if normalized_key_file:
-            connect_kwargs["client_keys"] = [normalized_key_file]
+            try:
+                chunk = await asyncio.wait_for(
+                    reader.read(READ_CHUNK_SIZE),
+                    timeout=min(remaining, READ_POLL_INTERVAL_SECONDS),
+                )
+            except asyncio.TimeoutError:
+                continue
 
-        ### Tunnel is used for jumphost chaining:
-        ### device connection goes through an already-open jumphost session
-        if tunnel is not None:
-            connect_kwargs["tunnel"] = tunnel
+            if chunk == "":
+                return
 
-        optional_kwargs: dict[str, Any] = {
-            "kex_algs": ssh_options.get("kex_algs"),
-            "encryption_algs": ssh_options.get("encryption_algs"),
-            "server_host_key_algs": ssh_options.get("server_host_key_algs"),
-            "connect_timeout": max(1, int(timeout)) if timeout is not None else None,
-        }
-        for key, value in optional_kwargs.items():
-            if value is not None:
-                connect_kwargs[key] = value
-
-        label = connection_label or normalized_host
-        logger.debug(
-            "Opening SSH connection to %s (%s:%d) with profile '%s'",
-            label,
-            normalized_host,
-            int(port),
-            ssh_profile,
-        )
-        return await asyncssh.connect(**connect_kwargs)
+            buffer += chunk
+            inactivity_deadline = loop.time() + timeout_seconds
 
     async def _collect_vendor_config(
         self,
-        connection: asyncssh.SSHClientConnection,
+        reader: Any,
+        writer: Any,
         vendor_id: str,
         default_timeout: int,
         enable_password: str | None,
     ) -> tuple[str, str | None]:
         """Collect configuration and metadata from device via vendor-defined command phases."""
         ### Get command sets for the vendor (pre_backup, backup, post_backup)
-        command_sets = vendor_service.get_backup_commands(vendor_id, protocol="ssh")
+        command_sets = vendor_service.get_backup_commands(vendor_id, protocol="telnet")
         backup_commands = command_sets.get("backup")
         if not backup_commands:
             raise ValueError(f"Vendor '{vendor_id}' has no backup commands configured")
@@ -919,27 +962,27 @@ class SSHService:
         pre_backup_commands = command_sets.get("pre_backup", [])
         post_backup_commands = command_sets.get("post_backup", [])
 
-        process = await connection.create_process(term_type="vt100", encoding="utf-8")
         captured_output: list[dict[str, Any]] = []
         try:
             ### Write an initial newline to ensure we get a prompt before starting commands
-            process.stdin.write("\n")
+            await self._write(writer, "\n")
 
             ### Wait for the initial prompt to ensure the shell is ready before sending commands
             try:
-                await self._read_until_patterns(process.stdout, prompt_patterns, default_timeout)
+                await self._read_until_patterns(reader, prompt_patterns, default_timeout)
             except asyncio.TimeoutError:
                 logger.debug(
                     "Initial prompt wait timed out for vendor '%s'; retrying once after additional newline",
                     vendor_id,
                 )
-                process.stdin.write("\n")
-                await self._read_until_patterns(process.stdout, prompt_patterns, default_timeout)
+                await self._write(writer, "\n")
+                await self._read_until_patterns(reader, prompt_patterns, default_timeout)
 
             ### Run commands
             ## pre_backup
             await self._run_command_phase(
-                process=process,
+                reader=reader,
+                writer=writer,
                 commands=pre_backup_commands,
                 default_timeout=default_timeout,
                 prompt_patterns=prompt_patterns,
@@ -950,7 +993,8 @@ class SSHService:
 
             ## backup
             captured_output = await self._run_command_phase(
-                process=process,
+                reader=reader,
+                writer=writer,
                 commands=backup_commands,
                 default_timeout=default_timeout,
                 prompt_patterns=prompt_patterns,
@@ -961,7 +1005,8 @@ class SSHService:
 
             ## post_backup
             await self._run_command_phase(
-                process=process,
+                reader=reader,
+                writer=writer,
                 commands=post_backup_commands,
                 default_timeout=default_timeout,
                 prompt_patterns=prompt_patterns,
@@ -970,34 +1015,19 @@ class SSHService:
                 enable_password=None,
                 required=False, # Set to false so backup capture can still succeed even if post_backup fails
             )
-
         finally:
-            ### Always force-close local shell handle; if already closed this isn't needed
-            forced_close_wait_timeout_seconds = 1.5
-            try:
-                close = getattr(process, "close", None)
-                if callable(close):
-                    close()
-                else:
-                    channel = getattr(process, "channel", None)
-                    if channel is None and hasattr(process, "stdin"):
-                        channel = getattr(process.stdin, "channel", None)
-                    if channel is not None:
-                        channel.close()
-            except Exception as ex:
-                logger.debug(
-                    "Forced shell close failed for vendor '%s' (%s: %s); continuing outer SSH connection cleanup",
-                    vendor_id,
-                    ex.__class__.__name__,
-                    ex,
-                )
-
-            wait_closed = getattr(process, "wait_closed", None)
-            if callable(wait_closed):
+            ### Attempt graceful close if the writer supports it
+            close = getattr(writer, "close", None)
+            if callable(close):
                 try:
-                    await asyncio.wait_for(wait_closed(), timeout=forced_close_wait_timeout_seconds)
+                    close()
                 except Exception:
                     pass
+
+            if writer is not None:
+                ### Wait for the connection to fully close before the next retry attempt to avoid overlapping sessions
+                ### Use a short grace period and skip if the close future is on a different loop
+                await self._safe_wait_closed(writer, timeout=1.5)
 
         non_metadata_outputs: list[str] = []
         for chunk in captured_output:
@@ -1039,8 +1069,8 @@ class SSHService:
         timeout_seconds: int,
     ) -> tuple[str, str | None]:
         """Collect config in local test mode while reusing vendor processing rules."""
-        ### Keep vendor command validation parity with real SSH path.
-        command_sets = vendor_service.get_backup_commands(vendor_id, protocol="ssh")
+        ### Keep vendor command validation parity with real Telnet path.
+        command_sets = vendor_service.get_backup_commands(vendor_id, protocol="telnet")
         backup_commands = command_sets.get("backup")
         if not backup_commands:
             raise ValueError(f"Vendor '{vendor_id}' has no backup commands configured")
@@ -1061,35 +1091,33 @@ class SSHService:
         *,
         device_config: dict[str, Any] | None = None,
     ) -> tuple[str, str | None]:
-        """Get device configuration plus optional metadata via SSH or local simulator."""
+        """Get device configuration plus optional metadata via Telnet or local simulator."""
         ### Get device config
         device_config = device_config or self.settings.get_device_config(device.group, device.device_name)
         enable_password_raw = str(device_config.get("enable_password") or "").strip()
         enable_password = enable_password_raw if enable_password_raw else None
 
-        protocol = str(device_config.get("protocol")).strip().lower()
-        if protocol != "ssh":
+        protocol = str(device_config.get("protocol") or "ssh").strip().lower()
+        if protocol != "telnet":
             raise ValueError(
-                f"Device '{device.device_name}' in group '{device.group}' requires SSH protocol for ssh_service.py"
+                f"Device '{device.device_name}' in group '{device.group}' requires Telnet protocol for telnet_service.py"
             )
 
-        ### Filter for required SSH config values
+        ### Filter for required Telnet config values
         timeout_seconds = int(device_config["timeout"])
         retry_count = int(device_config["retry"])
         vendor_id = str(device_config["vendor"]).strip()
-        device_ssh_profile = str(device_config["ssh_profile"]).strip()
-        device_port = int(device_config.get("port") or 22)
+        device_port = int(device_config.get("port") or 23)
         device_username = str(device_config["username"]).strip()
 
-        ### Device authentication can be password-based, key-based, or both.
+        ### Device authentication can be password-based only for Telnet
         device_password_raw = str(device_config.get("password") or "").strip()
         device_password = device_password_raw if device_password_raw else None
-        device_key_file_raw = str(device_config.get("ssh_key_file") or "").strip()
-        device_ssh_key_file = device_key_file_raw if device_key_file_raw else None
+        if not device_password:
+            raise ValueError(
+                f"Device '{device.device_name}' in group '{device.group}' requires password for telnet protocol"
+            )
 
-        ### Jumphost settings are optional and already validated in get_device_config
-        jumphost_cfg = device_config.get("jumphost")
-        
         max_attempts = retry_count + 1
 
         ### Use the local simulator if test mode is enabled
@@ -1103,54 +1131,39 @@ class SSHService:
         ### Try to fetch config from device with commands defined in vendor YAML, apply retries on failure
         last_exception: Exception | None = None
         for attempt in range(1, max_attempts + 1):
-            jump_connection: asyncssh.SSHClientConnection | None = None
-            connection: asyncssh.SSHClientConnection | None = None
+            reader: Any | None = None
+            writer: Any | None = None
             try:
-                ### If jumphost is configured, open it first and tunnel the..
-                ## ..device SSH connection through that session
-                if jumphost_cfg:
-                    jumphost_name = str(jumphost_cfg.get("hostname") or "").strip()
-                    jumphost_port = int(jumphost_cfg.get("port") or 22)
-                    jumphost_username = str(jumphost_cfg.get("username") or "").strip()
-                    jumphost_ssh_profile = str(jumphost_cfg.get("ssh_profile") or "").strip()
-
-                    jumphost_password_raw = str(jumphost_cfg.get("password") or "").strip()
-                    jumphost_password = jumphost_password_raw if jumphost_password_raw else None
-                    jumphost_key_raw = str(jumphost_cfg.get("ssh_key_file") or "").strip()
-                    jumphost_ssh_key_file = jumphost_key_raw if jumphost_key_raw else None
-
-                    logger.debug(
-                        "Connecting to jumphost '%s' for device '%s'",
-                        jumphost_name,
-                        device.device_name,
-                    )
-                    jump_connection = await self.connect(
-                        host=jumphost_name,
-                        port=jumphost_port,
-                        username=jumphost_username,
-                        password=jumphost_password,
-                        ssh_key_file=jumphost_ssh_key_file,
-                        ssh_profile=jumphost_ssh_profile,
-                        timeout=timeout_seconds,
-                        connection_label=f"jumphost:{jumphost_name}",
-                    )
-
-                ### Connect via SSH using SSH profile options
-                connection = await self.connect(
+                loop = asyncio.get_running_loop()
+                asyncio.set_event_loop(loop)
+                connect_kwargs = self._build_open_connection_kwargs(
                     host=str(device.ip_address),
+                    port=device_port,
+                    timeout=timeout_seconds,
+                    loop=loop,
+                )
+                
+                ### Connect via Telnet using
+                connect_coro = telnetlib3.open_connection(**connect_kwargs)
+                reader, writer = await asyncio.wait_for(
+                    connect_coro,
+                    timeout=max(2, timeout_seconds),
+                )
+
+                prompt_patterns = self._get_prompt_patterns(vendor_id)
+                await self._login(
+                    reader=reader,
+                    writer=writer,
                     username=device_username,
                     password=device_password,
-                    ssh_key_file=device_ssh_key_file,
-                    port=device_port,
-                    ssh_profile=device_ssh_profile,
+                    prompt_patterns=prompt_patterns,
                     timeout=timeout_seconds,
-                    tunnel=jump_connection,
-                    connection_label=device.device_name,
                 )
 
                 ### Fun part: Run the configured command phases to capture device config
                 config, metadata_output = await self._collect_vendor_config(
-                    connection=connection,
+                    reader=reader,
+                    writer=writer,
                     vendor_id=vendor_id,
                     default_timeout=timeout_seconds,
                     enable_password=enable_password,
@@ -1164,9 +1177,9 @@ class SSHService:
                     )
                 return config, metadata_output
             except asyncio.TimeoutError as ex:
-                ### Log timeout error if SSH connection times out or if waiting for command output exceeds timeout
+                ### Log timeout error if Telnet connection times out or if waiting for command output exceeds timeout
                 last_exception = TimeoutError(
-                    f"SSH config fetch timed out after {timeout_seconds}s "
+                    f"Telnet config fetch timed out after {timeout_seconds}s "
                     f"(attempt {attempt}/{max_attempts})"
                 )
                 logger.warning(
@@ -1189,28 +1202,26 @@ class SSHService:
                 )
             finally:
                 ### Ensure connection is properly closed to avoid resource leaks, even on failure
-                if connection is not None:
-                    connection.close()
+                if writer is not None:
                     try:
-                        await connection.wait_closed()
+                        ### Attempt graceful close if the writer supports it
+                        close = getattr(writer, "close", None)
+                        if callable(close):
+                            close()
                     except Exception:
                         pass
 
-                ### Always close jumphost tunnel after device connection closes
-                if jump_connection is not None:
-                    jump_connection.close()
-                    try:
-                        await jump_connection.wait_closed()
-                    except Exception:
-                        pass
+                    ### Wait for the connection to fully close before the next retry attempt to avoid overlapping sessions
+                    ### Use a short grace period and skip if the close future is on a different loop
+                    await self._safe_wait_closed(writer, timeout=1.5)
 
             if attempt < max_attempts:
                 await asyncio.sleep(0.25)
 
         if last_exception is not None:
             raise last_exception
-        raise RuntimeError("SSH config fetch failed without a captured exception!!")
+        raise RuntimeError("Telnet config fetch failed without a captured exception!!")
 
 
 ### Singleton instance
-ssh_service = SSHService()
+telnet_service = TelnetService()

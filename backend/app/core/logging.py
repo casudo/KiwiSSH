@@ -47,6 +47,18 @@ def configure_logging(debug: bool = False) -> None:
             "git.cmd": {
                 "level": "INFO",  # Suppress noisy GitPython command DEBUG logs
             },
+            "telnetlib3": {
+                "level": "WARNING",  # Suppress telnetlib3 info logs to avoid __repr__ issues
+            },
+            "telnetlib3.client_base": {
+                "level": "WARNING",  # Suppress telnetlib3 connection lifecycle logs
+            },
+            "telnetlib3.client": {
+                "level": "WARNING",  # Suppress telnetlib3 client connection logs
+            },
+            "telnetlib3.stream_writer": {
+                "level": "WARNING",  # Suppress telnetlib3 stream negotiation logs
+            },
         },
         "root": {
             "level": level,
