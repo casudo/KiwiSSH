@@ -313,6 +313,8 @@ class SSHService:
                 if tail_lines and self._line_matches_prompt(tail_lines[-1], patterns):
                     ### Collect any trailing bytes that arrive immediately after prompt detection
                     ### This reduces output bleed into the next command on some devices
+                    idle_timeout = 0.05
+                    max_chunks = 16
                     if len(buffer) >= LARGE_OUTPUT_TIMEOUT_THRESHOLD_BYTES:
                         ### Allow a longer quiet window to catch late chunks from large outputs
                         idle_timeout = 0.2
