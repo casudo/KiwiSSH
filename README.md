@@ -321,7 +321,7 @@ Each vendor file contains these top-level sections:
 
 - `vendor`: metadata (`id`, `name`, `description`)
 - `session`: session-level output settings (`comment_prefix`, `prompt`, `pagination`, `include_metadata_in_config`)
-- `commands`: command phases (`pre_backup`, `backup`, `post_backup`)
+- `commands`: command phases (`pre_backup`, `backup`, `post_backup`); you can nest protocol-specific overrides under `commands.ssh` or `commands.telnet`
 - `processing`: optional output cleanup/redaction rules
 
 Each segment is explained in detail below.

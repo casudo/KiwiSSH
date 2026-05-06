@@ -27,7 +27,12 @@ class VendorService:
         """
         return self.settings.get_vendor_config(vendor_id)
 
-    def get_backup_commands(self, vendor_id: str) -> dict[str, list[dict[str, Any]]]:
+    def get_backup_commands(
+        self,
+        vendor_id: str,
+        *,
+        protocol: str | None = None,
+    ) -> dict[str, list[dict[str, Any]]]:
         """
         Get backup commands for a vendor.
 
@@ -42,6 +47,14 @@ class VendorService:
             raise ValueError(f"Unknown vendor '{vendor_id}'")
 
         commands = vendor.get("commands", {})
+
+        ### Use specific protocol commands if defined for the vendor
+        ## if not specified, the commands will be assumed to be protocol-agnostic and used for all sessions of that vendor
+        if protocol:
+            protocol_key = str(protocol).strip().lower()
+            protocol_commands = commands.get(protocol_key)
+            if isinstance(protocol_commands, dict):
+                commands = protocol_commands
 
         return {
             "pre_backup": commands.get("pre_backup", []),
