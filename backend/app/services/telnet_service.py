@@ -1,6 +1,7 @@
 """Telnet connection service using telnetlib3."""
 
 import asyncio
+import contextlib
 import logging
 import re
 import inspect
@@ -1144,11 +1145,17 @@ class TelnetService:
                 )
                 
                 ### Connect via Telnet using
-                connect_coro = telnetlib3.open_connection(**connect_kwargs)
-                reader, writer = await asyncio.wait_for(
-                    connect_coro,
-                    timeout=max(2, timeout_seconds),
-                )
+                connect_task = asyncio.create_task(telnetlib3.open_connection(**connect_kwargs))
+                try:
+                    reader, writer = await asyncio.wait_for(
+                        connect_task,
+                        timeout=max(2, timeout_seconds),
+                    )
+                except asyncio.TimeoutError:
+                    connect_task.cancel()
+                    with contextlib.suppress(asyncio.CancelledError, Exception):
+                        await connect_task
+                    raise
 
                 prompt_patterns = self._get_prompt_patterns(vendor_id)
                 await self._login(
