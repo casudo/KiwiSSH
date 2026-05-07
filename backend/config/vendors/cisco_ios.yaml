@@ -57,6 +57,8 @@ processing:
     - "^!\\s*NVRAM config last updated"
     - "^ntp clock-period \\d+"
     - '^ (tunnel mpls traffic-eng bandwidth [^\n]*)\n((?: [^\n]*\n)* tunnel mpls traffic-eng auto-bw)'
+    - 'Time source is.*'
+    - 'Load for.*'
 
   ### Lines that mark config boundaries
   ## If either boundary is missing, keep from/to the file edge.
