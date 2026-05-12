@@ -20,6 +20,8 @@ from app.services.ssh_service import (
     GENERIC_PROMPT_PATTERNS,
     LARGE_OUTPUT_INACTIVITY_TIMEOUT_SECONDS,
     LARGE_OUTPUT_TIMEOUT_THRESHOLD_BYTES,
+    PROMPT_CONFIRM_IDLE_SECONDS,
+    PROMPT_CONFIRM_MAX_SECONDS,
     READ_CHUNK_SIZE,
     READ_POLL_INTERVAL_SECONDS,
 )
@@ -360,20 +362,23 @@ class TelnetService:
                     tail_lines.pop()
 
                 if tail_lines and self._line_matches_prompt(tail_lines[-1], patterns):
-                    ### Collect any trailing bytes that arrive immediately after prompt detection
-                    ### This reduces output bleed into the next command on some devices
-
-                    idle_timeout = 0.05
-                    max_chunks = 16
+                    ### Confirm prompt by waiting for a short idle window
+                    ### If more output arrives, treat it as a false prompt match and keep reading
+                    idle_timeout = PROMPT_CONFIRM_IDLE_SECONDS
+                    max_total_seconds = PROMPT_CONFIRM_MAX_SECONDS
                     if len(buffer) >= LARGE_OUTPUT_TIMEOUT_THRESHOLD_BYTES:
                         # Allow a longer quiet window to catch late chunks from large outputs.
-                        idle_timeout = 0.2
-                        max_chunks = 64
-                    buffer += await self._read_trailing_output(
+                        idle_timeout = max(idle_timeout, 0.4)
+                        max_total_seconds = max(max_total_seconds, 4.0)
+                    trailing = await self._read_trailing_output(
                         reader,
                         idle_timeout=idle_timeout,
-                        max_chunks=max_chunks,
+                        max_chunks=None,
+                        max_total_seconds=max_total_seconds,
                     )
+                    if trailing:
+                        buffer += trailing
+                        continue
                     return buffer
 
                 ### Handle pagination prompts by sending the response for the matching pagination rule
@@ -452,11 +457,19 @@ class TelnetService:
     async def _read_trailing_output(
         reader: Any,
         idle_timeout: float = 0.05,
-        max_chunks: int = 16,
+        max_chunks: int | None = 16,
+        max_total_seconds: float | None = None,
     ) -> str:
         """Read immediately available trailing output after prompt detection."""
+        loop = asyncio.get_running_loop()
+        start_time = loop.time()
         trailing = ""
-        for _ in range(max_chunks):
+        chunks_read = 0
+        while True:
+            if max_chunks is not None and chunks_read >= max_chunks:
+                break
+            if max_total_seconds is not None and (loop.time() - start_time) >= max_total_seconds:
+                break
             try:
                 chunk = await asyncio.wait_for(reader.read(READ_CHUNK_SIZE), timeout=idle_timeout)
             except asyncio.TimeoutError:
@@ -466,6 +479,7 @@ class TelnetService:
                 break
 
             trailing += chunk
+            chunks_read += 1
 
         return trailing
 
