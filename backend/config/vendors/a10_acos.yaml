@@ -73,3 +73,10 @@ processing:
         replacement: 'secret encrypted <hidden>'
       - search: 'password encrypted (\S+)'
         replacement: 'password encrypted <hidden>'
+      - search: 'pass-phrase encrypted (\S+)'
+        replacement: 'pass-phrase encrypted <hidden>'
+      - search: 'md5 encrypted (\S+)'
+        replacement: 'md5 encrypted <hidden>'
+      ### Global encrypted pattern
+      - search: 'encrypted (\S+)'
+        replacement: 'encrypted <hidden>'
