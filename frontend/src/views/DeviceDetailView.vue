@@ -62,7 +62,25 @@ const diffStats = ref({ added: 0, removed: 0 })
 const diffLoading = ref(false)
 const diffError = ref<string | null>(null)
 const downloadingBackups = ref<Record<string, boolean>>({})
+const downloadingLatest = ref(false)
 const jobLookupLoading = ref<Record<string, boolean>>({})
+
+const latestBackup = computed<BackupEntry | null>(() => {
+  let latest: BackupEntry | null = null
+  for (const entry of backupHistory.value) {
+    const entryTime = new Date(entry.timestamp).getTime()
+    if (!Number.isFinite(entryTime)) continue
+    if (!latest) {
+      latest = entry
+      continue
+    }
+    const latestTime = new Date(latest.timestamp).getTime()
+    if (!Number.isFinite(latestTime) || entryTime > latestTime) {
+      latest = entry
+    }
+  }
+  return latest
+})
 
 onMounted(async () => {
   await devicesStore.fetchDevice(deviceName.value)
@@ -343,6 +361,40 @@ async function downloadConfig(backup: BackupEntry) {
   }
 }
 
+async function downloadLatestConfig() {
+  if (downloadingLatest.value) {
+    return
+  }
+
+  downloadingLatest.value = true
+
+  try {
+    const response = await backupApi.getLatestConfig(deviceName.value)
+    const config = response.config || ""
+    if (!config) {
+      alert("No backup config found for this device.")
+      return
+    }
+
+    const versionNumber = response.version_number ?? latestBackup.value?.version_number
+    const versionLabel = versionNumber ? `v${versionNumber}` : "latest"
+
+    const blob = new Blob([config], { type: "text/plain" })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `${deviceName.value}-${versionLabel}.conf`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (e) {
+    alert(`Download failed: ${e instanceof Error ? e.message : "Unknown error"}`)
+  } finally {
+    downloadingLatest.value = false
+  }
+}
+
 function isDownloading(backupHash: string): boolean {
   return Boolean(downloadingBackups.value[backupHash])
 }
@@ -398,6 +450,50 @@ function formatFileSize(bytes: number): string {
               :class="isFavorite ? 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-700 dark:hover:bg-amber-900/60' : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600'"
             >
               {{ isFavorite ? "★ Favorited" : "☆ Favorite" }}
+            </button>
+            <button
+              @click="downloadLatestConfig"
+              :disabled="!latestBackup || downloadingLatest"
+              class="btn btn-secondary"
+              :title="latestBackup ? 'Download latest config' : 'No backups available'"
+            >
+              <svg
+                v-if="downloadingLatest"
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4 inline mr-1 animate-spin"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"
+                />
+                <path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
+              </svg>
+              <svg
+                v-else
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4 inline mr-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                />
+              </svg>
+              {{ downloadingLatest ? "Downloading..." : "Download Latest" }}
             </button>
             <button @click="triggerBackup" class="btn btn-primary">
               Trigger Backup
@@ -543,7 +639,7 @@ function formatFileSize(bytes: number): string {
                   </p>
                 </div>
                 <button
-                  @click="downloadConfig(backup)"
+                  @click.stop="downloadConfig(backup)"
                   :disabled="isDownloading(backup.hash)"
                   class="shrink-0 btn btn-secondary py-1 px-3 text-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                 >
