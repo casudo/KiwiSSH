@@ -44,6 +44,7 @@ const devicePort = computed(() => {
 const backupHistory = ref<BackupEntry[]>([])
 const historyLoading = ref(false)
 const historyError = ref<string | null>(null)
+const totalHistoryCount = ref(0)
 
 // Filter states
 const filterDateFrom = ref<string>("")
@@ -83,11 +84,14 @@ const latestBackup = computed<BackupEntry | null>(() => {
 })
 
 onMounted(async () => {
-  await devicesStore.fetchDevice(deviceName.value)
-  if (devicesStore.vendors.length === 0) {
-    await devicesStore.fetchVendors()
-  }
-  await loadBackupHistory()
+  currentPage.value = 1
+  const devicePromise = devicesStore.fetchDevice(deviceName.value)
+  const historyPromise = loadBackupHistory()
+  const graphPromise = loadGraphHistory() // WIP
+  const vendorPromise = devicesStore.vendors.length === 0
+    ? devicesStore.fetchVendors()
+    : Promise.resolve()
+  await Promise.all([devicePromise, vendorPromise, historyPromise, graphPromise])
 })
 
 async function loadBackupHistory() {
@@ -95,8 +99,11 @@ async function loadBackupHistory() {
   historyError.value = null
 
   try {
-    const response = await backupApi.getHistory(deviceName.value)
+    const limit = pageSize.value
+    const offset = (currentPage.value - 1) * pageSize.value
+    const response = await backupApi.getHistory(deviceName.value, limit, offset)
     backupHistory.value = response.history || []
+    totalHistoryCount.value = response.total_count ?? response.count ?? backupHistory.value.length
 
     // Auto-select the two most recent valid commits for diff
     if (commitOptions.value.length >= 2) {
@@ -111,6 +118,7 @@ async function loadBackupHistory() {
     }
   } catch (e) {
     historyError.value = e instanceof Error ? e.message : "Failed to load backup history"
+    totalHistoryCount.value = 0
   } finally {
     historyLoading.value = false
   }
@@ -156,13 +164,9 @@ const commitOptions = computed((): BackupEntry[] => {
 })
 
 // Pagination computed properties
-const totalPages = computed(() => Math.ceil(filteredBackupHistory.value.length / pageSize.value))
+const totalPages = computed(() => Math.max(1, Math.ceil(totalHistoryCount.value / pageSize.value)))
 
-const paginatedBackupHistory = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  const end = start + pageSize.value
-  return filteredBackupHistory.value.slice(start, end)
-})
+const paginatedBackupHistory = computed(() => filteredBackupHistory.value)
 
 function clearFilters() {
   filterDateFrom.value = ""
@@ -182,6 +186,7 @@ function clearSelectedGraphDate() {
 
 function handlePageSizeChange() {
   currentPage.value = 1 // Reset to first page when page size changes
+  void loadBackupHistory()
 }
 
 function scrollToTop() {
@@ -193,12 +198,14 @@ function goToPreviousHistoryPage() {
   if (currentPage.value <= 1) return
   currentPage.value -= 1
   scrollToTop()
+  void loadBackupHistory()
 }
 
 function goToNextHistoryPage() {
   if (currentPage.value >= totalPages.value) return
   currentPage.value += 1
   scrollToTop()
+  void loadBackupHistory()
 }
 
 async function loadDiff() {
