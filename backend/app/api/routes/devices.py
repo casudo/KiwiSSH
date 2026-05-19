@@ -110,9 +110,7 @@ async def get_device(device_name: str, db: Session = Depends(get_db)) -> dict:
     ### Get backup count from git history
     backup_count = 0
     try:
-        history = await git_service.get_config_history(device_name, group=device.group, limit=None)
-        if history:
-            backup_count = len(history)
+        backup_count = await git_service.get_config_history_count(device_name, group=device.group)
     except Exception:
         pass
 

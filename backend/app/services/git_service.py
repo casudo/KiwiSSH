@@ -277,59 +277,31 @@ class GitService:
             message,
         )
 
-    async def get_config_history(
+    def _get_config_history_sync(
         self,
         device_name: str,
         group: str,
         limit: int | None = None,
+        offset: int = 0,
     ) -> list[dict[str, Any]]:
-        """
-        Get configuration history for a device.
-
-        Args:
-            device_name: Name of the device
-            group: Device group (determines which repo)
-            limit: Maximum number of history entries to return. None returns all entries.
-
-        Returns:
-            List of history entries with commit info, file sizes, and version numbers
-        """
+        """Blocking git history lookup for a device config file."""
         repo = self._ensure_repo(group)
-        commits = []
+        commits: list[dict[str, Any]] = []
         config_file = f"{device_name}.conf"
 
-        for commit in repo.iter_commits():
+        commit_kwargs: dict[str, Any] = {"paths": config_file}
+        if limit is not None:
+            commit_kwargs["max_count"] = limit
+        if offset > 0:
+            commit_kwargs["skip"] = offset
 
-            ### Check if this commit modified the device's config file
-            modified = False
-
-            if commit.parents:
-                ### Not the first commit - check what files were modified
-                for parent in commit.parents:
-                    diffs = parent.diff(commit)
-                    for diff_item in diffs:
-                        ### Check both old path (a_path) and new path (b_path)
-                        if diff_item.a_path == config_file or diff_item.b_path == config_file:
-                            modified = True
-                            break
-                    if modified:
-                        break
-            else:
-                ### First commit - check if file exists in tree
-                for item in commit.tree.traverse():
-                    if item.path == config_file:
-                        modified = True
-                        break
-
-            if not modified:
-                continue
-
+        for commit in repo.iter_commits(**commit_kwargs):
             ### Get file size at this commit
             file_size_bytes = 0
-            for item in commit.tree.traverse():
-                if item.path == config_file:
-                    file_size_bytes = item.size
-                    break
+            try:
+                file_size_bytes = (commit.tree / config_file).size
+            except KeyError:
+                file_size_bytes = 0
 
             commits.append({
                 "hash": commit.hexsha,
@@ -342,12 +314,52 @@ class GitService:
                 "version_number": 0,  # Will be set after we know total count
             })
 
+        total_count = len(commits)
+        try:
+            total_count = int(repo.git.rev_list("--count", "HEAD", "--", config_file).strip())
+        except (ValueError, GitCommandError):
+            total_count = len(commits)
+
         ### Assign version numbers globally - oldest commit = 1, newest = N
         ### Commits are newest first, so reverse the numbering
         for idx, commit in enumerate(commits):
-            commit["version_number"] = len(commits) - idx
+            commit["version_number"] = max(0, total_count - (offset + idx))
 
-        return commits if limit is None else commits[:limit]
+        return commits
+
+    async def get_config_history(
+        self,
+        device_name: str,
+        group: str,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> list[dict[str, Any]]:
+        """
+        Get configuration history for a device.
+
+        Args:
+            device_name: Name of the device
+            group: Device group (determines which repo)
+            limit: Maximum number of history entries to return. None returns all entries.
+            offset: Number of most recent entries to skip (for pagination)
+
+        Returns:
+            List of history entries with commit info, file sizes, and version numbers
+        """
+        return await asyncio.to_thread(self._get_config_history_sync, device_name, group, limit, offset)
+
+    def _get_config_history_count_sync(self, device_name: str, group: str) -> int:
+        """Return commit count for a device config file using git rev-list."""
+        repo = self._ensure_repo(group)
+        config_file = f"{device_name}.conf"
+        try:
+            return int(repo.git.rev_list("--count", "HEAD", "--", config_file).strip())
+        except (ValueError, GitCommandError):
+            return 0
+
+    async def get_config_history_count(self, device_name: str, group: str) -> int:
+        """Get configuration history count without loading full history."""
+        return await asyncio.to_thread(self._get_config_history_count_sync, device_name, group)
 
     async def get_config_at_commit(
         self,

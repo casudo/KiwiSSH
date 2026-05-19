@@ -179,6 +179,7 @@ async def get_backup_job_status(job_id: str) -> dict:
 async def get_device_backup_history(
     device_name: str,
     limit: int | None = Query(None, ge=1, description="Maximum number of history entries to return. Omit for all."),
+    offset: int = Query(0, ge=0, description="Number of history entries to skip."),
 ) -> dict:
     """Get backup history for a device."""
     device = await source_service.get_device(device_name)
@@ -187,16 +188,29 @@ async def get_device_backup_history(
         raise HTTPException(status_code=404, detail=f"Device '{device_name}' not found")
 
     try:
-        history = await git_service.get_config_history(device_name, group=device.group, limit=limit)
+        total_count = await git_service.get_config_history_count(device_name, group=device.group)
+        history = await git_service.get_config_history(
+            device_name,
+            group=device.group,
+            limit=limit,
+            offset=offset,
+        )
         return {
             "device_name": device_name,
             "history": history,
             "count": len(history),
+            "total_count": total_count,
+            "limit": limit,
+            "offset": offset,
         }
     except Exception as e:
         return {
             "device_name": device_name,
             "history": [],
+            "count": 0,
+            "total_count": 0,
+            "limit": limit,
+            "offset": offset,
             "error": str(e),
         }
 
@@ -248,7 +262,7 @@ async def get_latest_config(device_name: str, commit: str | None = None) -> dict
         if commit:
             config = await git_service.get_config_at_commit(device_name, commit, group=device.group)
             ### Get commit info from history
-            history = await git_service.get_config_history(device_name, group=device.group, limit=None)
+            history = await git_service.get_config_history(device_name, group=device.group, limit=None, offset=0)
             commit_info = next((c for c in history if c["hash"] == commit), None)
 
             return {
@@ -261,7 +275,7 @@ async def get_latest_config(device_name: str, commit: str | None = None) -> dict
             }
         else:
             ### Get latest
-            history = await git_service.get_config_history(device_name, group=device.group, limit=1)
+            history = await git_service.get_config_history(device_name, group=device.group, limit=1, offset=0)
             if not history:
                 return {
                     "device_name": device_name,
