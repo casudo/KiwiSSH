@@ -7,8 +7,14 @@ interface BackupEntry {
   [key: string]: unknown
 }
 
+interface BackupDayCount {
+  date: string
+  count: number
+}
+
 interface Props {
-  backups: BackupEntry[]
+  backups?: BackupEntry[]
+  dailyCounts?: BackupDayCount[]
   selectedDate?: string
 }
 
@@ -39,7 +45,15 @@ function formatLocalDate(date: Date): string {
 const backupsByDate = computed((): Map<string, number> => {
   const map = new Map<string, number>()
 
-  for (const backup of props.backups) {
+  if (props.dailyCounts && props.dailyCounts.length > 0) {
+    for (const day of props.dailyCounts) {
+      if (!day.date) continue
+      map.set(day.date, (map.get(day.date) || 0) + day.count)
+    }
+    return map
+  }
+
+  for (const backup of props.backups || []) {
     // Parse ISO timestamp and convert to local date
     const date = new Date(backup.timestamp)
     // Get local date string (not UTC)

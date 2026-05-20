@@ -20,7 +20,8 @@ interface BackupEntry {
   version_number: number
 }
 
-const graphHistoryCache = new Map<string, Array<{ timestamp: string }>>()
+const graphHistoryCache = new Map<string, Array<{ date: string; count: number }>>()
+const graphDays = 365
 
 const route = useRoute()
 const router = useRouter()
@@ -47,7 +48,7 @@ const backupHistory = ref<BackupEntry[]>([])
 const historyLoading = ref(false)
 const historyError = ref<string | null>(null)
 const totalHistoryCount = ref(0)
-const graphBackups = ref<Array<{ timestamp: string }>>([])
+const graphDailyCounts = ref<Array<{ date: string; count: number }>>([])
 
 // Filter states
 const filterDateFrom = ref<string>("")
@@ -90,7 +91,7 @@ onMounted(async () => {
   currentPage.value = 1
   const devicePromise = devicesStore.fetchDevice(deviceName.value)
   const historyPromise = loadBackupHistory()
-  const graphPromise = loadGraphHistory() // WIP
+  const graphPromise = loadGraphHistory()
   const vendorPromise = devicesStore.vendors.length === 0
     ? devicesStore.fetchVendors()
     : Promise.resolve()
@@ -98,20 +99,21 @@ onMounted(async () => {
 })
 
 async function loadGraphHistory() {
-  const cacheKey = deviceName.value
+  const tzOffsetMinutes = new Date().getTimezoneOffset()
+  const cacheKey = `${deviceName.value}|${graphDays}|${tzOffsetMinutes}`
   const cached = graphHistoryCache.get(cacheKey)
   if (cached) {
-    graphBackups.value = cached
+    graphDailyCounts.value = cached
     return
   }
 
   try {
-    const response = await backupApi.getHistory(deviceName.value)
-    const timestamps = (response.history || []).map((entry) => ({ timestamp: entry.timestamp }))
-    graphHistoryCache.set(cacheKey, timestamps)
-    graphBackups.value = timestamps
+    const response = await backupApi.getHistoryGraph(deviceName.value, graphDays, tzOffsetMinutes)
+    const counts = response.counts || []
+    graphHistoryCache.set(cacheKey, counts)
+    graphDailyCounts.value = counts
   } catch (e) {
-    graphBackups.value = []
+    graphDailyCounts.value = []
   }
 }
 
@@ -285,7 +287,8 @@ async function triggerBackup() {
 
     // Reload history after backup (for UI update)
     await loadBackupHistory()
-    graphHistoryCache.delete(deviceName.value)
+    const tzOffsetMinutes = new Date().getTimezoneOffset()
+    graphHistoryCache.delete(`${deviceName.value}|${graphDays}|${tzOffsetMinutes}`)
     await loadGraphHistory()
 
     // Reload device data from API to get updated status from database
@@ -561,7 +564,7 @@ function formatFileSize(bytes: number): string {
       </div>
 
       <BackupContributionGraph
-        :backups="graphBackups"
+        :daily-counts="graphDailyCounts"
         :selected-date="selectedDateInGraph"
         @day-selected="setSelectedGraphDate"
         @day-cleared="clearSelectedGraphDate"
