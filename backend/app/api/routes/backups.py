@@ -1,6 +1,7 @@
 """Backup operation endpoints."""
 
 import logging
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
 
@@ -211,6 +212,50 @@ async def get_device_backup_history(
             "total_count": 0,
             "limit": limit,
             "offset": offset,
+            "error": str(e),
+        }
+
+
+@router.get("/history/graph/{device_name}")
+async def get_device_backup_graph(
+    device_name: str,
+    days: int = Query(365, ge=1, le=3650, description="Number of days to include"),
+    tz_offset_minutes: int = Query(0, description="Timezone offset in minutes (Date.getTimezoneOffset())"),
+) -> dict:
+    """Get per-day backup counts for the last N days (graph-only endpoint)."""
+    device = await source_service.get_device(device_name)
+
+    if device is None:
+        raise HTTPException(status_code=404, detail=f"Device '{device_name}' not found")
+
+    try:
+        counts = await git_service.get_backup_graph_counts(
+            device_name,
+            group=device.group,
+            days=days,
+            tz_offset_minutes=tz_offset_minutes,
+        )
+        offset_delta = timedelta(minutes=-int(tz_offset_minutes))
+        now_utc = datetime.now(timezone.utc)
+        today_local = (now_utc + offset_delta).date()
+        start_date = today_local - timedelta(days=days - 1)
+        total = sum(int(item.get("count", 0)) for item in counts)
+
+        return {
+            "device_name": device_name,
+            "days": days,
+            "tz_offset_minutes": tz_offset_minutes,
+            "from": start_date.isoformat(),
+            "to": today_local.isoformat(),
+            "total": total,
+            "counts": counts,
+        }
+    except Exception as e:
+        return {
+            "device_name": device_name,
+            "days": days,
+            "tz_offset_minutes": tz_offset_minutes,
+            "counts": [],
             "error": str(e),
         }
 
