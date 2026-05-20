@@ -82,6 +82,22 @@ export interface BackupHistoryResponse {
   error?: string
 }
 
+export interface BackupGraphDay {
+  date: string
+  count: number
+}
+
+export interface BackupGraphResponse {
+  device_name: string
+  days: number
+  tz_offset_minutes?: number
+  from?: string
+  to?: string
+  total?: number
+  counts: BackupGraphDay[]
+  error?: string
+}
+
 export interface BackupJobsResponse {
   count: number
   total_count: number

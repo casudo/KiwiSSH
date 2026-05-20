@@ -4,6 +4,7 @@ import type {
   BackupJobStatus,
   BackupJobsResponse,
   BackupHistoryResponse,
+  BackupGraphResponse,
 } from "../types/backup"
 
 export const backupApi = {
@@ -44,6 +45,18 @@ export const backupApi = {
     if (limit !== undefined) params.limit = limit
     if (offset !== undefined) params.offset = offset
     const response = await api.get<BackupHistoryResponse>(`/backups/history/${deviceName}`, { params })
+    return response.data
+  },
+
+  async getHistoryGraph(
+    deviceName: string,
+    days?: number,
+    tzOffsetMinutes?: number,
+  ): Promise<BackupGraphResponse> {
+    const params: Record<string, number> = {}
+    if (days !== undefined) params.days = days
+    if (tzOffsetMinutes !== undefined) params.tz_offset_minutes = tzOffsetMinutes
+    const response = await api.get<BackupGraphResponse>(`/backups/history/graph/${deviceName}`, { params })
     return response.data
   },
 
