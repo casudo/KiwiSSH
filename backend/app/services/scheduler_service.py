@@ -1,6 +1,8 @@
-"""Service for scheduling and triggering backups based on cron schedules.
+"""Service for scheduling and triggering multiple tasks based on cron schedules.
 
-This service resolves device-specific schedules with precedence (app < group < node)
+Schedules backups as well as log retention cleanup jobs.
+
+Backups: resolves device-specific schedules with precedence (app < group < node)
 and provides methods to determine which devices should have their backup triggered
 at any given time. Uses APScheduler to execute backups on configured cron schedules.
 """
@@ -21,7 +23,7 @@ from app.services.log_retention_service import log_retention_service
 logger = logging.getLogger(__name__)
 
 
-class BackupSchedulerService:
+class SchedulerService:
     """Service for managing backup scheduling based on device configurations."""
 
     def __init__(self) -> None:
@@ -110,7 +112,7 @@ class BackupSchedulerService:
             logger.error("Scheduled log retention failed: %s", ex)
 
     def start_scheduler(self, devices: list[DeviceBase]) -> None:
-        """Start the backup scheduler and schedule all configured devices.
+        """Start the scheduler and schedule all configured tasks.
         
         Args:
             devices: List of all available devices
@@ -184,24 +186,24 @@ class BackupSchedulerService:
             self.scheduler.start()
             
         except Exception as ex:
-            logger.error(f"Failed to start backup scheduler: {ex}")
+            logger.error(f"Failed to start scheduler: {ex}")
             self.scheduler = None
 
     def stop_scheduler(self) -> None:
-        """Stop the backup scheduler gracefully."""
+        """Stop the scheduler gracefully."""
         if self.scheduler is None:
             logger.warning("Scheduler is not running")
             return
 
         try:
             self.scheduler.shutdown(wait=True)
-            logger.info("Backup scheduler stopped")
+            logger.info("Scheduler stopped")
         except Exception as ex:
-            logger.error(f"Error stopping backup scheduler: {ex}")
+            logger.error(f"Error stopping scheduler: {ex}")
         finally:
             self.scheduler = None
             self.scheduled_devices.clear()
 
 
 ### Singleton instance
-backup_scheduler_service = BackupSchedulerService()
+scheduler_service = SchedulerService()
