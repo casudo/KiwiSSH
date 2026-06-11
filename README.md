@@ -529,7 +529,6 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 - Swagger API documentation on GitHub Pages
 - Allow group passwords to bet set via env vars or other input
 - Optional share anonymouse usage data for statistics (needs opt-in, privacy policy and telemetry server)
-- Add UI banner when new update is available
 - Login Screen, User management and RBAC
 
 ---
