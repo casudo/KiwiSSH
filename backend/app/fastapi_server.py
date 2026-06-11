@@ -16,6 +16,7 @@ from app.services import source_service
 from app.services.backup_service import backup_service
 from app.services.backup_scheduler_service import backup_scheduler_service
 from app.services.backup_job_service import backup_job_service
+from app.services.log_retention_service import log_retention_service
 from app.db import database
 
 ### Load .env file early to ensure env vars are available
@@ -68,6 +69,25 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
                 db.close()
         except Exception as e:
             logger.warning(f"Failed to clean up stuck jobs during startup: {e}")
+
+    ### Run log retention on startup
+    retention_cfg = settings.app.retention
+    if retention_cfg.enabled and database.SessionLocal is not None:
+        try:
+            db = database.SessionLocal()
+            try:
+                result = log_retention_service.run(
+                    db,
+                    max_age_days=retention_cfg.max_age_days,
+                    max_rows=retention_cfg.max_rows,
+                )
+                total_deleted = result["deleted_age"] + result["deleted_rows"]
+                if total_deleted:
+                    logger.info(f"Log retention on startup: removed {total_deleted} record(s)")
+            finally:
+                db.close()
+        except Exception as e:
+            logger.warning(f"Log retention startup run failed: {e}")
 
     ### Start global backup queue workers
     await backup_service.start_backup_queue()
