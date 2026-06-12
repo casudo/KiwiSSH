@@ -9,7 +9,7 @@ vendor:
 ### Session-level output behavior.
 session:
   comment_prefix: "# "
-  prompt: '^(\(\w\) )?([-\w.~]+(\s[(\w\-.)]+)?~?\s?[#>$]\s?)$'
+  prompt: '^(\(\w\) )?([-\w.~()]+(\s[(\w\-.)]+)?~?\s?[#>$]\s?)$'
   pagination:
     enabled: true
     patterns:
