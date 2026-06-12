@@ -112,6 +112,13 @@ class ScheduleConfig(BaseModel):
         return tz
     
 
+class RetentionConfig(BaseModel):
+    """Backup job log retention configuration."""
+    enabled: bool = False
+    max_rows: int = Field(default=100000, ge=1000, description="Delete oldest jobs when total count exceeds this")
+    max_age_days: int = Field(default=90, ge=1, description="Delete jobs older than this many days")
+
+
 ### Application configuration models
 class AppConfig(BaseModel):
     """Application-level settings."""
@@ -122,6 +129,7 @@ class AppConfig(BaseModel):
     protocol: str = "ssh"
     api: ApiConfig = Field(default_factory=ApiConfig)
     schedule: ScheduleConfig = Field(default_factory=ScheduleConfig)
+    retention: RetentionConfig = Field(default_factory=RetentionConfig)
 
     @field_validator("protocol", mode="before")
     @classmethod

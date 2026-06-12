@@ -170,6 +170,18 @@ function goToNextPage() {
   void loadJobsPage()
 }
 
+function goToPreviousPageNoScroll() {
+  if (currentPage.value <= 1) return
+  currentPage.value -= 1
+  void loadJobsPage()
+}
+
+function goToNextPageNoScroll() {
+  if (currentPage.value >= totalPages.value) return
+  currentPage.value += 1
+  void loadJobsPage()
+}
+
 async function handleRefresh() {
   await loadJobsPage()
 }
@@ -501,6 +513,29 @@ async function handleFlushDatabase() {
       </div>
     </div>
 
+    <!-- Pagination (top) -->
+    <div v-if="jobsStore.totalJobs > 0" class="mb-4 flex items-center justify-between">
+      <span class="text-sm text-gray-600 dark:text-gray-400">
+        Page {{ currentPage }} of {{ totalPages }} ({{ pageStart }}-{{ pageEnd }} of {{ jobsStore.totalJobs }} total)
+      </span>
+      <div class="flex gap-2">
+        <button
+          @click="goToPreviousPageNoScroll"
+          :disabled="currentPage === 1"
+          class="btn btn-secondary py-1 px-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          ← Previous
+        </button>
+        <button
+          @click="goToNextPageNoScroll"
+          :disabled="currentPage >= totalPages"
+          class="btn btn-secondary py-1 px-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Next →
+        </button>
+      </div>
+    </div>
+
     <!-- Jobs list -->
     <LoadingSpinner v-if="jobsStore.loading && jobsStore.jobs.length === 0" size="lg" class="py-12" />
 
@@ -590,6 +625,7 @@ async function handleFlushDatabase() {
       </div>
     </div>
 
+    <!-- Pagination (bottom) -->
     <div v-if="jobsStore.totalJobs > 0" class="mt-4 flex items-center justify-between">
       <span class="text-sm text-gray-600 dark:text-gray-400">
         Page {{ currentPage }} of {{ totalPages }} ({{ pageStart }}-{{ pageEnd }} of {{ jobsStore.totalJobs }} total)

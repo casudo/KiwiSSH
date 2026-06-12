@@ -171,6 +171,9 @@ Full available options:
 | `app.api.cors_origins` | A list of allowed CORS origins for the API server. | No | `["http://localhost:5173", "http://127.0.0.1:5173"]` |
 | `app.schedule.cron` | The cron expression for the global backup schedule. | No | `0 2 * * *` |
 | `app.schedule.TZ` | The timezone for the backup schedule. | No | `TZ environment variable or UTC` |
+| `app.retention.enabled` | If set to true, log retention policies will be enforced. | No | `false` |
+| `app.retention.max_age_days` | Maximum age of backup job logs in days. Logs older than this will be deleted. | No | `90` |
+| `app.retention.max_rows` | Maximum number of backup job logs to keep. Oldest logs will be deleted when this limit is exceeded. | No | `100000` |
 
 ### application_database
 
@@ -503,30 +506,29 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 - Checks for device source: No duplicate hostnames, valid IPs, ... (What if multiple groups hold the same IP address range?)
 - Update ssh_service to use FQDN instead of IP to avoid?
 - Add new vendors
+- Cache backup history response for a device so it doesnt need to fetch again
   
 **Mid-term:**
 
-- Implement backup job log rotation and retention policies (e.g. delete logs if line >10000 or older than 90 days)
-- Add visual popup when opening JobView.vue if the page load takes longer than 2 seconds to inform the user that the page is still loading and to prevent them from thinking the UI is frozen
+- Add visual popup when opening JobView.vue if the page load takes longer than 2 seconds to inform the user that the page is still loading and to prevent them from thinking the UI is frozen (Branch [job-log-loading-spinner](https://github.com/casudo/KiwiSSH/tree/job-log-loading-spinner))
 - Pentests
 - Rework Pydantic models (required vs optional fields, default values, validators, etc.)
 - Update Ruff linter and formatter
 - Add Vue linter/formatter?
-- Telnet support? SCP support?
+- SCP support?
 - Update ssh_profile legacy with Synology NAS ssh settings "Low"
 - Show "backup time" when NO_CHANGES" in log line "No configuration changes detected for {device_name}"?
+- Put redaction boolean switch as group/node level override instead of per vendor to be able to easily turn on/off redaction for specific groups/nodes without having to modify the vendor YAML files?
 
 **Long Term:**
 
 - Notification System (Email, Slack, Webhook) ([#5](https://github.com/casudo/KiwiSSH/issues/5))
   - Special notification IF git diff shows a minus or plus of 100 lines or more to quickly inform about major config changes
 - i18n localization support
-- New Update available notification in the UI
 - Fix logging strings to use lazy formatting instead of f-strings ([Ruff G004](https://docs.astral.sh/ruff/rules/logging-f-string/)) (Add to ruff.toml)
 - Swagger API documentation on GitHub Pages
 - Allow group passwords to bet set via env vars or other input
 - Optional share anonymouse usage data for statistics (needs opt-in, privacy policy and telemetry server)
-- Add UI banner when new update is available
 - Login Screen, User management and RBAC
 
 ---

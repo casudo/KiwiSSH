@@ -9,6 +9,8 @@ from app.models.backup import BackupTriggerRequest, BackupTriggerResponse
 from app.services.backup_service import backup_service
 from app.services.source_service import source_service
 from app.services.git_service import git_service
+from app.services.log_retention_service import log_retention_service
+from app.core import get_settings
 from app.db.database import get_db
 from sqlalchemy import desc, func
 from app.db.models import BackupJob
@@ -373,3 +375,35 @@ async def flush_database(db: Session = Depends(get_db)) -> dict:
         db.rollback()
         logger.error(f"Failed to flush database: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to flush database: {str(e)}")
+
+
+@router.post("/retention/run")
+async def run_log_retention(db: Session = Depends(get_db)) -> dict:
+    """Manually trigger the log retention policy.
+
+    Applies the configured age and row-count limits immediately and returns
+    the number of records that were deleted.
+    """
+    settings = get_settings()
+    retention_cfg = settings.app.retention
+
+    if not retention_cfg.enabled:
+        return {"message": "Log retention is disabled", "deleted_age": 0, "deleted_rows": 0}
+
+    try:
+        result = log_retention_service.run(
+            db,
+            max_age_days=retention_cfg.max_age_days,
+            max_rows=retention_cfg.max_rows,
+        )
+        total = result["deleted_age"] + result["deleted_rows"]
+        return {
+            "message": f"Retention run complete: removed {total} record(s)",
+            "deleted_age": result["deleted_age"],
+            "deleted_rows": result["deleted_rows"],
+            "max_age_days": retention_cfg.max_age_days,
+            "max_rows": retention_cfg.max_rows,
+        }
+    except Exception as e:
+        logger.error(f"Failed to run log retention: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to run log retention: {str(e)}")

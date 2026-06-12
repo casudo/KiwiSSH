@@ -4,9 +4,11 @@ import Navbar from "@/components/Navbar.vue"
 import Footer from "@/components/Footer.vue"
 import { useFavoritesStore } from "@/stores/favorites"
 import { useThemeStore } from "@/stores/theme"
+import { useAppStore } from "@/stores/app"
 
 const favoritesStore = useFavoritesStore()
 const themeStore = useThemeStore()
+const appStore = useAppStore()
 
 onMounted(async () => {
   // Load theme
@@ -23,6 +25,9 @@ onMounted(async () => {
       console.warn("Failed to load favorites from backend:", e)
     }
   }
+
+  // Check for available updates (best-effort, errors are silently ignored)
+  appStore.checkForUpdates()
 })
 </script>
 

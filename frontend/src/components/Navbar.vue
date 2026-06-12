@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { RouterLink, useRoute } from "vue-router"
 import { useThemeStore } from "@/stores/theme"
+import { useAppStore } from "@/stores/app"
 import { computed } from "vue"
 import { APP_VERSION } from "@/main"
 
 const route = useRoute()
 const themeStore = useThemeStore()
+const appStore = useAppStore()
 
 interface NavItem {
   name: string
@@ -27,6 +29,9 @@ const isActive = (path: string): boolean => {
 }
 
 const isDarkMode = computed(() => themeStore.isDarkMode())
+const showUpdateBanner = computed(
+  () => appStore.updateAvailable && !appStore.updateDismissed
+)
 </script>
 
 <template>
@@ -68,6 +73,43 @@ const isDarkMode = computed(() => themeStore.isDarkMode())
             <span v-else class="text-lg">🌙</span>
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- Update available banner -->
+    <div
+      v-if="showUpdateBanner"
+      class="bg-kiwissh-600/90 dark:bg-kiwissh-700/90 border-t border-kiwissh-500/50 dark:border-kiwissh-600/50 px-4 py-2"
+    >
+      <div class="container mx-auto flex items-center justify-between gap-4">
+        <div class="flex items-center gap-2 text-sm text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>
+            New update available:
+            <strong>v{{ appStore.latestVersion }}</strong>
+            (current: v{{ APP_VERSION }})
+          </span>
+          <a
+            href="https://github.com/casudo/KiwiSSH/releases/latest"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="underline hover:text-white/80 font-medium"
+          >
+            View release notes
+          </a>
+        </div>
+        <button
+          @click="appStore.dismissUpdate()"
+          class="shrink-0 text-white/70 hover:text-white transition-colors"
+          title="Dismiss"
+          aria-label="Dismiss update notification"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
     </div>
   </nav>
