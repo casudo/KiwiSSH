@@ -32,6 +32,7 @@ It was created as better alternative to RANCID and Oxidized, with a focus on sim
   - [kiwissh.yaml](#kiwisshyaml)
     - [app](#app)
     - [application\_database](#application_database)
+    - [notifications](#notifications)
     - [sources](#sources)
       - [File](#file)
       - [PostgreSQL](#postgresql)
@@ -49,6 +50,7 @@ It was created as better alternative to RANCID and Oxidized, with a focus on sim
   - [How do I setup a remote git location?](#how-do-i-setup-a-remote-git-location)
   - [When do I choose the global `git.remote` vs per-group overrides (`groups.<group>.git.remote`)?](#when-do-i-choose-the-global-gitremote-vs-per-group-overrides-groupsgroupgitremote)
   - [fatal: Could not read from remote repository](#fatal-could-not-read-from-remote-repository)
+  - [Third Party Monitoring](#third-party-monitoring)
 - [Future Goals](#future-goals)
 - [Technical Documentation](#technical-documentation)
 - [Contributing to KiwiSSH](#contributing-to-kiwissh)
@@ -189,6 +191,10 @@ The `application_database` segment is used to configure the connection to the Po
 | `application_database.database` | The name of the PostgreSQL database. | **Yes** | - |
 | `application_database.username` | The username for the PostgreSQL database. | **Yes** | - |
 | `application_database.password` | The password for the PostgreSQL database. | **Yes** | - |
+
+### notifications
+
+WIP
 
 ### sources
 
@@ -496,6 +502,10 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 
 > [!TIP]
 > In order to persistently keep the `known_hosts` file in Docker, make sure to mount a volume to `/home/kiwissh/.ssh` and ensure the permissions are correct to ensure successful SSH authentication when pushing even after restarting the container.
+
+## Third Party Monitoring
+
+WIP
 
 ---
 

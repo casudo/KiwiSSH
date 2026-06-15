@@ -23,6 +23,18 @@ application_database:
   username: "kiwissh_user"
   password: "kiwissh-user-password"
 
+### Notification settings (optional, disabled by default)
+## Read about the configuration options in the README.md
+notifications:
+  enabled: true
+  trigger: "always"
+  type:
+    smtp:
+      host: "smtp.example.com"
+      sender: "kiwissh@example.com"
+      recipients:
+        - "admin@example.com"
+
 ### Device sources
 ## Load from file or PostgreSQL. At least one source is required.
 ## Required columns: group, device_name, ip_address, enabled

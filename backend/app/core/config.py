@@ -193,6 +193,44 @@ class NodeGitConfig(BaseModel):
         return text or None
 
 
+### =====================================================================
+### Notification Configuration
+
+class NotificationTrigger(str, Enum):
+    """Controls when backup notifications are sent."""
+    ALWAYS = "always"                     # Notify on every Success or Failed
+    FAILURE_ALL = "failure_all"           # Notify on every Failed
+    FAILURE_ANOMALY = "failure_anomaly"   # Notify on Failed only when previous was Success or No Changes
+
+
+class NotificationType(BaseModel):
+    """Notification delivery channel."""
+    smtp: SmtpConfig | None = None
+    # TODO: webhook, slack, teams, ...
+
+
+class NotificationsConfig(BaseModel):
+    """Global notification configuration."""
+    enabled: bool = False
+    trigger: NotificationTrigger = NotificationTrigger.FAILURE_ANOMALY
+    type: NotificationType = Field(default_factory=NotificationType)
+
+    @model_validator(mode="after")
+    def validate_type_config(self) -> "NotificationsConfig":
+        """Require at least one channel config block when notifications are enabled."""
+        if not self.enabled:
+            return self
+        if self.type.smtp is None:
+            raise ValueError(
+                "At least one notification channel must be configured under notifications.type "
+                "(e.g. notifications.type.smtp) when notifications.enabled is true"
+            )
+        ### TODO: Update check for multiple channels
+        return self
+
+
+### =====================================================================
+
 class JumphostBaseConfig(BaseModel):
     """Shared reusable jumphost fields for group and node-level config."""
     hostname: str | None = None
@@ -573,6 +611,7 @@ class Settings(BaseSettings):
     sources: SourcesConfig | None = None
     git: GitConfig = Field(default_factory=GitConfig)
     application_database: ApplicationDatabaseConfig | None = None
+    notifications: NotificationsConfig = Field(default_factory=NotificationsConfig)
     schedule: ScheduleConfig | None = None
     api: ApiConfig = Field(default_factory=ApiConfig)
 
@@ -626,6 +665,9 @@ class Settings(BaseSettings):
 
             ### application_database
             self.application_database = ApplicationDatabaseConfig(**file_content.get("application_database", {}))
+
+            ### notifications
+            self.notifications = NotificationsConfig(**file_content.get("notifications", {}))
 
         ### Load SSH profiles
         ssh_profiles_file = self.config_dir / "ssh_profiles.yaml"
