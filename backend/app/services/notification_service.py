@@ -1,9 +1,14 @@
 """Notification Service - notifications for backup events."""
 
+import asyncio
 import logging
+import smtplib
+import ssl
+from datetime import datetime
+from email.message import EmailMessage
 from typing import TYPE_CHECKING
 
-from app.core.config import NotificationsConfig
+from app.core.config import NotificationsConfig, SmtpConfig
 from app.models.backup import BackupStatus
 
 if TYPE_CHECKING:
@@ -89,6 +94,37 @@ class NotificationService:
             lines.extend(["", "Error Detail:", "-" * 40, error_message])
         lines.extend(["", "-" * 40, "This message was sent by KiwiSSH."])
         return "\n".join(lines)
+
+    def _send_smtp(
+        self,
+        smtp_config: SmtpConfig,
+        subject: str,
+        body: str,
+    ) -> None:
+        """Send an email via SMTP (blocking - intended to run via asyncio.to_thread)."""
+        msg = EmailMessage()
+        msg["Subject"] = subject
+        msg["From"] = smtp_config.sender
+        msg["To"] = ", ".join(smtp_config.recipients)
+        msg.set_content(body)
+
+        ### SSL/TLS
+        if smtp_config.use_ssl:
+            context = ssl.create_default_context()
+            with smtplib.SMTP_SSL(smtp_config.host, smtp_config.port, context=context) as server:
+                if smtp_config.username and smtp_config.password:
+                    server.login(smtp_config.username, smtp_config.password)
+                server.send_message(msg)
+        ### STARTTLS or plain
+        else:
+            with smtplib.SMTP(smtp_config.host, smtp_config.port) as server:
+                if smtp_config.use_tls:
+                    context = ssl.create_default_context()
+                    server.starttls(context=context)
+                if smtp_config.username and smtp_config.password:
+                    server.login(smtp_config.username, smtp_config.password)
+                server.send_message(msg)
+
     ### ==================================================================================
     ### Send Notification for Type N Methods
     ### ==================================================================================
@@ -112,8 +148,7 @@ class NotificationService:
             timestamp=result.timestamp,
         )
 
-        ### WIP: Logic to send mail
-
+        await asyncio.to_thread(self._send_smtp, smtp_config, subject, body)
         logger.info(
             "Sent smtp notification for %s (status=%s) to %d recipient(s)",
             device_name,
