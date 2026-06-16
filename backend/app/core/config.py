@@ -252,7 +252,7 @@ class NotificationType(BaseModel):
 class NotificationsConfig(BaseModel):
     """Global notification configuration."""
     enabled: bool = False
-    trigger: NotificationTrigger = NotificationTrigger.FAILURE_NEW
+    trigger: NotificationTrigger = NotificationTrigger.FAILURE
     type: NotificationType = Field(default_factory=NotificationType)
 
     @model_validator(mode="after")
