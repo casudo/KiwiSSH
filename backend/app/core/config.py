@@ -200,8 +200,8 @@ class NodeGitConfig(BaseModel):
 class NotificationTrigger(str, Enum):
     """Controls when backup notifications are sent."""
     ALWAYS = "always"                     # Notify on every Success or Failed
-    FAILURE_ALL = "failure_all"           # Notify on every Failed
-    FAILURE_ANOMALY = "failure_anomaly"   # Notify on Failed only when previous was Success or No Changes
+    FAILURE = "failure"                   # Notify on every Failed
+    FAILURE_NEW = "failure_new"           # Notify on Failed **ONLY** when previous was Success, No Changes or None (first ever backup failure)
 
 
 class SmtpConfig(BaseModel):
@@ -252,7 +252,7 @@ class NotificationType(BaseModel):
 class NotificationsConfig(BaseModel):
     """Global notification configuration."""
     enabled: bool = False
-    trigger: NotificationTrigger = NotificationTrigger.FAILURE_ANOMALY
+    trigger: NotificationTrigger = NotificationTrigger.FAILURE_NEW
     type: NotificationType = Field(default_factory=NotificationType)
 
     @model_validator(mode="after")

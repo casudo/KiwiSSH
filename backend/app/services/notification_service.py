@@ -40,10 +40,10 @@ class NotificationService:
         if trigger == "always":
             return new_status in (BackupStatus.SUCCESS, BackupStatus.FAILED)
 
-        if trigger == "failure_all":
+        if trigger == "failure":
             return new_status == BackupStatus.FAILED
 
-        if trigger == "failure_anomaly":
+        if trigger == "failure_new":
             if new_status != BackupStatus.FAILED:
                 return False
             ### No prior history -> first backup ever failed -> notify
@@ -71,6 +71,7 @@ class NotificationService:
         device_name: str,
         group: str,
         status: BackupStatus,
+        previous_status: str | None,
         job_id: str | None,
         error_message: str | None,
         duration_seconds: float | None,
@@ -80,19 +81,20 @@ class NotificationService:
         lines = [
             "KiwiSSH Backup Notification",
             "=" * 40,
-            f"Device    : {device_name}",
-            f"Group     : {group}",
-            f"Status    : {status.value.upper()}",
+            f"Device        : {device_name}",
+            f"Group         : {group}",
+            f"Prev. Status  : {previous_status.upper() if previous_status else 'NONE'}",
+            f"Status        : {status.value.upper()}",
         ]
         if timestamp:
-            lines.append(f"Timestamp : {timestamp.strftime('%Y-%m-%d %H:%M:%S UTC')}")
+            lines.append(f"Timestamp     : {timestamp.strftime('%Y-%m-%d %H:%M:%S UTC')}")
         if duration_seconds is not None:
-            lines.append(f"Duration  : {duration_seconds:.1f}s")
+            lines.append(f"Duration      : {duration_seconds:.1f}s")
         if job_id:
-            lines.append(f"Job ID    : {job_id}")
+            lines.append(f"Job ID        : {job_id}")
         if error_message:
             lines.extend(["", "Error Detail:", "-" * 40, error_message])
-        lines.extend(["", "-" * 40, "This message was sent by KiwiSSH."])
+        lines.extend(["\n\n\n", "-" * 40, "This message was sent by KiwiSSH."])
         return "\n".join(lines)
 
     def _send_smtp(
@@ -133,6 +135,7 @@ class NotificationService:
         self,
         device_name: str,
         group: str,
+        previous_status: str | None,
         result: "BackupRecord",
         smtp_config: SmtpConfig,
     ) -> None:
@@ -141,6 +144,7 @@ class NotificationService:
         body = self._build_body(
             device_name=device_name,
             group=group,
+            previous_status=previous_status,
             status=result.status,
             job_id=result.job_id,
             error_message=result.error_message,
@@ -193,7 +197,7 @@ class NotificationService:
         ### Dispatch to each configured channel
         if notifications.type.smtp is not None:
             try:
-                await self._notify_smtp(device_name, group, result, notifications.type.smtp)
+                await self._notify_smtp(device_name, group, previous_status, notifications.type.smtp)
             except Exception as ex:
                 logger.warning("Failed to send smtp notification for %s: %s", device_name, ex)
 
