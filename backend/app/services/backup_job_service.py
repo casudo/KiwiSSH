@@ -1,7 +1,7 @@
 """Service for managing backup job records in the database."""
 
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, update
+from sqlalchemy import desc, func, update
 from app.db.models import BackupJob
 from app.utils.timezone import get_utc_now
 
@@ -185,21 +185,28 @@ class BackupJobService:
         if not device_names:
             return {}
 
-        ### Get all jobs for these devices, ordered by timestamp
-        jobs = db.query(BackupJob).filter(
-            BackupJob.device_name.in_(device_names)
-        ).order_by(
-            BackupJob.device_name,
-            desc(BackupJob.timestamp)
-        ).all()
+        ### Subquery: one row per device with its maximum (latest) timestamp
+        latest_ts_subq = (
+            db.query(
+                BackupJob.device_name,
+                func.max(BackupJob.timestamp).label("max_ts"),
+            )
+            .filter(BackupJob.device_name.in_(device_names))
+            .group_by(BackupJob.device_name)
+            .subquery()
+        )
 
-        ### Build dict with latest job per device
-        latest_jobs = {}
-        for job in jobs:
-            if job.device_name not in latest_jobs:
-                latest_jobs[job.device_name] = job
+        jobs = (
+            db.query(BackupJob)
+            .join(
+                latest_ts_subq,
+                (BackupJob.device_name == latest_ts_subq.c.device_name)
+                & (BackupJob.timestamp == latest_ts_subq.c.max_ts),
+            )
+            .all()
+        )
 
-        return latest_jobs
+        return {job.device_name: job for job in jobs}
 
 
 ### Singleton instance
