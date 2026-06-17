@@ -505,6 +505,10 @@ class BackupService:
                 group=device.group,
             )
 
+            ### A new commit was created: Erase the cached history count
+            if has_changes:
+                git_service.invalidate_history_count(device.device_name, device.group)
+
             duration_seconds = max(0.0, time.perf_counter() - started_at)
 
             ### If no changes detected, return NO_CHANGES status
