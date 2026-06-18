@@ -254,6 +254,11 @@ class NotificationsConfig(BaseModel):
     enabled: bool = False
     trigger: NotificationTrigger = NotificationTrigger.FAILURE
     type: NotificationType = Field(default_factory=NotificationType)
+    large_diff_threshold: int = Field(
+        default=500,
+        ge=1,
+        description="Send a major change notification when lines added or removed reaches this threshold. Set to a very high number to effectively disable.",
+    )
 
     @model_validator(mode="after")
     def validate_type_config(self) -> "NotificationsConfig":

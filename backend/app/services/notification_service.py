@@ -76,6 +76,8 @@ class NotificationService:
         error_message: str | None,
         duration_seconds: float | None,
         timestamp: datetime | None,
+        lines_added: int = 0,
+        lines_removed: int = 0,
     ) -> str:
         """Build plain text email body."""
         lines = [
@@ -92,6 +94,8 @@ class NotificationService:
             lines.append(f"Duration      : {duration_seconds:.1f}s")
         if job_id:
             lines.append(f"Job ID        : {job_id}")
+        if lines_added or lines_removed:
+            lines.append(f"Config Change : +{lines_added} / -{lines_removed} lines")
         if error_message:
             lines.extend(["", "Error Detail:", "-" * 40, error_message])
         lines.extend(["\n\n\n", "-" * 40, "This message was sent by KiwiSSH."])
@@ -138,6 +142,8 @@ class NotificationService:
         previous_status: str | None,
         result: "BackupRecord",
         smtp_config: SmtpConfig,
+        lines_added: int = 0,
+        lines_removed: int = 0,
     ) -> None:
         """Send an SMTP email notification for a backup result."""
         subject = self._build_subject(device_name, group, result.status)
@@ -150,6 +156,8 @@ class NotificationService:
             error_message=result.error_message,
             duration_seconds=result.duration_seconds,
             timestamp=result.timestamp,
+            lines_added=lines_added,
+            lines_removed=lines_removed,
         )
 
         await asyncio.to_thread(self._send_smtp, smtp_config, subject, body)
@@ -157,6 +165,39 @@ class NotificationService:
             "Sent smtp notification for %s (status=%s) to %d recipient(s)",
             device_name,
             result.status.value,
+            len(smtp_config.recipients),
+        )
+
+    async def _notify_smtp_large_diff(
+        self,
+        device_name: str,
+        group: str,
+        result: "BackupRecord",
+        smtp_config: SmtpConfig,
+        lines_added: int,
+        lines_removed: int,
+    ) -> None:
+        """Send an SMTP notification specifically for a major config change."""
+        subject = f"[KiwiSSH] Major Config Change: {device_name} ({group}) [+{lines_added} / -{lines_removed} lines]"
+        body = self._build_body(
+            device_name=device_name,
+            group=group,
+            previous_status=None,
+            status=result.status,
+            job_id=result.job_id,
+            error_message=None,
+            duration_seconds=result.duration_seconds,
+            timestamp=result.timestamp,
+            lines_added=lines_added,
+            lines_removed=lines_removed,
+        )
+
+        await asyncio.to_thread(self._send_smtp, smtp_config, subject, body)
+        logger.info(
+            "Sent large diff smtp notification for %s (+%d / -%d lines) to %d recipient(s)",
+            device_name,
+            lines_added,
+            lines_removed,
             len(smtp_config.recipients),
         )
 
@@ -170,6 +211,9 @@ class NotificationService:
         result: "BackupRecord",
         previous_status: str | None,
         notifications: NotificationsConfig,
+        *,
+        lines_added: int = 0,
+        lines_removed: int = 0,
     ) -> None:
         """Send a notification based on trigger and channel config.
 
@@ -179,12 +223,24 @@ class NotificationService:
             result: Completed backup result
             previous_status: Last completed backup status before this run (or None)
             notifications: Global NotificationsConfig from Settings
+            lines_added: Lines added in this commit (from git diff)
+            lines_removed: Lines removed in this commit (from git diff)
         """
         if not notifications.enabled:
             return
 
-        ### Check if a notification should be sent or not
-        if not self._should_notify(notifications.trigger.value, result.status, previous_status):
+        ### Trigger-based notification (always / failure / failure_new)
+        if self._should_notify(notifications.trigger.value, result.status, previous_status):
+            if notifications.type.smtp is not None:
+                try:
+                    await self._notify_smtp(
+                        device_name, group, previous_status, result, notifications.type.smtp,
+                        lines_added=lines_added, lines_removed=lines_removed,
+                    )
+                except Exception as ex:
+                    logger.warning("Failed to send smtp notification for %s: %s", device_name, ex)
+            ### TODO: If notification.type.XYZ is not None...
+        else:
             logger.debug(
                 "Notification suppressed for %s (trigger=%s, status=%s, previous=%s)",
                 device_name,
@@ -192,16 +248,17 @@ class NotificationService:
                 result.status.value,
                 previous_status,
             )
-            return
 
-        ### Dispatch to each configured channel
-        if notifications.type.smtp is not None:
-            try:
-                await self._notify_smtp(device_name, group, previous_status, notifications.type.smtp)
-            except Exception as ex:
-                logger.warning("Failed to send smtp notification for %s: %s", device_name, ex)
-
-        ### TODO: If notification.type.XYZ is not none...
+        ### Large diff notification (fires independently of trigger on significant config changes)
+        if lines_added >= notifications.large_diff_threshold or lines_removed >= notifications.large_diff_threshold:
+            if notifications.type.smtp is not None:
+                try:
+                    await self._notify_smtp_large_diff(
+                        device_name, group, result, notifications.type.smtp, lines_added, lines_removed
+                    )
+                except Exception as ex:
+                    logger.warning("Failed to send large diff smtp notification for %s: %s", device_name, ex)
+            ### TODO: If notification.type.XYZ is not None...
 
 
 ### Singleton instance

@@ -7,6 +7,7 @@ commits, history retrieval, and diff generation.
 import asyncio
 import logging
 import threading
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -26,11 +27,15 @@ logger = logging.getLogger(__name__)
 class GitService:
     """Service for Git-based configuration storage."""
 
+    ### Backup count is cached per device to avoid spawning a git subprocess on every API request
+    _HISTORY_COUNT_TTL_SECONDS: int = 300
+
     def __init__(self) -> None:
         self.settings = get_settings()
         self._repos: dict[str, Any] = {}  # Cache repos by group
         self._repo_locks: dict[str, threading.RLock] = {}
         self._repo_locks_guard = threading.Lock()
+        self._history_count_cache: dict[tuple[str, str], tuple[int, float]] = {}
 
     def _get_repo_lock(self, group: str) -> threading.RLock:
         """Get per-group lock guarding GitPython repository access."""
@@ -200,7 +205,7 @@ class GitService:
         config_content: str,
         group: str,
         message: str | None = None,
-    ) -> tuple[str, bool]:
+    ) -> tuple[str, bool, int, int]:
         """
         Save configuration to git repository.
 
@@ -211,7 +216,7 @@ class GitService:
             message: Commit message (optional, will use template if not provided)
 
         Returns:
-            Tuple of (git commit hash, has_changes)
+            Tuple of (git commit hash, has_changes, lines_added, lines_removed)
             - has_changes=False means the config is identical to the last backup
         """
         lock = self._get_repo_lock(group)
@@ -237,7 +242,7 @@ class GitService:
             ### Only commit if there are changes
             if not has_changes:
                 ### Return a dummy hash and False to indicate no changes
-                return ("", False) # TODO: Why do we need the hash here?
+                return ("", False, 0, 0) # TODO: Why do we need the hash here?
 
             ### Stage the file
             repo.index.add([config_file.name])
@@ -259,7 +264,10 @@ class GitService:
                         group,
                     )
 
-            return (commit.hexsha, True)
+            commit_stats = commit.stats.files.get(config_file.name, {})
+            lines_added = commit_stats.get("insertions", 0)
+            lines_removed = commit_stats.get("deletions", 0)
+            return (commit.hexsha, True, lines_added, lines_removed)
 
     async def save_config(
         self,
@@ -267,7 +275,7 @@ class GitService:
         config_content: str,
         group: str,
         message: str | None = None,
-    ) -> tuple[str, bool]:
+    ) -> tuple[str, bool, int, int]:
         """Save configuration to git repository without blocking the event loop."""
         return await asyncio.to_thread(
             self._save_config_sync,
@@ -357,18 +365,46 @@ class GitService:
         return await asyncio.to_thread(self._get_config_history_sync, device_name, group, limit, offset)
 
     def _get_config_history_count_sync(self, device_name: str, group: str) -> int:
-        """Return commit count for a device config file using git rev-list."""
+        """Return commit count for a device config file using git rev-list.
+
+        Results are cached for _HISTORY_COUNT_TTL_SECONDS to avoid a git subprocess
+        on every request.  The cache entry is evicted immediately when a new commit
+        is made for the device (see invalidate_history_count).
+        """
+        cache_key = (device_name, group)
+
+        ### Fast path: return cached value if still within TTL (no lock needed for a dict read)
+        cached = self._history_count_cache.get(cache_key)
+        if cached is not None and time.monotonic() < cached[1]:
+            return cached[0]
+
         lock = self._get_repo_lock(group)
         with lock:
-            ### Check if repo exists and has commits
+            ### Double-check inside the lock to avoid duplicate git calls from concurrent requests
+            cached = self._history_count_cache.get(cache_key)
+            if cached is not None and time.monotonic() < cached[1]:
+                return cached[0]
+
             repo = self._ensure_repo(group)
             if not self._has_commits(repo):
-                return 0
-            config_file = f"{device_name}.conf"
-            try:
-                return int(repo.git.rev_list("--count", "HEAD", "--", config_file).strip())
-            except (ValueError, GitCommandError):
-                return 0
+                count = 0
+            else:
+                config_file = f"{device_name}.conf"
+                try:
+                    count = int(repo.git.rev_list("--count", "HEAD", "--", config_file).strip())
+                except (ValueError, GitCommandError):
+                    count = 0
+
+            self._history_count_cache[cache_key] = (count, time.monotonic() + self._HISTORY_COUNT_TTL_SECONDS)
+            return count
+
+    def invalidate_history_count(self, device_name: str, group: str) -> None:
+        """Evict the cached history count for a device so the next request re-queries git.
+
+        Call this immediately after a new commit is created for the device so the
+        count stays accurate without waiting for the TTL to expire.
+        """
+        self._history_count_cache.pop((device_name, group), None)
 
     async def get_config_history_count(self, device_name: str, group: str) -> int:
         """Get configuration history count without loading full history."""

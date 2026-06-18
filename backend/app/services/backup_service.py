@@ -499,11 +499,15 @@ class BackupService:
                     raise
 
             ### Save config to git (using device's group)
-            commit_hash, has_changes = await git_service.save_config(
+            commit_hash, has_changes, lines_added, lines_removed = await git_service.save_config(
                 device.device_name,
                 config,
                 group=device.group,
             )
+
+            ### A new commit was created: Erase the cached history count
+            if has_changes:
+                git_service.invalidate_history_count(device.device_name, device.group)
 
             duration_seconds = max(0.0, time.perf_counter() - started_at)
 
@@ -542,7 +546,8 @@ class BackupService:
             )
             await asyncio.to_thread(self._update_job_final_status, job_id, result)
             await notification_service.send_notification(
-                device.device_name, device.group, result, previous_status, settings.notifications
+                device.device_name, device.group, result, previous_status, settings.notifications,
+                lines_added=lines_added, lines_removed=lines_removed,
             )
             return result
 

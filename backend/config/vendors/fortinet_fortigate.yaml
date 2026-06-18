@@ -83,3 +83,6 @@ processing:
         replacement: "\\1<secret hidden>"
       - search: "(?s)(set csr ).*?-+END CERTIFICATE REQUEST-+\"$"
         replacement: "\\1<secret hidden>"
+      - search: '(set\b.*?uuid\s+).+'
+        replacement: '\1<uuid hidden>'
+

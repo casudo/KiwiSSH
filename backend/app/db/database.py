@@ -34,6 +34,10 @@ def init_database(settings: Settings) -> None:
         echo=False,
         future=True,
         pool_pre_ping=True,
+        ### Increase if QueuePool error
+        pool_size=20,
+        max_overflow=20,
+        pool_timeout=10,
         connect_args={"connect_timeout": 5},
     )
 

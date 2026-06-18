@@ -58,7 +58,7 @@ async def list_devices(
     enabled_only: bool = Query(False, description="Only return enabled devices"),
     include_config: bool = Query(False, description="Include full device configuration"),
     db: Session = Depends(get_db),
-) -> dict: # TOD: group and enabled_only filters needed?
+) -> dict: # TODO: group and enabled_only filters needed?
     """List all devices with standardized response format."""
     if group:
         devices = await source_service.get_devices_by_group(group)
@@ -106,6 +106,9 @@ async def get_device(device_name: str, db: Session = Depends(get_db)) -> dict:
 
     ### Enrich with backup information
     device = await _enrich_device_with_backup_info(device_base, db)
+
+    ### All DB work is done — release the connection back to the pool now
+    db.close()
 
     ### Get backup count from git history
     backup_count = 0
