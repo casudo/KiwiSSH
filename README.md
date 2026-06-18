@@ -173,7 +173,7 @@ Full available options:
 | `app.api.cors_origins` | A list of allowed CORS origins for the API server. | No | `["http://localhost:5173", "http://127.0.0.1:5173"]` |
 | `app.schedule.cron` | The cron expression for the global backup schedule. | No | `0 2 * * *` |
 | `app.schedule.TZ` | The timezone for the backup schedule. | No | `TZ environment variable or UTC` |
-| `app.retention.enabled` | If set to true, log retention policies will be enforced. | No | `false` |
+| `app.retention.enabled` | If set to true, log retention policies will be enforced. Will run every day at 03:00 UTC. | No | `false` |
 | `app.retention.max_age_days` | Maximum age of backup job logs in days. Logs older than this will be deleted. | No | `90` |
 | `app.retention.max_rows` | Maximum number of backup job logs to keep. Oldest logs will be deleted when this limit is exceeded. | No | `100000` |
 
