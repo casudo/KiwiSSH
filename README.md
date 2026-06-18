@@ -208,6 +208,7 @@ You can get notified if the backup of a device fails or succeeds.
 | `notifications.trigger` | The notification trigger. | No | `failure` |
 | `notifications.type` | The type of notification. | **Yes** | - |
 | `notifications.smtp.host` | The SMTP server host. | **Yes** | - |
+| `notifications.large_diff_threshold` | The diff line count threshold for considering a backup change as "large". This can be used to trigger notifications only for significant changes. | No | `650` |
 | `notifications.smtp.port` | The SMTP server port. | No | `25` |
 | `notifications.smtp.sender` | The sender email address. | **Yes** | - |
 | `notifications.smtp.recipients` | The recipient email addresses (list). | **Yes** | - |
@@ -576,8 +577,6 @@ The endpoint will return the following information about the device:
 
 **Long Term:**
 
-- Notification System (Email, Slack, Webhook) ([#5](https://github.com/casudo/KiwiSSH/issues/5))
-  - Special notification IF git diff shows a minus or plus of 100 lines or more to quickly inform about major config changes
 - i18n localization support
 - Fix logging strings to use lazy formatting instead of f-strings ([Ruff G004](https://docs.astral.sh/ruff/rules/logging-f-string/)) (Add to ruff.toml)
 - Swagger API documentation on GitHub Pages
