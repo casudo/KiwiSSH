@@ -1,0 +1,52 @@
+### 6WIND VSR Vendor Configuration
+## Instructions for backing up 6WIND VSR firewalls
+
+vendor:
+  id: "6wind_vsr"
+  name: "6WIND VSR"
+  description: "6WIND Virtual Service Router"
+
+### Session-level output behavior.
+session:
+  comment_prefix: "# "
+  prompt: '^[\w\s().@_\/:-]+> $'
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Pre-backup commands (prepare the session) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  pre_backup:
+    - command: "cliconfig pager enabled false"
+
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "show product version"
+      metadata: true
+    - command: "show config"
+      show_command_in_config: true
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "exit"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  # strip_patterns:
+    # - "^% Invalid input detected at '\\^' marker\\.$"
+    # - "^\\s+\\^$"
+    # - "^#config-version="
+    # - "^conf_file_ver=.*$"
+  # config_start: "^config "
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      - search: '(?<!  {1})(?:password|secret) (?:\d )?\S+' # double space to exclude radius password template
+        replacement: '\1<secret-hidden>'
