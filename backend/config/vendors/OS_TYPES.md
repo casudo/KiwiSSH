@@ -22,6 +22,8 @@
 | Cisco             | NXOS                  | [cisco_nxos.yaml](/backend/config/vendors/cisco_nxos.yaml)                       |                                        |
 | Cisco             | ASA                   | [cisco_asa.yaml](/backend/config/vendors/cisco_asa.yaml)                         |                                        |
 | Citrix            | NetScaler             | [citrix_netscaler.yaml](/backend/config/vendors/citrix_netscaler.yaml)           |                                        |
+| D-Link            | D-Link                | [dlink_dlink.yaml](/backend/config/vendors/dlink_dlink.yaml)                     |                                        |
+| D-Link            | D-Link NextGen        | [dlink_dlinknextgen.yaml](/backend/config/vendors/dlink_dlinknextgen.yaml)       | Cisco-like CLI                         |
 | Eltex             | Eltex                 | [eltex_eltex.yaml](/backend/config/vendors/eltex_eltex.yaml)                     |                                        |
 | Extreme Networks  | WM                    | [motorola_rfs.yaml](/backend/config/vendors/motorola_rfs.yaml)                   | Uses Motorola's RFS vendor file        |
 | Fortinet          | FortiGate             | [fortinet_fortigate.yaml](/backend/config/vendors/fortinet_fortigate.yaml)       | [FortiGate](#fortinet-device-types)    |
