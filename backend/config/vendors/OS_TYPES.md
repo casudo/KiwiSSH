@@ -23,10 +23,12 @@
 | Cisco             | ASA                   | [cisco_asa.yaml](/backend/config/vendors/cisco_asa.yaml)                         |                                        |
 | Citrix            | NetScaler             | [citrix_netscaler.yaml](/backend/config/vendors/citrix_netscaler.yaml)           |                                        |
 | Eltex             | Eltex                 | [eltex_eltex.yaml](/backend/config/vendors/eltex_eltex.yaml)                     |                                        |
+| Extreme Networks  | WM                    | [motorola_rfs.yaml](/backend/config/vendors/motorola_rfs.yaml)                   | Uses Motorola's RFS vendor file        |
 | Fortinet          | FortiGate             | [fortinet_fortigate.yaml](/backend/config/vendors/fortinet_fortigate.yaml)       | [FortiGate](#fortinet-device-types)    |
 | Fortinet          | FortiOS               | [fortinet_fortios.yaml](/backend/config/vendors/fortinet_fortios.yaml)           | [FortiOS](#fortinet-device-types)      |
 | HP                | ProCurve              | [hp_procurve.yaml](/backend/config/vendors/hp_procurve.yaml)                     |                                        |
 | Juniper           | JunOS                 | [juniper_junos.yaml](/backend/config/vendors/juniper_junos.yaml)                 | [JunOS](#juniper-junos)                |
+| Motorola          | RFS                   | [motorola_rfs.yaml](/backend/config/vendors/motorola_rfs.yaml)                   |                                        |
 | OpenWRT           |                       | [openwrt.yaml](/backend/config/vendors/openwrt.yaml)                             |                                        |
 | OPNsense          |                       | [opnsense.yaml](/backend/config/vendors/opnsense.yaml)                           |                                        |
 | Palo Alto         | PanOS                 | [paloalto_panos.yaml](/backend/config/vendors/paloalto_panos.yaml)               |                                        |
