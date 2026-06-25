@@ -9,7 +9,10 @@ vendor:
 ### Session-level output behavior.
 session:
   comment_prefix: "# "
-  prompt: '^(\(\w\) )?([-\w.~()]+(\s[(\w\-.)]+)?~?\s?[#>$]\s?)$'
+  prompt: '^(?:\(\w\)\ )?[-\w.~]+(?:\((?:\w+)\))?(?:\ [(\w\-.)]+)?~?\ ?[#>$]\ ?$'
+  ### Will match:
+  ## hostname(Primary) #
+  ## hostname(Primary) (global) #
   pagination:
     enabled: true
     patterns:
