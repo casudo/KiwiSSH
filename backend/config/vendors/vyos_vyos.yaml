@@ -1,0 +1,65 @@
+### VyOS Vendor Configuration
+## Instructions for backing up VyOS devices
+
+vendor:
+  id: "vyos_vyos"
+  name: "VyOS"
+  description: "VyOS devices"
+
+## Vyos is a Fork of Vyatta and is being actively developed.
+## https://vyos.org/
+
+
+### Session-level output behavior.
+session:
+  prompt: '^\S+@\S+(:~\$|>) $'
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "show version"
+      metadata: true
+    - command: "show configuration commands | no-more"
+      show_command_in_config: true
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "exit"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  # strip_patterns:
+    # - "^% Invalid input detected at '\\^' marker\\.$"
+    # - "^\\s+\\^$"
+    # - "^#config-version="
+    # - "^conf_file_ver=.*$"
+  # config_start: "^config "
+  # config_end: "^end$"
+
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      - search: 'secret (\S+).*'
+        replacement: 'secret <secret removed>'
+      - search: 'password (\S+).*'
+        replacement: 'password <secret removed>'
+      - search: 'snmp community (\S+)'
+        replacement: 'snmp community <secret removed>'
+      - search: 'snmp trap-target ([^\s\\]*) community (\S+)'
+        replacement: 'snmp trap-target \1 community <secret removed>'
+      - search: 'preshared-key (\S+).*'
+        replacement: 'preshared-key <secret removed>'
+      - search: 'private key (\S+).*'
+        replacement: 'private key <secret removed>'
+      - search: 'private-key (\S+).*'
+        replacement: 'private-key <secret removed>'
+      - search: '([a-z]+:\/\/[^:\s]+:)\S+@' # password in URLs like protocol://user:password@domain.tld/
+        replacement: '\1<secret removed>@'

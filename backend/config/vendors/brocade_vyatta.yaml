@@ -1,0 +1,58 @@
+### Brocade Vyatta Vendor Configuration
+## Instructions for backing up Brocade Vyatta devices
+
+vendor:
+  id: "brocade_vyatta"
+  name: "Brocade Vyatta"
+  description: "Brocade Vyatta devices"
+
+### Session-level output behavior.
+session:
+  prompt: '@.*(:~\$|>)\s'
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "show version"
+      metadata: true
+    - command: "show configuration commands | no-more"
+      show_command_in_config: true
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "exit"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  # strip_patterns:
+    # - "^% Invalid input detected at '\\^' marker\\.$"
+    # - "^\\s+\\^$"
+    # - "^#config-version="
+    # - "^conf_file_ver=.*$"
+  # config_start: "^config "
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      - search: 'encrypted-password (\S+).*'
+        replacement: 'encrypted-password <secret removed>'
+      - search: 'plaintext-password (\S+).*'
+        replacement: 'plaintext-password <secret removed>'
+      - search: 'password (\S+).*'
+        replacement: 'password <secret removed>'
+      - search: 'pre-shared-secret (\S+).*'
+        replacement: 'pre-shared-secret <secret removed>'
+      - search: 'community (\S+)'
+        replacement: 'community <hidden>'
+      - search: 'private-key (\S+).*'
+        replacement: 'private-key <secret removed>'
+      - search: 'preshared-key (\S+).*'
+        replacement: 'preshared-key <secret removed>'
