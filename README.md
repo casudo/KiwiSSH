@@ -235,7 +235,7 @@ Configure where KiwiSSH load the devices to backup from. You can choose between 
 
 | Key | Description | Required | Default Value |
 | --- | ----------- | -------- | ------------- |
-| `sources.file` | The absolute path to the CSV file containing the device entries. | **Yes** | - |
+| `sources.file` | Path to the CSV file containing the device entries. Absolute, or relative to the config directory. | **Yes** | - |
 
 The devices will be loaded from the specified CSV file. The headers must be seperated by commas like this:
 
@@ -284,7 +284,7 @@ KiwiSSH will always store the device configurations in local git repositories to
 
 | Key | Description | Required | Default Value |
 | --- | ----------- | -------- | ------------- |
-| `git.local_path` | The local path where the git repositories for the device groups will be stored. | No | `/config/backups` |
+| `git.local_path` | The local path where the git repositories for the device groups will be stored. Absolute, or relative to the config directory. | No | `/config/backups` |
 | `git.commit_message_template` | The global template for the git commit messages. Available placeholders: `{group}`, `{device_name}`, `{timestamp}`. | No | `"Backup: {group}/{device_name} at {timestamp}"` |
 | `git.remote.url` | The global remote git repository URL. Available placeholders: `{group}`. This can be overridden for specific groups. | No | - |
 | `git.remote.branch` | The global remote git branch to push to. This can be overridden for specific groups. | No | `main` |
