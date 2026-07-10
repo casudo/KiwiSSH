@@ -529,27 +529,19 @@ class SourcesConfig(BaseModel):
 
     @field_validator("file", mode="before")
     @classmethod
-    def validate_file_source_path(cls, value: str | None) -> str | None:
-        """Ensure sources.file is absolute when configured (Windows or POSIX)."""
+    def normalize_file_source_path(cls, value: str | None) -> str | None:
+        """Normalize sources.file.
+
+        Accepts absolute or relative paths.
+        Relative paths are resolved against the configuration directory later (Settings._resolve_config_relative_path).
+        """
         if value is None:
             return None
 
         raw_path = str(value).strip()
         if not raw_path:
             return None
-        expanded_path = os.path.expanduser(raw_path)
-
-        native_path = Path(expanded_path)
-        is_native_absolute = native_path.is_absolute()
-        is_posix_absolute = PurePosixPath(expanded_path).is_absolute()
-
-        if not is_native_absolute and not is_posix_absolute:
-            raise ValueError("sources.file must be an absolute path")
-
-        if is_native_absolute:
-            return str(native_path)
-
-        return PurePosixPath(expanded_path).as_posix()
+        return os.path.expanduser(raw_path)
 
     @model_validator(mode="after")
     def validate_exactly_one_source(self) -> "SourcesConfig":
@@ -610,25 +602,15 @@ class GitConfig(BaseModel):
 
     @field_validator("local_path", mode="before")
     @classmethod
-    def validate_local_path(cls, local_path: str) -> str:
-        """Ensure git.local_path is configured and absolute (Windows or POSIX)."""
+    def normalize_local_path(cls, local_path: str) -> str:
+        """Normalize git.local_path.
+
+        Accepts absolute or relative paths.
+        Relative paths are resolved against the configuration directory later (Settings._resolve_config_relative_path).
+        """
         if local_path is None or not str(local_path).strip():
             raise ValueError("git.local_path must be a non-empty path")
-
-        raw_path = str(local_path).strip()
-        expanded_path = os.path.expanduser(raw_path)
-
-        native_path = Path(expanded_path)
-        is_native_absolute = native_path.is_absolute()
-        is_posix_absolute = PurePosixPath(expanded_path).is_absolute()
-
-        if not is_native_absolute and not is_posix_absolute:
-            raise ValueError("git.local_path must be an absolute path")
-
-        if is_native_absolute:
-            return str(native_path)
-
-        return PurePosixPath(expanded_path).as_posix()
+        return os.path.expanduser(str(local_path).strip())
 
 
 class ApplicationDatabaseConfig(BaseModel):
@@ -692,6 +674,21 @@ class Settings(BaseSettings):
 
         return self
 
+    def _resolve_config_relative_path(self, path_value: str) -> str:
+        """Resolve a possibly-relative path against the configuration directory.
+
+        Absolute paths (native or POSIX-style like '/config/backups') are returned
+        unchanged. Relative paths are resolved against `config_dir` so bare-metal
+        installs work without hardcoded absolute paths.
+        """
+        expanded = os.path.expanduser(str(path_value).strip())
+        candidate = Path(expanded)
+        ### Check and return absolute path
+        if candidate.is_absolute() or PurePosixPath(expanded).is_absolute():
+            return str(candidate)
+        ### return resolved relative path
+        return str((self.config_dir / candidate).resolve())
+
     def load_yaml_configs(self) -> None:
         """Load YAML configuration files."""
         ### Load main config
@@ -717,9 +714,14 @@ class Settings(BaseSettings):
 
             ### sources
             self.sources = SourcesConfig(**file_content.get("sources", {}))
+            ## Resolve a relative sources.file path against the configuration directory
+            if self.sources.file:
+                self.sources.file = self._resolve_config_relative_path(self.sources.file)
 
             ### git
             self.git = GitConfig(**file_content.get("git", {}))
+            ## Resolve a relative git.local_path against the configuration directory
+            self.git.local_path = self._resolve_config_relative_path(self.git.local_path)
 
             ### Validate cross-section git remote requirements
             self._validate_git_remote_configuration()
