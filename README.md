@@ -227,10 +227,10 @@ You can get notified if the backup of a device fails or succeeds.
 
 ### sources
 
-Configure where KiwiSSH load the devices to backup from. You can choose between loading the devices from a CSV file or from a PostgreSQL database.
+Configure where KiwiSSH load the devices to backup from. You can choose between loading the devices from a CSV file, a PostgreSQL database, or a generic HTTP endpoint.
 
 > [!IMPORTANT]
-> At least one source must be configured. The following columns are required in the device source: `group`, `device_name`, `ip_address`, `enabled`.
+> At least one source must be configured (and only one). The following fields are required for every device in the source: `group`, `device_name`, `ip_address`, `enabled`.
 
 #### File
 
@@ -275,6 +275,22 @@ The `backup_jobs` table can grow quite large over time depending on the number o
 
 > [!TIP]
 > Consider backing up your PostgreSQL database(s) regularly, independently of KiwiSSH. We recommend [Databasus](https://github.com/databasus/databasus) for that.
+
+#### HTTP
+
+Loads devices from an HTTP(S) endpoint that returns a JSON array of device objects.
+| Key | Description | Required | Default Value |
+| --- | ----------- | -------- | ------------- |
+| `sources.http.url` | The HTTP(S) URL to fetch the device list from. Must start with `http://` or `https://`. | **Yes** | - |
+| `sources.http.headers` | Map of HTTP request headers, e.g. an authentication token. | No | `{}` |
+| `sources.http.map` | Maps KiwiSSH's canonical fields (`device_name`, `ip_address`, `group`, `enabled`) to the field names in the JSON response. | **Yes** | - |
+| `sources.http.default_group` | Fallback group used when a response item has no (mapped) group value. | No | - |
+| `sources.http.items_key` | Key to locate the device list when the response is an object instead of a top-level array. | No | - |
+| `sources.http.verify_tls` | Whether to verify the server's TLS certificate. | No | `true` |
+| `sources.http.timeout` | Request timeout in seconds. | No | `10` |
+
+As with the file and PostgreSQL sources, Vendors, credentials and SSH profile are **not** taken from the HTTP response — they are resolved from the matching `group` (and optional per-device `node`) configuration in `kiwissh.yaml`. The HTTP source only provides `group`, `device_name`, `ip_address` and `enabled`.
+
 
 ### git
 
