@@ -625,6 +625,7 @@ The endpoint will return the following information about the device:
 - Allow group passwords to bet set via env vars or other input
 - Optional share anonymouse usage data for statistics (needs opt-in, privacy policy and telemetry server)
 - Login Screen, User management and RBAC
+- Allow merging of multiple device sources
 
 ---
 
