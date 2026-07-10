@@ -614,18 +614,26 @@ class SourcesConfig(BaseModel):
 
     @model_validator(mode="after")
     def validate_exactly_one_source(self) -> "SourcesConfig":
-        """Require exactly one configured device source: file or postgres."""
-        has_file_source = self.file is not None
-        has_postgres_source = self.postgres is not None
+        """Require exactly one configured device source: file, postgres or http."""
+        configured = [
+            name
+            for name, value in (
+                ("file", self.file),
+                ("postgres", self.postgres),
+                ("http", self.http),
+            )
+            if value is not None
+        ]
 
-        if has_file_source and has_postgres_source:
+        if len(configured) > 1:
             raise ValueError(
-                "Configure only one source under 'sources': either 'file' or 'postgres', not both"
+                "Configure only one source under 'sources': one of 'file', 'postgres' or 'http', "
+                f"not multiple ({', '.join(configured)})"
             )
 
-        if not has_file_source and not has_postgres_source:
+        if not configured:
             raise ValueError(
-                "One source is required under 'sources': configure either 'file' or 'postgres'"
+                "One source is required under 'sources': configure either 'file', 'postgres' or 'http'"
             )
 
         return self
