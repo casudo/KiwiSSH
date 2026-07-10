@@ -19,17 +19,9 @@ class SourceService:
         self._devices_cache: dict[str, DeviceBase] = {}
         self._loaded = False
 
-    def _get_csv_source_path(self) -> Path:
-        """Resolve CSV source path from sources.file string."""
-
-        default_config_path = "/config/sources/devices.csv"
-
-        configured_path = self.settings.sources.file if self.settings.sources else None
-        if not configured_path:
-            configured_path = default_config_path
-
-        candidate = Path(configured_path)
-        return candidate.resolve()
+    ### =============================================================================
+    ### SourceService Class Helper Functions
+    ### =============================================================================
 
     def _cache_device_from_row(self, row: dict, row_num: int | str) -> None:
         """Build and cache a device from a normalized source row."""
@@ -69,17 +61,22 @@ class SourceService:
         )
         self._devices_cache[device.device_name] = device
 
-    @staticmethod
-    def _validate_table_name(table_name: str) -> str:
-        """Validate and return PostgreSQL table name from configuration."""
+    ### =============================================================================
+    ### CSV Source Functions
+    ### =============================================================================
 
-        normalized = table_name.strip()
-        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", normalized):
-            raise ValueError(
-                "Invalid sources.postgres.table value. Use only letters, numbers, and underscore."
-            )
-        return normalized
+    def _get_csv_source_path(self) -> Path:
+        """Resolve CSV source path from sources.file string."""
 
+        default_config_path = "/config/sources/devices.csv"
+
+        configured_path = self.settings.sources.file if self.settings.sources else None
+        if not configured_path:
+            configured_path = default_config_path
+
+        candidate = Path(configured_path)
+        return candidate.resolve()
+    
     async def load_devices_from_csv(self) -> list[DeviceBase]:
         """Load devices from CSV file.
 
@@ -99,6 +96,21 @@ class SourceService:
 
         self._loaded = True
         return list(self._devices_cache.values())
+    
+    ### =============================================================================
+    ### PostgreSQL Source Functions
+    ### =============================================================================
+
+    @staticmethod
+    def _validate_table_name(table_name: str) -> str:
+        """Validate and return PostgreSQL table name from configuration."""
+
+        normalized = table_name.strip()
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", normalized):
+            raise ValueError(
+                "Invalid sources.postgres.table value. Use only letters, numbers, and underscore."
+            )
+        return normalized
 
     async def load_devices_from_postgres(self) -> list[DeviceBase]:
         """Load devices from a PostgreSQL source table."""
@@ -165,6 +177,10 @@ class SourceService:
 
         self._loaded = True
         return list(self._devices_cache.values())
+
+    ### =============================================================================
+    ### HTTP Source Functions
+    ### =============================================================================
 
     def _map_http_item(self, item: dict, field_map: dict[str, str], default_group: str | None) -> dict:
         """Translate a raw HTTP response item into a canonical source row."""
@@ -254,6 +270,10 @@ class SourceService:
 
         self._loaded = True
         return list(self._devices_cache.values())
+
+    ### =============================================================================
+    ### SourceService Class PUBLIC Functions
+    ### =============================================================================
 
     async def load_devices(self) -> list[DeviceBase]:
         """Load devices from configured source."""
