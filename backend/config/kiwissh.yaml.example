@@ -38,8 +38,8 @@ notifications:
         - "admin@example.com"
 
 ### Device sources
-## Load from file or PostgreSQL. At least one source is required.
-## Required columns: group, device_name, ip_address, enabled
+## Load from file, PostgreSQL or an HTTP endpoint. Exactly one source is required.
+## Required fields per device: group, device_name, ip_address, enabled
 ## Paths may be absolute, or relative to the config directory.
 sources:
   # file: "/config/sources/devices.csv"   # absolute (Docker) — or relative e.g. "sources/devices.csv"
@@ -50,6 +50,14 @@ sources:
       table: "prod_devices"
       username: "kiwissh"
       password: "strongpassword"
+  # http:
+  #     url: "http://10.11.12.13/api/devices"
+  #     headers:
+  #       X-Auth-Token: "1d73fabef8a44f5714b585cf0xxxxx"
+  #     map:            # maps KiwiSSH field -> JSON response field (defaults shown)
+  #       device_name: hostname
+  #       ip_address: ip
+  #     default_group: "core-switches"  # used when the response has no group field
 
 ### Global git backup repository settings
 ## Local git storage is always active and stores one repository per group under local_path.
