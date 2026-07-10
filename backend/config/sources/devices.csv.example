@@ -1,6 +1,6 @@
 group,device_name,ip_address,enabled
 customer-aaa,router-core-01,10.30.54.1,true
-customer-aaa,router-core-02,10.30.54.2,,true
+customer-aaa,router-core-02,10.30.54.2,true
 abc-company,switch-dist-01,172.16.28.50,true
 abc-company,switch-access-01,172.17.2.34,true
 it-department,firewall-01,192.168.1.254,true
