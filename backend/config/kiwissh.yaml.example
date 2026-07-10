@@ -1,6 +1,8 @@
 ### KiwiSSH - Main Configuration
 ##
 ## To see a list of all available paramaters and their descriptions, please refer to the README.md or the Pydantic models in /backend/app/core/config.py.
+##
+### WARNING: Rename this file to "kiwissh.yaml" and edit the values to suit your environment. Do not edit this example file directly!
 
 ### Application settings
 app:
@@ -38,8 +40,9 @@ notifications:
 ### Device sources
 ## Load from file or PostgreSQL. At least one source is required.
 ## Required columns: group, device_name, ip_address, enabled
+## Paths may be absolute, or relative to the config directory.
 sources:
-  # file: "/config/sources/devices.csv"
+  # file: "/config/sources/devices.csv"   # absolute (Docker) — or relative e.g. "sources/devices.csv"
   postgres:
       host: "172.16.147.56"
       port: 5432
@@ -52,7 +55,7 @@ sources:
 ## Local git storage is always active and stores one repository per group under local_path.
 ## DO NOT delete the "backups" folder ever unless you want to lose all your local git repositories and their history.
 git:
-  local_path: "/config/backups"
+  local_path: "/config/backups"   # absolute (Docker) — or relative e.g. "backups" (resolved against the config dir)
   ### Optional global remote git location for groups without overrides.
   ### If this block is configured, git.remote.url is required.
   # remote:

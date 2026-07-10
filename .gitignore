@@ -5,6 +5,9 @@ docker-compose.yaml
 *_Dev.drawio
 *.bkp
 
+### Ignore runtime config file
+backend/config/kiwissh.yaml
+
 ### Node ###
 # Logs
 logs
