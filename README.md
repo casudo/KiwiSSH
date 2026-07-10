@@ -36,6 +36,7 @@ It was created as better alternative to RANCID and Oxidized, with a focus on sim
     - [sources](#sources)
       - [File](#file)
       - [PostgreSQL](#postgresql)
+      - [HTTP](#http)
     - [git](#git)
     - [groups](#groups)
     - [nodes](#nodes)
@@ -279,6 +280,7 @@ The `backup_jobs` table can grow quite large over time depending on the number o
 #### HTTP
 
 Loads devices from an HTTP(S) endpoint that returns a JSON array of device objects.
+
 | Key | Description | Required | Default Value |
 | --- | ----------- | -------- | ------------- |
 | `sources.http.url` | The HTTP(S) URL to fetch the device list from. Must start with `http://` or `https://`. | **Yes** | - |
@@ -291,6 +293,22 @@ Loads devices from an HTTP(S) endpoint that returns a JSON array of device objec
 
 As with the file and PostgreSQL sources, Vendors, credentials and SSH profile are **not** taken from the HTTP response — they are resolved from the matching `group` (and optional per-device `node`) configuration in `kiwissh.yaml`. The HTTP source only provides `group`, `device_name`, `ip_address` and `enabled`.
 
+> [!TIP]
+> Since the HTTP source is generic, you can use it to load devices from any system that can provide a JSON array of devices. For example, you could use LibreNMS, NetBox, or any other inventory system that has an API endpoint returning device information in JSON format.
+>
+> Example for LibreNMS `/oxidized` endpoint (no PR to establish a `/kiwissh` endpoint yet):
+>
+>```yaml
+>sources:
+>  http:
+>    url: "http://librenms/api/v0/oxidized"
+>    headers:
+>      X-Auth-Token: "1d73fabef8a44f5714b585cf0xxxxx"
+>    map:
+>      device_name: hostname
+>      ip_address: ip
+>    default_group: "core-switches"
+>```
 
 ### git
 
