@@ -36,7 +36,6 @@ class QueuedBackupItem:
 CLI_ERROR_PATTERNS = [
     re.compile(r"^%\s*(?:Unrecognized command|Invalid input detected|Unknown command|Incomplete command)", re.IGNORECASE),
     re.compile(r"Invalid input detected at '\^' marker", re.IGNORECASE),
-    re.compile(r"^\s*\^\s*$"),
     re.compile(r"^\s*syntax error\b", re.IGNORECASE),
 ]
 
