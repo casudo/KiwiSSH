@@ -293,6 +293,54 @@ Loads devices from an HTTP(S) endpoint that returns a JSON array of device objec
 
 As with the file and PostgreSQL sources, Vendors, credentials and SSH profile are **not** taken from the HTTP response — they are resolved from the matching `group` (and optional per-device `node`) configuration in `kiwissh.yaml`. The HTTP source only provides `group`, `device_name`, `ip_address` and `enabled`.
 
+Whatever the outer shape, the device list must ultimately be a **JSON array of flat objects**, where each object holds the fields referenced by `sources.http.map`. KiwiSSH reads the mapped field names as **direct keys** on each item — it does not descend into nested objects or use object keys as device names.
+
+The examples below all assume this map:
+
+```yaml
+map:
+  device_name: hostname
+  ip_address: ip
+  group: group
+```
+
+**1. Top-level JSON array (no `items_key` needed)**
+
+```json
+[
+  { "hostname": "device-01",  "ip": "192.168.1.2", "group": "fortigate-fws" },
+  { "hostname": "device-02", "ip": "172.16.1.3", "group": "customer-abc-cisco-switch" }
+]
+```
+
+**2. Array nested under a key (set `items_key` to that key)**
+
+```json
+{
+  "devices": [
+    { "hostname": "device-01",  "ip": "192.168.1.2", "group": "fortigate-fws" },
+    { "hostname": "device-02", "ip": "172.16.1.3", "group": "customer-abc-cisco-switch" }
+  ]
+}
+```
+
+```yaml
+sources:
+  http:
+    url: "https://example.com/api/devices"
+    items_key: devices
+    map:
+      device_name: hostname
+      ip_address: ip
+      group: group
+```
+
+> [!WARNING]
+> When an item has no mapped `group` value (missing or blank), the configured `sources.http.default_group` is applied. Similarly, when no `enabled` field is mapped or present, the device defaults to enabled.
+
+> [!CAUTION]
+> **Not supported:** an array whose items are keyed by device name (e.g. `[{ "device-01": { ... }, "device-02": { ... } }]`) or any structure where the mapped fields are not direct keys of each list item. The object keys carry no meaning to KiwiSSH — the device name always comes from the mapped `device_name` field.
+
 > [!TIP]
 > Since the HTTP source is generic, you can use it to load devices from any system that can provide a JSON array of devices. For example, you could use LibreNMS, NetBox, or any other inventory system that has an API endpoint returning device information in JSON format.
 >
