@@ -5,6 +5,7 @@ pydantic-settings==2.14.1
 python-dotenv==1.2.2
 asyncssh==2.23.1
 telnetlib3==4.0.4
+httpx==0.28.1
 gitpython==3.1.50
 ruff==0.15.16
 sqlalchemy==2.0.50

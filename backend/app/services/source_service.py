@@ -3,7 +3,7 @@
 import csv
 from pathlib import Path
 import re
-
+import httpx
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError, ProgrammingError, SQLAlchemyError
 
@@ -19,17 +19,9 @@ class SourceService:
         self._devices_cache: dict[str, DeviceBase] = {}
         self._loaded = False
 
-    def _get_csv_source_path(self) -> Path:
-        """Resolve CSV source path from sources.file string."""
-
-        default_config_path = "/config/sources/devices.csv"
-
-        configured_path = self.settings.sources.file if self.settings.sources else None
-        if not configured_path:
-            configured_path = default_config_path
-
-        candidate = Path(configured_path)
-        return candidate.resolve()
+    ### =============================================================================
+    ### SourceService Class Helper Functions
+    ### =============================================================================
 
     def _cache_device_from_row(self, row: dict, row_num: int | str) -> None:
         """Build and cache a device from a normalized source row."""
@@ -69,17 +61,22 @@ class SourceService:
         )
         self._devices_cache[device.device_name] = device
 
-    @staticmethod
-    def _validate_table_name(table_name: str) -> str:
-        """Validate and return PostgreSQL table name from configuration."""
+    ### =============================================================================
+    ### CSV Source Functions
+    ### =============================================================================
 
-        normalized = table_name.strip()
-        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", normalized):
-            raise ValueError(
-                "Invalid sources.postgres.table value. Use only letters, numbers, and underscore."
-            )
-        return normalized
+    def _get_csv_source_path(self) -> Path:
+        """Resolve CSV source path from sources.file string."""
 
+        default_config_path = "/config/sources/devices.csv"
+
+        configured_path = self.settings.sources.file if self.settings.sources else None
+        if not configured_path:
+            configured_path = default_config_path
+
+        candidate = Path(configured_path)
+        return candidate.resolve()
+    
     async def load_devices_from_csv(self) -> list[DeviceBase]:
         """Load devices from CSV file.
 
@@ -99,6 +96,21 @@ class SourceService:
 
         self._loaded = True
         return list(self._devices_cache.values())
+    
+    ### =============================================================================
+    ### PostgreSQL Source Functions
+    ### =============================================================================
+
+    @staticmethod
+    def _validate_table_name(table_name: str) -> str:
+        """Validate and return PostgreSQL table name from configuration."""
+
+        normalized = table_name.strip()
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", normalized):
+            raise ValueError(
+                "Invalid sources.postgres.table value. Use only letters, numbers, and underscore."
+            )
+        return normalized
 
     async def load_devices_from_postgres(self) -> list[DeviceBase]:
         """Load devices from a PostgreSQL source table."""
@@ -166,11 +178,110 @@ class SourceService:
         self._loaded = True
         return list(self._devices_cache.values())
 
+    ### =============================================================================
+    ### HTTP Source Functions
+    ### =============================================================================
+
+    def _map_http_item(self, item: dict, field_map: dict[str, str], default_group: str | None) -> dict:
+        """Translate a raw HTTP response item into a canonical source row."""
+        ### field_map maps canonical KiwiSSH field -> JSON field name in the response
+        row: dict = {}
+        for canonical, json_field in field_map.items():
+            if json_field in item and item[json_field] is not None:
+                row[canonical] = item[json_field]
+
+        ### Apply the fallback group when none was provided by the response item
+        if not str(row.get("group", "")).strip() and default_group:
+            row["group"] = default_group
+
+        ### Default to enabled when the source doesn't carry an 'enabled' field
+        if "enabled" not in row:
+            row["enabled"] = True
+
+        return row
+
+    @staticmethod
+    def _extract_http_items(payload: object, items_key: str | None) -> list:
+        """Extract the device list from an HTTP JSON payload."""
+        ### Return JSON arrays as-is
+        if isinstance(payload, list):
+            return payload
+        
+        ### If response is a dict, search for the items_key key and get the item list
+        if isinstance(payload, dict):
+            ### Explicitly configured key takes precedence
+            if items_key:
+                nested = payload.get(items_key)
+                if not isinstance(nested, list):
+                    raise ValueError(
+                        f"sources.http response has no list under configured items_key '{items_key}'"
+                    )
+                return nested
+
+            ### TODO: Default item keys if dict and no items_key is configured? e.g. devices, items, data, list
+
+        raise ValueError(
+            "sources.http response must be a JSON array of devices or an object containing one. "
+            "Set sources.http.items_key if the list is nested under a specific key."
+        )
+
+    async def load_devices_from_http(self) -> list[DeviceBase]:
+        """Load devices from a generic HTTP source."""
+        src = self.settings.sources.http
+
+        ### Step 1: Fetch API endpoint and parse JSON response
+        try:
+            ### Build HTTP client from config
+            async with httpx.AsyncClient(
+                headers=src.headers,
+                verify=src.verify_tls,
+                timeout=src.timeout,
+                follow_redirects=True,
+            ) as client:
+                response = await client.get(src.url)
+                response.raise_for_status()
+                payload = response.json()
+        except httpx.HTTPStatusError as e:
+            raise ValueError(
+                f"sources.http request to '{src.url}' failed with HTTP {e.response.status_code}. "
+                "Verify the URL and authentication headers (e.g. X-Auth-Token)."
+            ) from e
+        except httpx.HTTPError as e:
+            raise ValueError(
+                f"Unable to reach sources.http endpoint '{src.url}': {e}"
+            ) from e
+        except ValueError as e:
+            ### Raised by response.json() on invalid JSON payloads
+            raise ValueError(
+                f"sources.http endpoint '{src.url}' did not return valid JSON."
+            ) from e
+
+        ### Step 2: Extract device list from JSON payload
+        items = self._extract_http_items(payload, src.items_key)
+
+        ### Step 3: Map each item to a canonical source row and cache devices
+        for index, item in enumerate(items, start=1):
+            if not isinstance(item, dict):
+                raise ValueError(
+                    f"sources.http item #{index} is not a JSON object and cannot be mapped."
+                )
+            row = self._map_http_item(item, src.map, src.default_group)
+            self._cache_device_from_row(row, f"http#{index}")
+
+        self._loaded = True
+        return list(self._devices_cache.values())
+
+    ### =============================================================================
+    ### SourceService Class PUBLIC Functions
+    ### =============================================================================
+
     async def load_devices(self) -> list[DeviceBase]:
         """Load devices from configured source."""
 
         if self.settings.sources.postgres:
             return await self.load_devices_from_postgres()
+        elif self.settings.sources.http:
+            return await self.load_devices_from_http()
         elif self.settings.sources.file:
             return await self.load_devices_from_csv()
 

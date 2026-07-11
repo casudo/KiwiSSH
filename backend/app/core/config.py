@@ -522,10 +522,79 @@ class PostgresSourceConfig(BaseModel):
         return text
 
 
+class HttpSourceConfig(BaseModel):
+    """Generic HTTP device source.
+
+    Fetches a JSON list of devices from an HTTP(S) endpoint and maps each item onto the source fields used by KiwiSSH.
+    Vendor, credentials and SSH profile are still resolved from the matching group/node config in `kiwissh.yaml`.
+    """
+    url: str
+    headers: dict[str, str] = Field(default_factory=dict)
+    map: dict[str, str] = Field(default_factory=dict) # Maps KiwiSSH field -> field name in the JSON response
+    default_group: str | None = None # Fallback group when a response item has no (mapped) group value
+    items_key: str | None = None # Optional key to locate the device list when the response is an object
+    verify_tls: bool = True
+    timeout: int = Field(default=10, ge=1)
+
+    @field_validator("url", mode="before")
+    @classmethod
+    def validate_url(cls, value: str | None) -> str:
+        """Require an http(s) URL for the HTTP source."""
+        text = "" if value is None else str(value).strip()
+        if not text:
+            raise ValueError("sources.http.url must be a non-empty string")
+        if not (text.startswith("http://") or text.startswith("https://")):
+            raise ValueError("sources.http.url must start with 'http://' or 'https://'")
+        return text
+
+    @field_validator("headers", mode="before")
+    @classmethod
+    def normalize_headers(cls, value: dict | None) -> dict[str, str]:
+        """Coerce header keys/values to strings and drop blanks."""
+        if value is None:
+            return {}
+        if not isinstance(value, dict):
+            raise ValueError("sources.http.headers must be a mapping of header name to value")
+        return {str(k).strip(): str(v) for k, v in value.items() if str(k).strip()}
+
+    @field_validator("map", mode="before")
+    @classmethod
+    def normalize_map(cls, value: dict | None) -> dict[str, str]:
+        """Validate the field map keys against the supported canonical fields."""
+        if value is None:
+            return {}
+        if not isinstance(value, dict):
+            raise ValueError("sources.http.map must be a mapping of canonical field to JSON field")
+        allowed = {"device_name", "ip_address", "group", "enabled"}
+        
+        normalized: dict[str, str] = {}
+        for key, mapped in value.items():
+            canonical = str(key).strip()
+            if canonical not in allowed:
+                raise ValueError(
+                    f"sources.http.map contains unsupported field '{canonical}'. "
+                    f"Allowed fields: {', '.join(sorted(allowed))}"
+                )
+            mapped_field = str(mapped).strip()
+            if mapped_field:
+                normalized[canonical] = mapped_field
+        return normalized
+
+    @field_validator("default_group", "items_key", mode="before")
+    @classmethod
+    def normalize_optional_text(cls, value: str | None) -> str | None:
+        """Normalize optional text fields and convert blanks to None."""
+        if value is None:
+            return None
+        text = str(value).strip()
+        return text or None
+
+
 class SourcesConfig(BaseModel):
     """Device source definitions."""
     file: str | None = None
     postgres: PostgresSourceConfig | None = None
+    http: HttpSourceConfig | None = None
 
     @field_validator("file", mode="before")
     @classmethod
@@ -545,18 +614,26 @@ class SourcesConfig(BaseModel):
 
     @model_validator(mode="after")
     def validate_exactly_one_source(self) -> "SourcesConfig":
-        """Require exactly one configured device source: file or postgres."""
-        has_file_source = self.file is not None
-        has_postgres_source = self.postgres is not None
+        """Require exactly one configured device source: file, postgres or http."""
+        configured = [
+            name
+            for name, value in (
+                ("file", self.file),
+                ("postgres", self.postgres),
+                ("http", self.http),
+            )
+            if value is not None
+        ]
 
-        if has_file_source and has_postgres_source:
+        if len(configured) > 1:
             raise ValueError(
-                "Configure only one source under 'sources': either 'file' or 'postgres', not both"
+                "Configure only one source under 'sources': one of 'file', 'postgres' or 'http', "
+                f"not multiple ({', '.join(configured)})"
             )
 
-        if not has_file_source and not has_postgres_source:
+        if not configured:
             raise ValueError(
-                "One source is required under 'sources': configure either 'file' or 'postgres'"
+                "One source is required under 'sources': configure either 'file', 'postgres' or 'http'"
             )
 
         return self

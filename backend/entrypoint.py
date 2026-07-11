@@ -32,8 +32,13 @@ def validate_configuration() -> None:
     
     settings = get_settings()
 
-    has_postgres_source = bool(settings.sources and settings.sources.postgres is not None)
-    logger.info(f"✓ Device source configured: {'postgres' if has_postgres_source else 'file'}")
+    if settings.sources and settings.sources.postgres is not None:
+        source_type = "postgres"
+    elif settings.sources and settings.sources.http is not None:
+        source_type = "http"
+    else:
+        source_type = "file"
+    logger.info(f"✓ Device source configured: {source_type}")
     logger.info("✓ Application database configured")
 
 def main() -> int:
