@@ -44,10 +44,18 @@ commands:
 ### Configuration processing rules
 ## Processing reduces diff noise and trims non-config boilerplate
 processing:
-  # strip_patterns:
-  #   - "^% Invalid input detected at '\\^' marker\\.$"
-  #   - "^\\s+\\^$"
-  #   - "^#config-version="
+  strip_patterns:
+    - "Current Time"
+    - "Disk Usage"
+    - "Release Version Information"
+    - "Branch Point"
+    - "Daylight Time Saving"
+    - "Time Zone"
+    - "x86-64 Applications"
+    - "File System"
+    - "Image Signature"
+    - "System Time"
+    - "conf_file_ver"
 
   # config_start: "^config"
   # config_end: "^end$"
