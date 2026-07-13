@@ -7,6 +7,8 @@
 | Accedian Networks | AEN                   | [accedian_aen.yaml](/backend/config/vendors/accedian_aen.yaml)                   | Accedian Performance Elements (NIDs)                               |
 | Acme Packet       | Acme Packet           | [acmepacket_acmepacket.yaml](/backend/config/vendors/acmepacket_acmepacket.yaml)           |                                                                    |
 | AddPack            | AddPack               | [addpack_addpack.yaml](/backend/config/vendors/addpack_addpack.yaml)             |                                                                    |
+| Adtran            | Total Access (AOS)                   | [adtran_aos.yaml](/backend/config/vendors/adtran_aos.yaml)                       |                                |
+| Adtran            | ADVA                   | [adtran_adva.yaml](/backend/config/vendors/adtran_adva.yaml)                     | [ADVA](#adtran-adva)       |
 | Alcatel-Lucent    | AOS                   | [alcatel_aos.yaml](/backend/config/vendors/alcatel_aos.yaml)                     | AOS6 - vxworks-based                                               |
 | Alcatel-Lucent    | AOS7                  | [alcatel_aos7.yaml](/backend/config/vendors/alcatel_aos7.yaml)                   | AOS7 and AOS8 - Linux-based                                        |
 | Alcatel-Lucent    | ISAM                  | [alcatel_isam.yaml](/backend/config/vendors/alcatel_isam.yaml)                   |                                                                    |

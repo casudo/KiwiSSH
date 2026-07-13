@@ -1,0 +1,54 @@
+### Adtran ADVA Vendor Configuration
+## Instructions for backing up Adtran ADVA devices
+
+vendor:
+  id: "adtran_adva"
+  name: "Adtran ADVA"
+  description: "Adtran ADVA devices"
+
+### Session-level behavior
+session:
+  comment_prefix: "# "
+  prompt: '\w+-+[#>]\s?$'
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "show system"
+      metadata: true
+    - command: "network-element ne-1"
+      metadata: true
+    - command: "show shelf-info"
+      metadata: true
+    - command: "show ports"
+      metadata: true
+    - command: "show running-config delta"
+      show_command_in_config: true
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "logout"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  ### Lines to strip from captured config (regex patterns)
+  strip_patterns:
+    - '^Preparing configuration file.*'
+    - '(up time|local time)'
+  ### Lines that mark config boundaries
+  ## If either boundary is missing, keep from/to the file edge.
+  # config_start: "^version \\d+\\.\\d+"
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      - search: 'community "[^"]+"'
+        replacement: 'community <redacted>'
