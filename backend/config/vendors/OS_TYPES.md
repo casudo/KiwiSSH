@@ -33,6 +33,7 @@
 | Brocade | SLX-OS | [brocade_slxos.yaml](/backend/config/vendors/brocade_slxos.yaml) |  |
 | Brocade           | Vyatta                | [brocade_vyatta.yaml](/backend/config/vendors/brocade_vyatta.yaml)               | Also used for Vyos <= 1.2.x, for newer versions use the VyOS model |
 | Calix | AXOS | [calix_axos.yaml](/backend/config/vendors/calix_axos.yaml) | |
+| Cambium | Cambium ePMP | [cambium_epmp.yaml](/backend/config/vendors/cambium_epmp.yaml) | ePMP series |
 | Casa              | Casa                  | [casa_casa.yaml](/backend/config/vendors/casa_casa.yaml)                         |                                                                    |
 | Cisco             | ACS                   | [cisco_acs.yaml](/backend/config/vendors/cisco_acs.yaml)                         |                                                                    |
 | Cisco             | AireOS                | [cisco_aireos.yaml](/backend/config/vendors/cisco_aireos.yaml)                   | [AireOS](#cisco-aireos)                                            |

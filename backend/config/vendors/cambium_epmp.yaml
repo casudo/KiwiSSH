@@ -1,0 +1,41 @@
+### Cambium Vendor Configuration
+## Instructions for backing up Cambium devices
+
+vendor:
+  id: "cambium_epmp"
+  name: "Cambium ePMP series"
+  description: "Cambium ePMP series"
+
+### Session-level output behavior.
+session:
+  prompt: '.*>'
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "config show json"
+      show_command_in_config: true
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "exit"
+      
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  # strip_patterns:
+  #   - '(^((.*)[Ss]ystem [Uu]ptime(.*))$)'
+  # config_start: "^config "
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    # patterns:
+    #   - search: "^(#private-encryption-key=).+"
+    #     replacement: "\\1<secret hidden>"
