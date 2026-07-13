@@ -38,6 +38,8 @@
 | Casa              | Casa                  | [casa_casa.yaml](/backend/config/vendors/casa_casa.yaml)                         |                                                                    |
 | Centec Networks | CNOS | [centec_cnos.yaml](/backend/config/vendors/centec_cnos.yaml) | |
 | Check Point | GaiaOS | [checkpoint_gaiaos.yaml](/backend/config/vendors/checkpoint_gaiaos.yaml) | |
+| Ciena | SAOS | [ciena_saos.yaml](/backend/config/vendors/ciena_saos.yaml) | Used for 6.x |
+| Ciena | SAOS 10 | [ciena_saos10.yaml](/backend/config/vendors/ciena_saos10.yaml) | Used for 10.x |
 | Cisco             | ACS                   | [cisco_acs.yaml](/backend/config/vendors/cisco_acs.yaml)                         |                                                                    |
 | Cisco             | AireOS                | [cisco_aireos.yaml](/backend/config/vendors/cisco_aireos.yaml)                   | [AireOS](#cisco-aireos)                                            |
 | Cisco             | IOS                   | [cisco_ios.yaml](/backend/config/vendors/cisco_ios.yaml)                         |                                                                    |

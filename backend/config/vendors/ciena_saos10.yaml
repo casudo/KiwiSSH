@@ -1,0 +1,58 @@
+### Ciena SAOS10 Vendor Configuration
+## Instructions for backing up Ciena SAOS10 devices
+
+vendor:
+  id: "ciena_saos10"
+  name: "Ciena SAOS10"
+  description: "Ciena SAOS devices (used for 10.x)"
+
+### Session-level output behavior.
+session:
+  comment_prefix: "# "
+  prompt: '^[\w-]+\*?> ?$'
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Pre-backup commands (prepare the session) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  pre_backup:
+    - command: "set session more off"
+
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "show system hostname"
+      metadata: true
+    - command: "show software"
+      metadata: true
+    - command: "show system components"
+      metadata: true
+    - command: "show system health"
+      metadata: true
+    - command: "show system last-reset-reasons"
+      metadata: true
+    - command: "show running config"
+      show_command_in_config: true
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "exit"
+      
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  strip_patterns:
+    - '^! Created: [^\n]*\n'
+    - '^! On terminal: [^\n]*\n'
+  # config_start: "^config "
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    # patterns:
+    #   - search: '^(set expert-password-hash ).*'
+    #     replacement: '\1<EXPERT PASSWORD REMOVED>'
