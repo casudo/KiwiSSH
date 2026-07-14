@@ -70,6 +70,7 @@
 | DELL | EMC Networking OS10 | [dell_os10.yaml](/backend/config/vendors/dell_os10.yaml) | [Dell EMC Networking OS10](#dell-emc-networking-os10) |
 | D-Link            | D-Link                | [dlink_dlink.yaml](/backend/config/vendors/dlink_dlink.yaml)                     |                                                                    |
 | D-Link            | D-Link NextGen        | [dlink_dlinknextgen.yaml](/backend/config/vendors/dlink_dlinknextgen.yaml)       | Cisco-like CLI                                                     |
+| ECI Telecom | ECIapollo | [ecitelecom_eciapollo.yaml](/backend/config/vendors/ecitelecom_eciapollo.yaml) | |
 | Eltex             | Eltex                 | [eltex_eltex.yaml](/backend/config/vendors/eltex_eltex.yaml)                     |                                                                    |
 | Extreme Networks  | WM                    | [motorola_rfs.yaml](/backend/config/vendors/motorola_rfs.yaml)                   | Uses Motorola's RFS vendor file                                    |
 | Fortinet          | FortiGate             | [fortinet_fortigate.yaml](/backend/config/vendors/fortinet_fortigate.yaml)       | [FortiGate](#fortinet-device-types)                                |
