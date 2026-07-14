@@ -61,6 +61,7 @@
 | ComNet | Microsemi Switch | [comnet_ms.yaml](/backend/config/vendors/comnet_ms.yaml) | |
 | Comtrol | RocketLinx | [comtrol_rocketlinx.yaml](/backend/config/vendors/comtrol_rocketlinx.yaml) | |
 | Cumulus | Linux | [cumulus_linux.yaml](/backend/config/vendors/cumulus_linux.yaml) | [Cumulus Linux](#cumulus-linux) |
+| Datacom | Datacom | [datacom_datacom.yaml](/backend/config/vendors/datacom_datacom.yaml) | For DmSwitch 3000 |
 | DCN | DCN | [cisco_ios.yaml](/backend/config/vendors/cisco_ios.yaml) | Same model as Cisco IOS |
 | DELL | PowerConnect | [dell_powerconnect.yaml](/backend/config/vendors/dell_powerconnect.yaml) | |
 | DELL | AOSW | [aruba_aosw.yaml](/backend/config/vendors/aruba_aosw.yaml) | Same model as Aruba Wireless (AOSW) |
