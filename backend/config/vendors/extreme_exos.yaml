@@ -36,7 +36,7 @@ commands:
 ## Processing reduces diff noise and trims non-config boilerplate
 processing:
   ### Lines to strip from captured config (regex patterns)
-  strip_patterns:
+  # strip_patterns:
 #    - "^% Invalid input detected at '\\^' marker\\.$"
 #    - "^\\s+\\^$"
 #    - "^Building configuration\\.\\.\\."
@@ -47,12 +47,10 @@ processing:
 #    - '^ (tunnel mpls traffic-eng bandwidth [^\n]*)\n((?: [^\n]*\n)* tunnel mpls traffic-eng auto-bw)'
 #    - 'Time source is.*'
 #    - 'Load for.*'
-
   ### Lines that mark config boundaries
   ## If either boundary is missing, keep from/to the file edge.
   # config_start: "^version \\d+\\.\\d+"
   # config_end: "^end$"
-
   ### Secret masking. When enabled=false, no redaction is applied.
   redaction:
     enabled: false
@@ -64,4 +62,4 @@ processing:
       - search: "^(configure snmpv3 add user).*"
         replacement: "\\1 <configuration removed>"
       - search: "^(configure snmpv3 add community).*"
-        replacement: "\\1 <configuration removed>"    
+        replacement: "\\1 <configuration removed>"
