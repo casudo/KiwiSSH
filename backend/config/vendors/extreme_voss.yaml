@@ -1,0 +1,59 @@
+### Extreme Networks VOSS Vendor Configuration
+## Instructions for backing up Extreme Network running VOSS-OS devices
+
+vendor:
+  id: "extreme_voss"
+  name: "Extreme Networks VOSS"
+  description: "Extreme Network VOSS devices (switches)"
+
+### Session-level behavior
+session:
+  comment_prefix: "#"
+  prompt: '^([\w.@()-]+\s*[#>]\s*)$'
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Pre-backup commands (prepare the session) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  pre_backup:
+    - command: "enable"
+#    - command: "terminal width 0"
+
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "show sys software"
+      description: "Collect platform as metadata"
+      metadata: true
+    - command: "show sys-info | no-more"
+      description: "Collect inventory as metadata"
+      metadata: true
+    - command: "show running-config | no-more"
+      description: "Get running configuration"
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+#    - command: "terminal length 24"
+#      description: "Restore paging"
+    - command: "exit"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  ### Lines to strip from captured config (regex patterns)
+  strip_patterns:
+    - "(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\s(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s(0?[1-9]|[12][0-9]|3[01])\\s([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\s\\d{4}\\s[A-Z]{2,5}$"
+  ### Lines that mark config boundaries
+  ## If either boundary is missing, keep from/to the file edge.
+  # config_start: "^version \\d+\\.\\d+"
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      - search: "^(tacacs server).*"
+        replacement: "\\1 <configuration removed>"
