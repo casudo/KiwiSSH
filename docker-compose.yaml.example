@@ -1,3 +1,7 @@
+networks:
+  your-network:
+    external: true
+
 services:
   backend:
     container_name: kiwissh_backend
@@ -19,6 +23,11 @@ services:
       # - /PATH_TO_CONFIG/config/ssh_profiles.yaml:/config/ssh_profiles.yaml
       ### Optional: mount SSH material for remote git pushes or device login (needs to be uid:gid 1000:1000)
       # - /PATH_TO_CONFIG/ssh_material:/home/kiwissh/.ssh
+    environment:
+      - TZ=Europe/Berlin
+    hostname: kiwissh_backend
+    networks:
+      - your-network
 
   frontend:
     container_name: kiwissh_frontend
@@ -26,5 +35,15 @@ services:
     restart: unless-stopped
     ports:
       - 8123:8080
+    # labels:
+    #   - traefik.enable=true
+    #   - traefik.http.routers.kiwissh.entrypoints=websecure
+    #   - traefik.http.routers.kiwissh.rule=Host(`kiwissh.domain.tld`)
+    #   - traefik.http.routers.kiwissh.tls=true
+    #   - traefik.http.services.kiwissh.loadbalancer.server.port=8080
+    #   - traefik.http.routers.kiwissh.middlewares=basic-auth@file
     depends_on:
       - backend
+    hostname: kiwissh_frontend
+    networks:
+      - your-network
