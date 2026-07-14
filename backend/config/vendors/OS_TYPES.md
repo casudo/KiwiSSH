@@ -60,6 +60,7 @@
 | Coriant (former Tellabs) | Groove | [coriant_groove.yaml](/backend/config/vendors/coriant_groove.yaml) | |
 | ComNet | Microsemi Switch | [comnet_ms.yaml](/backend/config/vendors/comnet_ms.yaml) | |
 | Comtrol | RocketLinx | [comtrol_rocketlinx.yaml](/backend/config/vendors/comtrol_rocketlinx.yaml) | |
+| Cumulus | Linux | [cumulus_linux.yaml](/backend/config/vendors/cumulus_linux.yaml) | [Cumulus Linux](#cumulus-linux) |
 | D-Link            | D-Link                | [dlink_dlink.yaml](/backend/config/vendors/dlink_dlink.yaml)                     |                                                                    |
 | D-Link            | D-Link NextGen        | [dlink_dlinknextgen.yaml](/backend/config/vendors/dlink_dlinknextgen.yaml)       | Cisco-like CLI                                                     |
 | Eltex             | Eltex                 | [eltex_eltex.yaml](/backend/config/vendors/eltex_eltex.yaml)                     |                                                                    |
@@ -117,6 +118,19 @@ Create a read-only user for KiwiSSH on the device:
 ```bash
 admin@N3550-F> configure user kiwissh password <password>
 admin@N3550-F> configure user kiwissh privilege read-only
+```
+
+## Cumulus Linux
+
+With the release of Cumulus Linux 3.4.0 the platform moved the routing daemon to a fork of `Quagga` named `FRRouting`. See the below link for the release notes.
+
+[https://support.cumulusnetworks.com/hc/en-us/articles/115011217808-Cumulus-Linux-3-4-0-Release-Notes](https://support.cumulusnetworks.com/hc/en-us/articles/115011217808-Cumulus-Linux-3-4-0-Release-Notes)
+
+Comment out the inappropriate commands in the [cumulus_linux.yaml](/backend/config/vendors/cumulus_linux.yaml) file to avoid errors when collecting the configuration.
+
+> [!NOTE]
+> The default command set for the Cumulus Linux Vendor file is `frr` and `NCLU`.
+
 ```
 
 ## Fortinet device types

@@ -1,0 +1,118 @@
+### Cumulus Linux Vendor Configuration
+## Instructions for backing up Cumulus Linux devices
+
+vendor:
+  id: "cumulus_linux"
+  name: "Cumulus Linux"
+  description: "Cumulus Linux devices"
+
+### Session-level output behavior.
+session:
+  comment_prefix: "# "
+  prompt: '^[\w.-]+@[\w.-]+(:mgmt)?:?~[#$] ?$'
+  ### Regular expression explanation:
+  ## ^                 : match begin of line, to have the most specific prompt
+  ## [\w.-]+@[\w.-]+   : user@hostname
+  ## (:mgmt)?          : optional when logged in out of band
+  ## :?~[#$] ?$        : end of prompt, containing the linux path,
+  ##                     which is always "~" in our context.
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Pre-backup commands (prepare the session) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  pre_backup:
+    - command: "sudo su -"
+      then: ["{{ enable_password }}"]
+
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "cat /etc/hostname"
+      metadata: true
+    - command: "cat /etc/hosts"
+      metadata: true
+    - command: "grep -r '' /etc/network/interface* | cut -d '/' -f 4"
+      metadata: true
+    - command: "cat /etc/resolv.conf"
+      metadata: true
+    - command: "cat /etc/ntp.conf"
+      metadata: true
+    - command: "cat /etc/snmp/snmpd.conf"
+      metadata: true
+    - command: "cat /etc/motd"
+      metadata: true
+    - command: "cat /etc/passwd"
+      metadata: true
+    - command: "cat /etc/cumulus/switchd.conf"
+      metadata: true
+    - command: "cat /etc/cumulus/ports.conf; echo"
+      description: "in some configurations, ports.conf has no trailing Line Feed, so we add an echo"
+      metadata: true
+    - command: "cat /etc/cumulus/datapath/traffic.conf"
+      metadata: true
+    - command: "cat /etc/cumulus/acl/policy.conf"
+      metadata: true
+    - command: "cat /etc/default/isc-dhcp-relay"
+      metadata: true
+    - command: "cat /etc/cumulus/etc.replace/os-release"
+      metadata: true
+    - command: "cl-license"
+      metadata: true
+    ## Change commands depending on FRRouting or Quagga
+    - command: "cat /etc/frr/daemons"
+      metadata: true
+    # - command: "cat /etc/quagga/daemons"
+    #   metadata: true
+    - command: "cat /etc/frr/zebra.conf"
+      metadata: true
+    # - command: "cat /etc/quagga/zebra.conf"
+    #   metadata: true
+    - command: "cat /etc/frr/ospfd.conf"
+      metadata: true
+    # - command: "cat /etc/quagga/ospfd.conf"
+    #   metadata: true
+    - command: "cat /etc/frr/ospf6d.conf"
+      metadata: true
+    # - command: "cat /etc/quagga/ospf6d.conf"
+    #   metadata: true
+    - command: "cat /etc/frr/bgpd.conf"
+      metadata: true
+    # - command: "cat /etc/quagga/bgpd.conf"
+    #   metadata: true
+    - command: "cat /etc/frr/frr.conf"
+      metadata: true
+    # - command: "cat /etc/quagga/Quagga.conf"
+    #   metadata: true
+    ## Show full persistent configuration
+    - command: "net show configuration commands"
+      description: "When using NCLU"
+      show_command_in_config: true
+    # - command: "nv config show --color off"
+    #   description: "When using NVUE"
+    #   show_command_in_config: true
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "exit"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  # strip_patterns:
+    # - "^% Invalid input detected at '\\^' marker\\.$"
+    # - "^\\s+\\^$"
+    # - "^#config-version="
+    # - "^conf_file_ver=.*$"
+  # config_start: "^config "
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      - search: 'password (\S+)'
+        replacement: 'password <hidden>'
