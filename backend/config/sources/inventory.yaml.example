@@ -1,0 +1,19 @@
+all:
+  children:
+    ### Each Ansible group maps to a KiwiSSH group and must exist in kiwissh.yaml.
+    customer-abc-switches:
+      hosts:
+        SA-NYC-028:
+          ansible_host: 10.51.20.28
+        SA-NYC-029:
+          ansible_host: 10.51.20.29
+          enabled: false
+        SA-NYC-030:
+          ansible_host: 10.51.20.30
+    datacenter-firewalls:
+      hosts:
+        fortigate-dc-east-01:
+          ansible_host: 172.12.25.26
+        fortigate-dc-west-01:
+          ansible_host: 172.12.32.49
+          enabled: false

@@ -34,9 +34,10 @@ It was created as better alternative to RANCID and Oxidized, with a focus on sim
     - [application\_database](#application_database)
     - [notifications](#notifications)
     - [sources](#sources)
-      - [File](#file)
+      - [CSV File](#csv-file)
       - [PostgreSQL](#postgresql)
       - [HTTP](#http)
+      - [Ansible Inventory](#ansible-inventory)
     - [git](#git)
     - [groups](#groups)
     - [nodes](#nodes)
@@ -228,35 +229,20 @@ You can get notified if the backup of a device fails or succeeds.
 
 ### sources
 
-Configure where KiwiSSH load the devices to backup from. You can choose between loading the devices from a CSV file, a PostgreSQL database, or a generic HTTP endpoint.
+Configure where KiwiSSH load the devices to backup from. You can choose between loading the devices from a CSV file, an Ansible inventory file, a PostgreSQL database, or a generic HTTP endpoint.
 
 > [!IMPORTANT]
 > At least one source must be configured (and only one). The following fields are required for every device in the source: `group`, `device_name`, `ip_address`, `enabled`.
 
-#### File
+#### CSV File
 
 | Key | Description | Required | Default Value |
 | --- | ----------- | -------- | ------------- |
 | `sources.file` | Path to the CSV file containing the device entries. Absolute, or relative to the config directory. | **Yes** | - |
 
-The devices will be loaded from the specified CSV file. The headers must be seperated by commas like this:
+The devices will be loaded from the specified CSV file. The headers must be separated by commas like this:
 
-```csv
-group,device_name,ip_address,enabled
-prod-firewalls,firewall-prod-01,10.50.240.100,true
-prod-firewalls,firewall-prod-02,10.50.240.101,true
-test-firewalls,firewall-test-01,10.60.194.10,true
-test-firewalls,firewall-test-02,10.60.194.11,true
-spine-switches,dc-spine-01,172.16.37.2,true
-spine-switches,dc-spine-02,172.16.37.3,true
-leaf-switches,dc-leaf-01,172.16.37.4,true
-leaf-switches,dc-leaf-02,172.16.37.5,true
-leaf-switches,dc-leaf-03,172.16.37.5,true
-leaf-switches,dc-leaf-04,172.16.37.6,true
-dev-rack,test-c8200-1n-4t,192.168.5.1,true
-dev-rack,marketing-catalyst-24p,192.168.5.2,true
-dev-rack,sales-catalyst-24p,192.168.5.3,false
-```
+[See an example CSV file here](backend/config/sources/devices.csv.example).
 
 #### PostgreSQL
 
@@ -345,6 +331,16 @@ sources:
 > Since the HTTP source is generic, you can use it to load devices from any system that can provide a JSON array of devices. For example, you could use LibreNMS, NetBox, or any other inventory system that has an API endpoint returning device information in JSON format.
 > 
 > See how to [implement LibreNMS support here](https://github.com/casudo/KiwiSSH/discussions/44).
+
+#### Ansible Inventory
+
+| Key | Description | Required | Default Value |
+| --- | ----------- | -------- | ------------- |
+| `sources.ansible` | Path to the Ansible inventory YAML file containing the device entries. Absolute, or relative to the config directory. | **Yes** | - |
+
+The devices will be loaded from the specified Ansible inventory YAML file. The hosts must be defined under the appropriate groups, and the `ansible_host` variable must be present (will be used as the IP address).
+
+[See an example Ansible inventory YAML file here](backend/config/sources/inventory.yaml.example).
 
 ### git
 

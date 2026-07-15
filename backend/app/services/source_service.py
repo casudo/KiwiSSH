@@ -4,6 +4,7 @@ import csv
 from pathlib import Path
 import re
 import httpx
+import yaml
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError, ProgrammingError, SQLAlchemyError
 
@@ -93,6 +94,88 @@ class SourceService:
             reader = csv.DictReader(f)
             for row_num, row in enumerate(reader, start=2):  # Start at 2 to account for header
                 self._cache_device_from_row(row, row_num)
+
+        self._loaded = True
+        return list(self._devices_cache.values())
+    
+    ### =============================================================================
+    ### Ansible Source Functions
+    ### =============================================================================
+
+    def _get_ansible_source_path(self) -> Path:
+        """Resolve Ansible inventory source path from sources.ansible string."""
+
+        default_config_path = "/config/sources/inventory.yaml"
+
+        configured_path = self.settings.sources.ansible if self.settings.sources else None
+        if not configured_path:
+            configured_path = default_config_path
+
+        candidate = Path(configured_path)
+        return candidate.resolve()
+    
+    @staticmethod
+    def _walk_inventory_group(group_name: str, group_data: object, rows: list[dict]) -> None:
+        """Recursively collect device rows from an Ansible inventory group node.
+
+        A device's group is the immediate Ansible group under which it is listed in 'hosts'.
+        The connection IP is taken from 'ansible_host'.
+        """
+        if not isinstance(group_data, dict):
+            return
+
+        hosts = group_data.get("hosts") or {}
+        if isinstance(hosts, dict):
+            ### Scan through all hosts in the group
+            for host_name, host_vars in hosts.items():
+                host_vars = host_vars if isinstance(host_vars, dict) else {}
+                ip_address = str(host_vars.get("ansible_host")).strip()
+                ### Map Ansible inventory hosts to canonical KiwiSSH device rows
+                rows.append(
+                    {
+                        "group": group_name,
+                        "device_name": str(host_name).strip(),
+                        "ip_address": ip_address,
+                        "enabled": host_vars.get("enabled", True),
+                    }
+                )
+
+        ### Handle children groups recursively, if present
+        children = group_data.get("children") or {}
+        if isinstance(children, dict):
+            for child_name, child_data in children.items():
+                SourceService._walk_inventory_group(str(child_name), child_data, rows)
+
+    def _parse_ansible_inventory(self, data: dict) -> list[dict]:
+        """Flatten a nested Ansible inventory mapping into normalized device rows."""
+        rows: list[dict] = []
+        for group_name, group_data in data.items():
+            self._walk_inventory_group(str(group_name), group_data, rows)
+        return rows
+
+    async def load_devices_from_ansible(self) -> list[DeviceBase]:
+        """Load devices from an Ansible inventory YAML file.
+
+        Ansible groups (under 'all.children') map to KiwiSSH groups and must exist in kiwissh.yaml.
+        Each host under a groups 'hosts' becomes a device, using 'ansible_host' as the IP.
+        """
+        inventory_path = self._get_ansible_source_path()
+
+        if not inventory_path.exists():
+            return []
+
+        with open(inventory_path, encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+
+        if not isinstance(data, dict):
+            raise ValueError(
+                f"Invalid Ansible inventory at '{inventory_path}': expected a YAML mapping at the top level"
+            )
+
+        ### Parse Ansible inventory and cache devices
+        rows = self._parse_ansible_inventory(data)
+        for index, row in enumerate(rows, start=1):
+            self._cache_device_from_row(row, f"ansible#{index}")
 
         self._loaded = True
         return list(self._devices_cache.values())
@@ -282,6 +365,8 @@ class SourceService:
             return await self.load_devices_from_postgres()
         elif self.settings.sources.http:
             return await self.load_devices_from_http()
+        elif self.settings.sources.ansible:
+            return await self.load_devices_from_ansible()
         elif self.settings.sources.file:
             return await self.load_devices_from_csv()
 

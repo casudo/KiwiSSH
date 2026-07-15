@@ -36,6 +36,8 @@ def validate_configuration() -> None:
         source_type = "postgres"
     elif settings.sources and settings.sources.http is not None:
         source_type = "http"
+    elif settings.sources and settings.sources.ansible is not None:
+        source_type = "ansible"
     else:
         source_type = "file"
     logger.info(f"✓ Device source configured: {source_type}")

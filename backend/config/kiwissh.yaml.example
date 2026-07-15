@@ -38,11 +38,12 @@ notifications:
         - "admin@example.com"
 
 ### Device sources
-## Load from file, PostgreSQL or an HTTP endpoint. Exactly one source is required.
+## Load from a CSV file, an Ansible inventory YAML, PostgreSQL or an HTTP endpoint. Exactly one source is required.
 ## Required fields per device: group, device_name, ip_address, enabled
 ## Paths may be absolute, or relative to the config directory.
 sources:
-  # file: "/config/sources/devices.csv"   # absolute (Docker) — or relative e.g. "sources/devices.csv"
+  # file: "/config/sources/devices.csv"
+  # ansible: "/config/sources/inventory.yaml"
   postgres:
       host: "172.16.147.56"
       port: 5432
@@ -62,8 +63,9 @@ sources:
 ### Global git backup repository settings
 ## Local git storage is always active and stores one repository per group under local_path.
 ## DO NOT delete the "backups" folder ever unless you want to lose all your local git repositories and their history.
+## Paths may be absolute, or relative to the config directory.
 git:
-  local_path: "/config/backups"   # absolute (Docker) — or relative e.g. "backups" (resolved against the config dir)
+  local_path: "/config/backups"
   ### Optional global remote git location for groups without overrides.
   ### If this block is configured, git.remote.url is required.
   # remote:
