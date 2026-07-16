@@ -81,6 +81,7 @@
 | HP                | ProCurve              | [hp_procurve.yaml](/backend/config/vendors/hp_procurve.yaml)                     |                                                                    |
 | H3C | S6520X | [h3c_s6520x.yaml](/backend/config/vendors/h3c_s6520x.yaml) | |
 | Huawei                | VRP       | [huawei_vrp.yaml](/backend/config/vendors/huawei_vrp.yaml)                     | Versatile Routing Platform                                             |
+| Huawei | SmartAX series | [huawei_smartax.yaml](/backend/config/vendors/huawei_smartax.yaml) | |
 | Icotera | 6400 series | [icotera_6400.yaml](/backend/config/vendors/icotera_6400.yaml) | |
 | Juniper           | JunOS                 | [juniper_junos.yaml](/backend/config/vendors/juniper_junos.yaml)                 | [JunOS](#juniper-junos)                                            |
 | Mikrotik          | RouterOS              | [mikrotik_routeros.yaml](/backend/config/vendors/mikrotik_routeros.yaml)         | [RouterOS](#mikrotik-routeros)                                     |
