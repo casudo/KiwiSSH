@@ -1,0 +1,51 @@
+### Icotera 6400 series Vendor Configuration
+## Instructions for backing up Icotera 6400 series devices
+
+vendor:
+  id: "icotera_6400"
+  name: "Icotera 6400 series"
+  description: "Icotera 6400 GPON/EPON network access devices"
+
+### Session-level behavior
+session:
+  comment_prefix: "## "
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "show management"
+      show_command_in_config: true
+    - command: "copy progress screen"
+  
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "exit"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  ### Lines to strip from captured config (regex patterns)
+  strip_patterns:
+    - 'System uptime'
+    - 'Bytes in'
+    - 'Pkts in'
+    - 'Ucast in'
+    - 'Mcast in'
+    - 'Bcast in'
+    - 'Total in'
+  ### Lines that mark config boundaries
+  ## If either boundary is missing, keep from/to the file edge.
+  # config_start: "^version \\d+\\.\\d+"
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    # patterns:
+    #   - search: '^local-user .+ (password|secret) \d) .+'
+    #     replacement: '\1 <secret hidden>'
