@@ -79,6 +79,7 @@
 | Fortinet          | FortiOS               | [fortinet_fortios.yaml](/backend/config/vendors/fortinet_fortios.yaml)           | [FortiOS](#fortinet-device-types)                                  |
 | Fortinet          | FortiWLC              | [fortinet_wlc.yaml](/backend/config/vendors/fortinet_wlc.yaml)                   |                                                                    |
 | HP                | ProCurve              | [hp_procurve.yaml](/backend/config/vendors/hp_procurve.yaml)                     |                                                                    |
+| H3C | S6520X | [h3c_s6520x.yaml](/backend/config/vendors/h3c_s6520x.yaml) | |
 | Huawei                | VRP       | [huawei_vrp.yaml](/backend/config/vendors/huawei_vrp.yaml)                     | Versatile Routing Platform                                             |
 | Icotera | 6400 series | [icotera_6400.yaml](/backend/config/vendors/icotera_6400.yaml) | |
 | Juniper           | JunOS                 | [juniper_junos.yaml](/backend/config/vendors/juniper_junos.yaml)                 | [JunOS](#juniper-junos)                                            |
