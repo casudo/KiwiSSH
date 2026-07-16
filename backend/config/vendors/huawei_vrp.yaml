@@ -44,7 +44,7 @@ commands:
 ## Processing reduces diff noise and trims non-config boilerplate
 processing:
   ### Lines to strip from captured config (regex patterns)
-#  strip_patterns:
+  # strip_patterns:
   ### Lines that mark config boundaries
   ## If either boundary is missing, keep from/to the file edge.
   # config_start: "^version \\d+\\.\\d+"
@@ -53,9 +53,9 @@ processing:
   redaction:
     enabled: false
     patterns:
-      - search: '^local-user .+ (password|secret) \\d) .+'
-        replacement: '\\1 <secret hidden>'
+      - search: '^local-user .+ (password|secret) \d) .+'
+        replacement: '\1 <secret hidden>'
       - search: '^(hwtacacs-server (.+ )?cipher) .+'
-        replacement: '\\1 <secret hidden>'
-      - search: "^snmp-agent usm-user v3 .+ (cipher) \\d) .+'
-        replacement: '\\1 <secret hidden>'
+        replacement: '\1 <secret hidden>'
+      - search: '^snmp-agent usm-user v3 .+ (cipher) \d) .+'
+        replacement: '\1 <secret hidden>'
