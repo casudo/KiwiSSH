@@ -119,14 +119,18 @@ To run KiwiSSH on your local machine without Docker, follow these steps:
 
 ## Docker
 
-KiwiSSH uses separate Docker images for backend and frontend.
+KiwiSSH uses separate Docker images for backend and frontend. The [example compose stack](docker-compose.yaml.example) also includes PostgreSQL for the application database. If you already have a PostgreSQL database up and running, you may remove the service from the compose file.
 
 - Backend: FastAPI API service
 - Frontend: Nginx serving the built Vue app and proxying `/api/*` to backend
+- PostgreSQL: Application data storage
 
-1. Update the [`docker-compose.yaml.example`](docker-compose.yaml.example) with the correct image tags for backend and frontend and set your desired environment variables (optional) and volume mounts. You can find an overview of all available environment variables [here in the README](#environment-variables) or [in the example .env file](backend/.env.example).
-2. Run the [`docker-compose.yaml.example`](docker-compose.yaml.example) file
-3. Open the UI at `http://<IP>:8123`
+1. Update the [`docker-compose.yaml.example`](docker-compose.yaml.example) with the correct host paths, network, database credentials, and any desired environment variables or volume mounts. Use the same PostgreSQL connection values in your `kiwissh.yaml`.
+2. Run the [`docker-compose.yaml.example`](docker-compose.yaml.example) file.
+3. Open the UI at `http://<IP>:8123`.
+
+> [!IMPORTANT]
+> Persist the PostgreSQL data and KiwiSSH backup directories on the host. Data stored only inside a container is lost when that container is recreated.
 
 > [!IMPORTANT]
 > If you're using SSH key authentication (remote git push, device backup auth, or jumphost auth), mount your SSH material into `/home/kiwissh/.ssh` and ensure permissions are correct (typically `600` for private keys/config/known_hosts, owned by `kiwissh` uid:gid 1000:1000).
