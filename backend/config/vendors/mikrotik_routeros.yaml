@@ -46,6 +46,7 @@ processing:
     - '# Firmware upgraded successfully, please reboot for changes to take effect!\r\n'
     - '# \S+ not ready\r\n'
     - '# .+ please restart the device in order to apply the new setting\r\n'
+    - '# 20.* by RouterOS'
   # config_start: "^config "
   # config_end: "^end$"
   ### Secret masking. When enabled=false, no redaction is applied.
