@@ -3,9 +3,30 @@ networks:
     external: true
 
 services:
+  postgres:
+    container_name: kiwissh_postgres
+    image: postgres:latest
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Berlin
+      - POSTGRES_DB=kiwissh
+      - POSTGRES_USER=kiwissh_user
+      - POSTGRES_PASSWORD=change-me
+    volumes:
+      ### Required: Mount PostgreSQL data to persistent storage
+      - /PATH_TO_POSTGRES_DATA:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    hostname: postgres
+    networks:
+      - your-network
+
   backend:
     container_name: kiwissh_backend
-    image: ghcr.io/casudo/kiwissh-backend:<tag>
+    image: ghcr.io/casudo/kiwissh-backend:latest
     restart: unless-stopped
     ### Uncomment ports if you want to access the API docs via http://<IP>:8000/docs
     # ports:
@@ -25,14 +46,19 @@ services:
       # - /PATH_TO_CONFIG/ssh_material:/home/kiwissh/.ssh
     environment:
       - TZ=Europe/Berlin
+    depends_on:
+      postgres:
+        condition: service_healthy
     hostname: kiwissh_backend
     networks:
       - your-network
 
   frontend:
     container_name: kiwissh_frontend
-    image: ghcr.io/casudo/kiwissh-frontend:<tag>
+    image: ghcr.io/casudo/kiwissh-frontend:latest
     restart: unless-stopped
+    environment:
+      - TZ=Europe/Berlin
     ports:
       - 8123:8080
     # labels:
