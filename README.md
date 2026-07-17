@@ -119,11 +119,11 @@ To run KiwiSSH on your local machine without Docker, follow these steps:
 
 ## Docker
 
-KiwiSSH uses separate Docker images for backend and frontend. The example Compose stack also includes PostgreSQL for the application database.
+KiwiSSH uses separate Docker images for backend and frontend. The [example compose stack](docker-compose.yaml.example) also includes PostgreSQL for the application database. If you already have a PostgreSQL database up and running, you may remove the service from the compose file.
 
 - Backend: FastAPI API service
 - Frontend: Nginx serving the built Vue app and proxying `/api/*` to backend
-- PostgreSQL: application data storage
+- PostgreSQL: Application data storage
 
 1. Update the [`docker-compose.yaml.example`](docker-compose.yaml.example) with the correct host paths, network, database credentials, and any desired environment variables or volume mounts. Use the same PostgreSQL connection values in your `kiwissh.yaml`.
 2. Run the [`docker-compose.yaml.example`](docker-compose.yaml.example) file.
