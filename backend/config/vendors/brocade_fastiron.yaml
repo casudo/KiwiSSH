@@ -10,6 +10,11 @@ vendor:
 session:
   comment_prefix: "! "
   prompt: '^([\w.@\/()-]+[#>]\s?)$'
+  pagination:
+    enabled: true
+    patterns:
+      - pattern: '--More--|Press any key to continue|Press <space> to continue'
+        response: " "
 
 ### Commands to execute for backup
 ## Supported step types in command phases:
