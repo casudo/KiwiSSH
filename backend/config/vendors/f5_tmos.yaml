@@ -1,0 +1,68 @@
+### F5 TMOS Vendor Configuration
+## Instructions for backing up F5 TMOS
+
+vendor:
+  id: "f5_tmos"
+  name: "F5 TMOS"
+  description: "F5 TMOS network devices"
+
+### Session-level output behavior.
+session:
+  comment_prefix: "# "
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "tmsh -q show sys version"
+      metadata: true
+    - command: "tmsh -q show sys software"
+      metadata: true
+    - command: "tmsh -q show sys hardware field-fmt"
+      metadata: true
+    - command: "cat /config/bigip.license"
+      metadata: true
+    - command: "tmsh -q list"
+      metadata: true
+    - command: "tmsh -q list net route all"
+      metadata: true
+    - command: "/bin/ls --full-time --color=never /config/ssl/ssl.crt"
+      metadata: true
+    - command: "/bin/ls --full-time --color=never /config/ssl/ssl.key"
+      metadata: true
+    - command: "tmsh -q show running-config sys db all-properties"
+      show_command_in_config: true
+    - command: "[ -d '/config/zebos' ] && cat /config/zebos/*/ZebOS.conf"
+      show_command_in_config: true
+    - command: "cat /config/partitions/*/bigip*.conf"
+      show_command_in_config: true
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  strip_patterns:
+    - 'sys db configsync.localconfigtime {[^}]+}'
+    - 'sys db gtm.configtime {[^}]+}'
+    - 'sys db ltm.configtime {[^}]+}'
+  # config_start: "^config "
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      - search: '^([\s\t]*)secret \S+'
+        replacement: '\1secret <secret removed>'
+      - search: '^([\s\t]*\S*)password \S+'
+        replacement: '\1password <secret removed>'
+      - search: '^([\s\t]*\S*)passphrase \S+'
+        replacement: '\1passphrase <secret removed>'
+      - search: 'community \S+'
+        replacement: 'community <secret removed>'
+      - search: 'community-name \S+'
+        replacement: 'community-name <secret removed>'
+      - search: '^([\s\t]*\S*)encrypted \S+$'
+        replacement: '\1encrypted <secret removed>'
