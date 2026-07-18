@@ -88,6 +88,7 @@
 | Fiberstorm (fs.com) | S3900-R | [bdcom_bdcom.yaml](/backend/config/vendors/bdcom_bdcom.yaml) | Same model as BDCOM |
 | Fiberstorm (fs.com) | S5800, S5850 | [centec_cnos.yaml](/backend/config/vendors/centec_cnos.yaml) | Same model as Centec CNOS |
 | Firebrick | Firebrick | [firebrick_firebrick.yaml](/backend/config/vendors/firebrick_firebrick.yaml) | |
+| Force10 | DNOS | [force10_dnos.yaml](/backend/config/vendors/force10_dnos.yaml) | |
 | Fortinet          | FortiGate             | [fortinet_fortigate.yaml](/backend/config/vendors/fortinet_fortigate.yaml)       | [FortiGate](#fortinet-device-types)                                |
 | Fortinet          | FortiOS               | [fortinet_fortios.yaml](/backend/config/vendors/fortinet_fortios.yaml)           | [FortiOS](#fortinet-device-types)                                  |
 | Fortinet          | FortiWLC              | [fortinet_wlc.yaml](/backend/config/vendors/fortinet_wlc.yaml)                   |                                                                    |
