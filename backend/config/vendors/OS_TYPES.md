@@ -78,6 +78,8 @@
 | Extreme Networks  | WM                    | [motorola_rfs.yaml](/backend/config/vendors/motorola_rfs.yaml)                   | Uses Motorola's RFS vendor file                                    |
 | Extreme Networks  | EXOS                  | [extreme_exos.yaml](/backend/config/vendors/extreme_exos.yaml)                   |                                                                    |  
 | Extreme Networks  | VOSS                  | [extreme_voss.yaml](/backend/config/vendors/extreme_voss.yaml)                   |                                                                    |
+| Extreme Networks  | Enterasys B/C-Series  | [extreme_enterasys.yaml](/backend/config/vendors/extreme_enterasys.yaml)         | |
+| Extreme Networks  | Enterasys 800-Series  | [extreme_enterasys800.yaml](/backend/config/vendors/extreme_enterasys800.yaml)         | |
 | Fortinet          | FortiGate             | [fortinet_fortigate.yaml](/backend/config/vendors/fortinet_fortigate.yaml)       | [FortiGate](#fortinet-device-types)                                |
 | Fortinet          | FortiOS               | [fortinet_fortios.yaml](/backend/config/vendors/fortinet_fortios.yaml)           | [FortiOS](#fortinet-device-types)                                  |
 | Fortinet          | FortiWLC              | [fortinet_wlc.yaml](/backend/config/vendors/fortinet_wlc.yaml)                   |                                                                    |
