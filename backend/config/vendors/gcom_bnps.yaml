@@ -1,0 +1,59 @@
+### GCOM Technologies Broadband Network Platform Software Vendor Configuration
+## Instructions for backing up GCOM Technologies BNPS devices
+
+vendor:
+  id: "gcom_bnps"
+  name: "GCOM Technologies BNPS"
+  description: "For switches from GCOM Technologies Co.,Ltd. running the 'Broadband Network Platform Software'"
+
+### Session-level behavior
+session:
+  comment_prefix: "! "
+  prompt: '^\r?([\w.@()-]+?(\(1-\d+ chars\))?[#>:]\s?)$'
+  login:
+    - expect: "*" # ^Password\(1-\d+ chars\): <--- This would break Telnet sessions
+      send: "{{ password }}"
+  pagination:
+    enabled: true
+    patterns:
+      - pattern: '^\.\.\.\.press ENTER to next line, CTRL_C to quit, other key to next page\.\.\.\.$'
+        response: " "
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "show version"
+      metadata: true
+    - command: "show system"
+      metadata: true
+    - command: "show interface sfp"
+      metadata: true
+    - command: "show running-config"
+      show_command_in_config: true
+  
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "exit"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  ### Lines to strip from captured config (regex patterns)
+  # strip_patterns:
+  #   - '^Building configuration.*\n'
+  ### Lines that mark config boundaries
+  ## If either boundary is missing, keep from/to the file edge.
+  # config_start: "^version \\d+\\.\\d+"
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      - search: '^(snmp-server community)\s+[^\s]+\s+(.*)'
+        replacement: '\1 <community hidden> \2'
