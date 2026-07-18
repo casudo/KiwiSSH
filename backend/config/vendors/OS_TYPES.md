@@ -71,6 +71,7 @@
 | D-Link            | D-Link                | [dlink_dlink.yaml](/backend/config/vendors/dlink_dlink.yaml)                     |                                                                    |
 | D-Link            | D-Link NextGen        | [dlink_dlinknextgen.yaml](/backend/config/vendors/dlink_dlinknextgen.yaml)       | Cisco-like CLI                                                     |
 | ECI Telecom | ECIapollo | [ecitelecom_eciapollo.yaml](/backend/config/vendors/ecitelecom_eciapollo.yaml) | |
+| EdgeCore | ECS3510, ES3526XA-V2, ES3528M | [edgecore_edgecos.yaml](/backend/config/vendors/edgecore_edgecos.yaml) | |
 | Eltex             | Eltex                 | [eltex_eltex.yaml](/backend/config/vendors/eltex_eltex.yaml)                     |                                                                    |
 | Extreme Networks  | WM                    | [motorola_rfs.yaml](/backend/config/vendors/motorola_rfs.yaml)                   | Uses Motorola's RFS vendor file                                    |
 | Extreme Networks  | EXOS                  | [extreme_exos.yaml](/backend/config/vendors/extreme_exos.yaml)                   |                                                                    |  
