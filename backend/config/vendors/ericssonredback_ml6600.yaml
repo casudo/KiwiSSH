@@ -1,0 +1,56 @@
+### Ericsson/Redback Minilink 6600 Vendor Configuration
+## Instructions for backing up Ericsson/Redback Minilink 6600
+
+vendor:
+  id: "ericssonredback_ml6600"
+  name: "Ericsson/Redback Minilink 6600"
+  description: "Ericsson/Redback Minilink 6600"
+
+### Session-level output behavior.
+session:
+  comment_prefix: "! "
+  prompt: '.*#'
+  login:
+    - expect: 'User:.*$'
+      send: "{{ password }}"
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "show version"
+      metadata: true
+    - command: "show inventory hw all"
+      metadata: true
+    - command: "show inventory sw all"
+      metadata: true
+    - command: "show license status all"
+      metadata: true
+    - command: "show running-config"
+      show_command_in_config: true
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "logout"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  # strip_patterns:
+  #   - '^(% Invalid input detected at'
+  #   - '^.*\sUp Time\s*:.*\n'
+  #   - '(\sTemperature \d*:)\s*\d+ degrees'
+  #   - 'Fan speed'
+  # config_start: "^config "
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    # patterns:
+    #   - search: 'password \d+ (\S+).*'
+    #     replacement: '<secret hidden>'

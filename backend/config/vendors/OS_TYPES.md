@@ -73,6 +73,8 @@
 | ECI Telecom | ECIapollo | [ecitelecom_eciapollo.yaml](/backend/config/vendors/ecitelecom_eciapollo.yaml) | |
 | EdgeCore | ECS3510, ES3526XA-V2, ES3528M | [edgecore_edgecos.yaml](/backend/config/vendors/edgecore_edgecos.yaml) | |
 | Eltex             | Eltex                 | [eltex_eltex.yaml](/backend/config/vendors/eltex_eltex.yaml)                     |                                                                    |
+| Ericsson/Redback | IPOS | [ericssonredback_ipos.yaml](/backend/config/vendors/ericssonredback_ipos.yaml) | Formerly SEOS |
+| Ericsson/Redback | Minilink 6600 | [ericssonredback_ml6600.yaml](/backend/config/vendors/ericssonredback_ml6600.yaml) | |
 | Extreme Networks  | WM                    | [motorola_rfs.yaml](/backend/config/vendors/motorola_rfs.yaml)                   | Uses Motorola's RFS vendor file                                    |
 | Extreme Networks  | EXOS                  | [extreme_exos.yaml](/backend/config/vendors/extreme_exos.yaml)                   |                                                                    |  
 | Extreme Networks  | VOSS                  | [extreme_voss.yaml](/backend/config/vendors/extreme_voss.yaml)                   |                                                                    |
