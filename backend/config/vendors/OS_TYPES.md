@@ -82,6 +82,10 @@
 | Extreme Networks  | Enterasys 800-Series  | [extreme_enterasys800.yaml](/backend/config/vendors/extreme_enterasys800.yaml)         | |
 | F5 | F5OS | [f5_f5os.yaml](/backend/config/vendors/f5_f5os.yaml) | |
 | F5 | TMOS | [f5_tmos.yaml](/backend/config/vendors/f5_tmos.yaml) | |
+| Fiberstorm (fs.com) | S3400 | [fiberstorm_fsos.yaml](/backend/config/vendors/fiberstorm_fsos.yaml) | |
+| Fiberstorm (fs.com) | S3900 | [edgecore_edgecos.yaml](/backend/config/vendors/edgecore_edgecos.yaml) | Same model as Edgecore EdgeCOS |
+| Fiberstorm (fs.com) | S3900-R | [bdcom_bdcom.yaml](/backend/config/vendors/bdcom_bdcom.yaml) | Same model as BDCOM |
+| Fiberstorm (fs.com) | S5800, S5850 | [centec_cnos.yaml](/backend/config/vendors/centec_cnos.yaml) | Same model as Centec CNOS |
 | Fortinet          | FortiGate             | [fortinet_fortigate.yaml](/backend/config/vendors/fortinet_fortigate.yaml)       | [FortiGate](#fortinet-device-types)                                |
 | Fortinet          | FortiOS               | [fortinet_fortios.yaml](/backend/config/vendors/fortinet_fortios.yaml)           | [FortiOS](#fortinet-device-types)                                  |
 | Fortinet          | FortiWLC              | [fortinet_wlc.yaml](/backend/config/vendors/fortinet_wlc.yaml)                   |                                                                    |
