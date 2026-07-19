@@ -693,21 +693,32 @@ class GitConfig(BaseModel):
 
 
 class ApplicationDatabaseConfig(BaseModel):
-    """Application PostgreSQL database configuration."""
+    """Application database configuration.
 
-    host: str
-    port: int = Field(default=5432,ge=1, le=65535)
-    database: str
-    username: str
-    password: str
+    Supports backends selected via `type`:
+      - `postgresql` (default): requires host/database/username/password.
+      - `sqlite`: file-based, requires only `path`.
+    """
 
-    @field_validator("host", "database", "username", "password", mode="before")
+    type: str = "postgresql"
+
+    ### PostgreSQL connection fields (required when type == "postgresql")
+    host: str | None = None
+    port: int = Field(default=5432, ge=1, le=65535)
+    database: str | None = None
+    username: str | None = None
+    password: str | None = None
+
+    ### SQLite connection field (required when type == "sqlite")
+    path: str | None = None
+
+    @field_validator("type", mode="before")
     @classmethod
-    def validate_non_empty_text(cls, value: str | None) -> str:
-        """Require non-empty strings for application database connection fields."""
-        text = "" if value is None else str(value).strip()
-        if not text:
-            raise ValueError("application_database connection fields must be non-empty strings")
+    def normalize_type(cls, value: str | None) -> str:
+        """Normalize and validate the database backend type."""
+        text = ("postgresql" if value is None else str(value)).strip().lower()
+        if text not in {"postgresql", "sqlite"}:
+            raise ValueError("application_database.type must be 'postgresql' or 'sqlite'")
         return text
 
 
