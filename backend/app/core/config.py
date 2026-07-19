@@ -892,13 +892,18 @@ class Settings(BaseSettings):
             )
 
     def _build_database_url(self) -> str:
-        """Build application database URL from PostgreSQL configuration.
+        """Build application database URL from the configured backend.
 
         Returns:
             SQLAlchemy database URL string
         """
         if self.application_database is None:
             raise ValueError("Missing required 'application_database' section in kiwissh.yaml")
+
+        if self.application_database.type == "sqlite":
+            ### Resolve relative SQLite paths against the configuration directory
+            resolved = self._resolve_config_relative_path(self.application_database.path)
+            return f"sqlite:///{Path(resolved).as_posix()}"
 
         return self._build_postgres_url(
             host=self.application_database.host,
