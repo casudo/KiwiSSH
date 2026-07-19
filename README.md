@@ -32,10 +32,12 @@ It was created as better alternative to RANCID and Oxidized, with a focus on sim
   - [kiwissh.yaml](#kiwisshyaml)
     - [app](#app)
     - [application\_database](#application_database)
+      - [PostgreSQL](#postgresql)
+      - [SQLite](#sqlite)
     - [notifications](#notifications)
     - [sources](#sources)
       - [CSV File](#csv-file)
-      - [PostgreSQL](#postgresql)
+      - [PostgreSQL](#postgresql-1)
       - [HTTP](#http)
       - [Ansible Inventory](#ansible-inventory)
     - [git](#git)
@@ -119,18 +121,18 @@ To run KiwiSSH on your local machine without Docker, follow these steps:
 
 ## Docker
 
-KiwiSSH uses separate Docker images for backend and frontend. The [example compose stack](docker-compose.yaml.example) also includes PostgreSQL for the application database. If you already have a PostgreSQL database up and running, you may remove the service from the compose file.
+KiwiSSH uses separate Docker images for backend and frontend. The [example compose stack](docker-compose.yaml.example) also includes PostgreSQL for the application database. If you already have a PostgreSQL database up and running, or if you prefer the file-based [SQLite](#sqlite) backend, you may remove the PostgreSQL service from the compose file.
 
 - Backend: FastAPI API service
 - Frontend: Nginx serving the built Vue app and proxying `/api/*` to backend
-- PostgreSQL: Application data storage
+- PostgreSQL: Application data storage (optional if using SQLite)
 
 1. Update the [`docker-compose.yaml.example`](docker-compose.yaml.example) with the correct host paths, network, database credentials, and any desired environment variables or volume mounts. Use the same PostgreSQL connection values in your `kiwissh.yaml`.
 2. Run the [`docker-compose.yaml.example`](docker-compose.yaml.example) file.
 3. Open the UI at `http://<IP>:8123`.
 
 > [!IMPORTANT]
-> Persist the PostgreSQL data and KiwiSSH backup directories on the host. Data stored only inside a container is lost when that container is recreated.
+> Persist the application database (PostgreSQL data directory, or the SQLite file) and KiwiSSH backup directories on the host. Data stored only inside a container is lost when that container is recreated.
 
 > [!IMPORTANT]
 > If you're using SSH key authentication (remote git push, device backup auth, or jumphost auth), mount your SSH material into `/home/kiwissh/.ssh` and ensure permissions are correct (typically `600` for private keys/config/known_hosts, owned by `kiwissh` uid:gid 1000:1000).
@@ -193,18 +195,37 @@ Full available options:
 
 ### application_database
 
-The `application_database` segment is used to configure the connection to the PostgreSQL database where KiwiSSH will store its application data (e.g. backup job logs, favorite devices, etc.). This database is required for KiwiSSH to function properly.
+The `application_database` segment configures where KiwiSSH stores its application data (e.g. backup job logs, favorite devices, etc.). This storage is required for KiwiSSH to function properly. Two backends are supported, selected via `application_database.type`:
+
+- `postgresql` (default): connects to an external PostgreSQL server.
+- `sqlite`: a self-contained, file-based database that requires no external server.
+
+> [!NOTE]
+> The frontend always reads log lines through the backend API, so it works identically regardless of the chosen backend.
+> It's still recommended to use PostgreSQL for production deployments, as it is more robust and scalable than SQLite.
+
+#### PostgreSQL
 
 > [!IMPORTANT]
 > Make sure that the database exists and that the provided user has the necessary permissions to create tables and perform operations on the database. KiwiSSH will automatically create the required tables on startup.
 
 | Key | Description | Required | Default Value |
 | --- | ----------- | -------- | ------------- |
+| `application_database.type` | Set to `postgresql`. | No | `postgresql` |
 | `application_database.host` | The host of the PostgreSQL database. | **Yes** | - |
 | `application_database.port` | The port of the PostgreSQL database. | No | `5432` |
 | `application_database.database` | The name of the PostgreSQL database. | **Yes** | - |
 | `application_database.username` | The username for the PostgreSQL database. | **Yes** | - |
 | `application_database.password` | The password for the PostgreSQL database. | **Yes** | - |
+
+#### SQLite
+
+The SQLite database is a single file. The file and its parent directory are created automatically on startup if they do not exist. Relative paths are resolved against the configuration directory. When running in Docker, mount the file to persistent storage so data survives container recreation.
+
+| Key | Description | Required | Default Value |
+| --- | ----------- | -------- | ------------- |
+| `application_database.type` | Set to `sqlite`. | **Yes** | `postgresql` |
+| `application_database.path` | Path to the SQLite database file (e.g. `kiwissh.db` or `/config/kiwissh.db`). | **Yes** | - |
 
 ### notifications
 
