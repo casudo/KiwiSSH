@@ -721,6 +721,27 @@ class ApplicationDatabaseConfig(BaseModel):
             raise ValueError("application_database.type must be 'postgresql' or 'sqlite'")
         return text
 
+    @model_validator(mode="after")
+    def validate_required_fields(self) -> "ApplicationDatabaseConfig":
+        """Ensure the fields required for the selected backend are provided."""
+        if self.type == "postgresql":
+            missing = [
+                name
+                for name in ("host", "database", "username", "password")
+                if not (getattr(self, name) or "").strip()
+            ]
+            if missing:
+                raise ValueError(
+                    "application_database PostgreSQL connection fields must be non-empty: "
+                    + ", ".join(missing)
+                )
+        elif self.type == "sqlite":
+            if not (self.path or "").strip():
+                raise ValueError(
+                    "application_database.path must be a non-empty file path when type is 'sqlite'"
+                )
+        return self
+
 
 class Settings(BaseSettings):
     """Application settings loaded from environment and config files."""
