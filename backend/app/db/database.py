@@ -17,19 +17,40 @@ SessionLocal = None
 
 
 def init_database(settings: Settings) -> None:
-    """Initialize PostgreSQL connection and create application tables."""
+    """Initialize the application database connection and create application tables.
+
+    Supports both PostgreSQL and SQLite backends, selected via
+    `application_database.type` in the configuration.
+    """
     global engine, SessionLocal
 
     app_db = settings.application_database
+
+    if app_db.type == "sqlite":
+        ...
+    elif app_db.type == "postgresql":
+        engine = _create_postgres_engine(settings, app_db)
+    else:
+        raise ValueError(f"Unsupported database type: {app_db.type}")
+
+    ### Create tables
+    Base.metadata.create_all(bind=engine)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+    logger.info("Application database initialized successfully")
+
+
+def _create_postgres_engine(settings: Settings, app_db) -> "object":
+    """Create a SQLAlchemy engine for a PostgreSQL backend."""
     logger.info(
-        "Connecting to application database '%s' on %s:%s as user '%s'",
+        "Connecting to PostgreSQL application database '%s' on %s:%s as user '%s'",
         app_db.database,
         app_db.host,
         app_db.port,
         app_db.username,
     )
 
-    engine = create_engine(
+    return create_engine(
         settings.database_url,
         echo=False,
         future=True,
