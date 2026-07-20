@@ -404,6 +404,78 @@ class SSHService:
             ### Timeout tracks inactivity, not total command runtime
             inactivity_deadline = loop.time() + timeout_seconds
 
+    async def _run_session_login(
+        self,
+        process: asyncssh.SSHClientProcess,
+        login_steps: list[dict[str, Any]],
+        *,
+        username: str,
+        password: str | None,
+        timeout: int,
+    ) -> None:
+        """Run an optional vendor-defined interactive login inside the SSH shell.
+
+        Some devices do not present a CLI prompt right after the SSH connection is established and instead require an additional in-shell login.
+        https://github.com/casudo/KiwiSSH/issues/55
+        
+        Each step waits for its `expect` regex to appear, then sends the configured `send` value.
+        The placeholders '{{ username }}' and '{{ password }}' are replaced with the device credentials specified per group/node.
+        """
+        placeholders = {
+            "{{ username }}": username,
+            "{{ password }}": password or "",
+        }
+
+        loop = asyncio.get_running_loop()
+        timeout_seconds = max(1, int(timeout))
+
+        for index, step in enumerate(login_steps, start=1):
+            if not isinstance(step, dict):
+                raise RuntimeError(
+                    f"session.login step #{index} must be a mapping with 'expect' and 'send'"
+                )
+
+            ### Validate "expect" pattern is present and valid
+            expect = str(step.get("expect") or "").strip()
+            if not expect:
+                raise RuntimeError(
+                    f"session.login step #{index} requires a non-empty 'expect' pattern"
+                )
+            try:
+                expect_pattern = re.compile(expect)
+            except re.error as ex:
+                raise RuntimeError(
+                    f"Invalid session.login expect pattern '{expect}': {ex}"
+                ) from ex
+
+            ### Read until the "expect" prompt appears or the timeout is reached
+            deadline = loop.time() + timeout_seconds
+            buffer = ""
+            while not expect_pattern.search(ANSI_ESCAPE_RE.sub("", buffer)):
+                remaining = deadline - loop.time()
+                if remaining <= 0:
+                    raise asyncio.TimeoutError(
+                        f"Timed out waiting for session.login pattern '{expect}'"
+                    )
+                try:
+                    chunk = await asyncio.wait_for(
+                        process.stdout.read(READ_CHUNK_SIZE),
+                        timeout=min(remaining, READ_POLL_INTERVAL_SECONDS),
+                    )
+                except asyncio.TimeoutError:
+                    continue
+                if chunk == "":
+                    raise RuntimeError(
+                        f"SSH shell closed while waiting for session.login pattern '{expect}'"
+                    )
+                buffer += chunk
+
+            ### Resolve the value to send, substituting credential placeholders
+            send_template = str(step.get("send") or "")
+            send_value = placeholders.get(send_template.strip(), send_template)
+            payload = send_value if send_value.endswith(("\n", "\r")) else f"{send_value}\n"
+            process.stdin.write(payload)
+
     @staticmethod
     async def _read_trailing_output(
         stream: asyncssh.SSHReader,
@@ -913,6 +985,8 @@ class SSHService:
         vendor_id: str,
         default_timeout: int,
         enable_password: str | None,
+        username: str,
+        password: str | None,
     ) -> tuple[str, str | None]:
         """Collect configuration and metadata from device via vendor-defined command phases."""
         ### Get command sets for the vendor (pre_backup, backup, post_backup)
@@ -928,6 +1002,9 @@ class SSHService:
         include_metadata_in_config = bool(session_config.get("include_metadata_in_config", False))
         prompt_patterns = self._get_prompt_patterns(vendor_id)
         pagination_rules = self._get_pagination_settings(vendor_id)
+        login_steps = session_config.get("login") or [] # Optional interactive in-shell login sequence
+        if login_steps and not isinstance(login_steps, list):
+            raise RuntimeError(f"Vendor '{vendor_id}' session.login must be a list of steps")
 
         ### Get processing rules for the vendor
         processing_rules = vendor_service.get_processing_rules(vendor_id)
@@ -939,6 +1016,17 @@ class SSHService:
         process = await connection.create_process(term_type="vt100", encoding="utf-8")
         captured_output: list[dict[str, Any]] = []
         try:
+            ### Run the optional interactive in-shell login before anything else
+            ## https://github.com/casudo/KiwiSSH/issues/55
+            if login_steps:
+                await self._run_session_login(
+                    process,
+                    login_steps,
+                    username=username,
+                    password=password,
+                    timeout=default_timeout,
+                )
+
             ### Write an initial newline to ensure we get a prompt before starting commands
             process.stdin.write("\n")
 
@@ -1171,6 +1259,8 @@ class SSHService:
                     vendor_id=vendor_id,
                     default_timeout=timeout_seconds,
                     enable_password=enable_password,
+                    username=device_username, # used for interactive in-shell login steps
+                    password=device_password, # used for interactive in-shell login steps
                 )
                 if attempt > 1:
                     logger.warning(

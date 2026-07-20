@@ -431,7 +431,7 @@ Vendor YAML files define how KiwiSSH interacts with each device CLI and how capt
 Each vendor file contains these top-level sections:
 
 - `vendor`: metadata (`id`, `name`, `description`)
-- `session`: session-level output settings (`comment_prefix`, `prompt`, `pagination`, `include_metadata_in_config`)
+- `session`: session-level output settings (`comment_prefix`, `prompt`, `pagination`, `login`, `include_metadata_in_config`)
 - `commands`: command phases (`pre_backup`, `backup`, `post_backup`); you can nest protocol-specific overrides under `commands.ssh` or `commands.telnet`
 - `processing`: optional output cleanup/redaction rules
 
@@ -454,6 +454,7 @@ Each segment is explained in detail below.
 | --- | ----------- | -------- | ------------- |
 | `session.comment_prefix` | If set, command outputs will be prefixed with this string and rendered as comments in the saved config file. This is useful for adding metadata like command descriptions or timestamps directly in the config file. | No | `! ` |
 | `session.prompt` | Optional prompt regex (or list of regexes) used to detect command completion in interactive shells. Match should cover the full prompt line. If omitted or invalid, KiwiSSH falls back to the built-in generic prompt pattern. | No | `[^\r\n=]*[A-Za-z0-9][^\r\n=]*[>#]\s*$` |
+| `session.login` | Optional list of interactive login steps executed **inside** the SSH shell before backup commands run. Used for devices that require a second CLI login (e.g. a `User Name:` / `Password:` prompt) after the SSH connection is established. Each step is `{ expect: "<regex>", send: "<value>" }`; steps run in order. The placeholders `{{ username }}` and `{{ password }}` are replaced with the device's credentials configured on the group/node level. Omit entirely for devices that present a prompt immediately. | No | - |
 | `session.pagination.enabled` | Enables pagination prompt handling for this vendor. | No | `false` |
 | `session.pagination.patterns` | Pagination pattern config. Supports a string, a list of regex strings, or a list of objects like `{ pattern: "...", response: "..." }`. Matching uses contains-style regex search against the normalized output line. When using object entries, `response` is configured per pattern and should be preferred. If `session.pagination` is omitted entirely, KiwiSSH falls back to built-in standard pagination detection patterns. | No | Built-in standard pagination pattern list |
 | `session.include_metadata_in_config` | Controls whether outputs from `metadata: true` commands are prepended as a block in the saved config. Metadata is always present in the backup job log. | No | `false` |

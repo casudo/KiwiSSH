@@ -4,7 +4,7 @@
 vendor:
   id: "cisco_smb"
   name: "Cisco SMB"
-  description: "Cisco Small Business 300, 500, and ESW2 series switches"
+  description: "Cisco Small Business 300, 500, and ESW2 series switches with an interactive CLI login"
 
   # http://www.cisco.com/c/en/us/support/switches/small-business-300-series-managed-switches/products-release-notes-list.html
 
@@ -12,6 +12,11 @@ vendor:
 session:
   comment_prefix: "! "
   prompt: '^\r?([\w.@()-]+[#>]\s?)$'
+  login:
+    - expect: 'User Name:'
+      send: '{{ username }}'
+    - expect: 'Password:'
+      send: '{{ password }}'
   pagination:
     enabled: true
     patterns:
@@ -65,8 +70,6 @@ processing:
   redaction:
     enabled: false
     patterns:
-    #   - search: '^(enable password) \S+ (.*)'
-    #     replacement: '\1 <secret hidden> \2'
       - search: '^(snmp-server community) \S+ (.*)'
         replacement: '\1 <configuration removed> \2'
       - search: '^(username \S+ privilege \d+) \S+ (.*)'
