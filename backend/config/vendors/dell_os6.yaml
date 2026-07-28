@@ -48,6 +48,8 @@ processing:
   ### Secret masking. When enabled=false, no redaction is applied.
   redaction:
     enabled: false
-    # patterns:
-    #   - search: '^((?:enable |username \S+ )?password (?:level\s\d{1,2} |encrypted ){,2})\S+(.*)'
-    #     replacement: '\1<secret hidden>\2'
+    patterns:
+      - search: '(password )(\S+)'
+        replacement: '\1<secret hidden>'
+      - search: '^(snmp-server community )\S+(.*)'
+        replacement: '\1<secret hidden>\2'
