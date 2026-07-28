@@ -15,15 +15,25 @@ app:
   api:
     host: "0.0.0.0" # Should be set to 0.0.0.0 when running in Docker to be accessible from outside the container
 
-### Application database (PostgreSQL only)
+### Application database (PostgreSQL or SQLite)
 ## This database stores KiwiSSH-owned data (backup job logs, favorites, etc.)
+##
+## Option A) PostgreSQL (default):
 ## The database itself and the user must already exist, the required tables will be created automatically.
 application_database:
+  type: "postgresql"
   host: "192.168.15.25"
   port: 5432
   database: "kiwissh"
   username: "kiwissh_user"
   password: "kiwissh-user-password"
+
+## Option B) SQLite (file-based, no external database server required):
+## The file (and its parent directory) is created automatically if it does not exist
+## Relative paths are resolved against the configuration directory
+# application_database:
+#   type: "sqlite"
+#   path: "kiwissh.db"
 
 ### Notification settings (optional, disabled by default)
 ## Read about the configuration options in the README.md
