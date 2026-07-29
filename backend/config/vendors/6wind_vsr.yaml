@@ -48,5 +48,5 @@ processing:
   redaction:
     enabled: false
     patterns:
-      - search: '(?<!  {1})(?:password|secret) (?:\d )?\S+' # double space to exclude radius password template
+      - search: '\b((?:password|secret)(?: \d)? )\S+'
         replacement: '\1<secret-hidden>'
