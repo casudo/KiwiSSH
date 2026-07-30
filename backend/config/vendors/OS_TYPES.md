@@ -101,6 +101,7 @@
 | Icotera | 6400 series | [icotera_6400.yaml](/backend/config/vendors/icotera_6400.yaml) | |
 | IP Infusion        | OcNOS                 | [ipinfusion_ocnos.yaml](/backend/config/vendors/ipinfusion_ocnos.yaml)           |                                                                    |
 | Juniper           | JunOS                 | [juniper_junos.yaml](/backend/config/vendors/juniper_junos.yaml)                 | [JunOS](#juniper-junos)                                            |
+| Juniper          | ScreenOS (Netscreen)              | [juniper_screenos.yaml](/backend/config/vendors/juniper_screenos.yaml)           |                                       |
 | Mikrotik          | RouterOS              | [mikrotik_routeros.yaml](/backend/config/vendors/mikrotik_routeros.yaml)         | [RouterOS](#mikrotik-routeros)                                     |
 | Motorola          | RFS                   | [motorola_rfs.yaml](/backend/config/vendors/motorola_rfs.yaml)                   |                                                                    |
 | OpenWRT           |                       | [openwrt.yaml](/backend/config/vendors/openwrt.yaml)                             |                                                                    |
