@@ -1,0 +1,68 @@
+### Mellanox Voltaire Vendor Configuration
+## Instructions for backing up Mellanox Voltaire devices
+
+vendor:
+  id: "mellanox_voltaire"
+  name: "Mellanox Voltaire"
+  description: "Mellanox Voltaire devices"
+
+### Session-level behavior
+session:
+  comment_prefix: "## "
+  prompt: '([\w.@()-\[:\s\]]+[#>]\s|(One or more tests have failed.*))$'
+  login:
+    - expect: 'Password:'
+      send: '{{ password }}'
+  pagination:
+    enabled: true
+    patterns:
+      - pattern: '.+lines\s\d+-\d+(\s|\/\d+\s\(END\)\s).+$'
+        response: " "
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Pre-backup commands (prepare the session) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  pre_backup:
+    - command: "no"
+
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "version show"
+      metadata: true
+    - command: "firmware-version show"
+      metadata: true
+    - command: "remote show"
+      metadata: true
+    - command: "sm-info show"
+      metadata: true
+    - command: " show"
+      show_command_in_config: true
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "exit"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  ### Lines to strip from captured config (regex patterns)
+  strip_patterns:
+    - '.+Generated at\s\d+.+'
+  ### Lines that mark config boundaries
+  ## If either boundary is missing, keep from/to the file edge.
+  # config_start: "^# unifi$"
+  # config_end: "^# misc$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      - search: '(snmp-server community).*'
+        replacement: '<redacted>'
+      - search: 'username (\S+) password (\d+) (\S+).*'
+        replacement: '<redacted>'

@@ -104,6 +104,8 @@
 | Juniper          | ScreenOS (Netscreen)              | [juniper_screenos.yaml](/backend/config/vendors/juniper_screenos.yaml)           |                                       |
 | LANCOM Systems GmbH | LCOS | [lancom_lcos.yaml](/backend/config/vendors/lancom_lcos.yaml) | |
 | Lenovo | Lenovo Network OS | [lenovo_lenovonos.yaml](/backend/config/vendors/lenovo_lenovonos.yaml) | |
+| Mellanox | MLNX-OS | [mellanox_mlnxos.yaml](/backend/config/vendors/mellanox_mlnxos.yaml) | |
+| Mellanox | Voltaire | [mellanox_voltaire.yaml](/backend/config/vendors/mellanox_voltaire.yaml) | |
 | Mikrotik          | RouterOS              | [mikrotik_routeros.yaml](/backend/config/vendors/mikrotik_routeros.yaml)         | [RouterOS](#mikrotik-routeros)                                     |
 | Motorola          | RFS                   | [motorola_rfs.yaml](/backend/config/vendors/motorola_rfs.yaml)                   |                                                                    |
 | OpenWRT           |                       | [openwrt.yaml](/backend/config/vendors/openwrt.yaml)                             |                                                                    |
