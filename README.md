@@ -59,6 +59,7 @@ It was created as better alternative to RANCID and Oxidized, with a focus on sim
 - [Technical Documentation](#technical-documentation)
 - [Contributing to KiwiSSH](#contributing-to-kiwissh)
 - [License](#license)
+- [Acknowledgements](#acknowledgements)
 - [Support](#support)
 
 # Features
@@ -701,6 +702,12 @@ Please visit [TECHNICAL.md](TECHNICAL.md) for detailed technical documentation a
 # License
 
 See [LICENSE](LICENSE) file for license information.
+
+# Acknowledgements
+
+KiwiSSH's vendor backup definitions were informed by the [Oxidized](https://github.com/ytti/oxidized) project, which is licensed under the Apache License 2.0. Specifically, some device CLI command sequences, prompt/secret regex patterns, and the general per-vendor model structure were adapted into KiwiSSH's own YAML format. No Oxidized source code was copied.
+
+KiwiSSH is an independent project and is not affiliated with or endorsed by Oxidized. Many thanks to the Oxidized maintainers and community for their work.
 
 # Support
 
