@@ -16,6 +16,8 @@ KiwiSSH is a network device configuration backup tool that connects to your devi
 
 It was created as better alternative to RANCID and Oxidized, with a focus on simplicity, ease of use, and modern technologies.
 
+The author would like to explicitly acknowledge that they included a translation of the Oxidized model database from Ruby into Python and distributed this as a core component of the KiwiSSH distribution.  The author consequently acknowledges that that KiwiSSH is a Derivative Work of Oxidized under Oxidized's Apache license.  The original licensing terms for Oxidized are included in the file `NOTICE`.
+
 > [!WARNING]
 > KiwiSSH is still in development and may contain bugs and support for only a limited number of vendors. If you want to collaborate, contribute or just have questions, please open an issue or PR.
 
