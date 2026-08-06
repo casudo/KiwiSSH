@@ -1,0 +1,72 @@
+### HP Comware Vendor Configuration
+## Instructions for backing up HP Comware devices
+
+vendor:
+  id: "hp_comware"
+  name: "HP Comware"
+  description: "HP (A-series)/H3C/3Com Comware"
+
+### Session-level output behavior.
+session:
+  comment_prefix: "# "
+  prompt: '^\0*(<[\w.-]+>).?$' # sometimes the prompt might have a leading nul or trailing ASCII Bell (^G)
+  pagination:
+    enabled: true
+    patterns:
+      - pattern: '^\s*---- More ----$'
+        response: " "
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Pre-backup commands (prepare the session) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  pre_backup:
+    - command: "enable"
+      then: ["{{ enable_password }}"]
+    - command: "screen-length disable"
+    - command: "undo terminal monitor"
+
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "display version"
+      metadata: true
+    - command: "display device"
+      metadata: true
+    - command: "display device manuinfo"
+      metadata: true
+    - command: "display current-configuration"
+      show_command_in_config: true
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "quit"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  # strip_patterns:
+    # - "^% Invalid input detected at '\\^' marker\\.$"
+    # - "^\\s+\\^$"
+    # - "^#config-version="
+    # - "^conf_file_ver=.*$"
+  # config_start: "^config "
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      - search: '^( snmp-agent community).*'
+        replacement: '\1<secret hidden>'
+      - search: '(password hash).*'
+        replacement: '\1 <secret hidden>'
+      - search: '^( password cipher).*'
+        replacement: '\1 <secret hidden>'
+      - search: '(key (authentication )?cipher) \S+'
+        replacement: '\1 <secret hidden>'
+      - search: '(cipher authentication-mode (md5|sha)).\S+ (privacy-mode (des56|3des|aes\d{0,3})) .\S+'
+        replacement: '\1 <secret hidden> \3 <secret hidden>'

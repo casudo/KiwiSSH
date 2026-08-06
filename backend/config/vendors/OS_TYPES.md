@@ -95,6 +95,7 @@
 | Fortinet          | FortiWLC              | [fortinet_wlc.yaml](/backend/config/vendors/fortinet_wlc.yaml)                   |                                                                    |
 | GCOM Technologies | Broadband Network Platform Software | [gcom_bnps.yaml](/backend/config/vendors/gcom_bnps.yaml) | |
 | HP                | ProCurve              | [hp_procurve.yaml](/backend/config/vendors/hp_procurve.yaml)                     |                                                                    |
+| HP | Comware | [hp_comware.yaml](/backend/config/vendors/hp_comware.yaml) | |
 | H3C | S6520X | [h3c_s6520x.yaml](/backend/config/vendors/h3c_s6520x.yaml) | |
 | Huawei                | VRP       | [huawei_vrp.yaml](/backend/config/vendors/huawei_vrp.yaml)                     | Versatile Routing Platform                                             |
 | Huawei | SmartAX series | [huawei_smartax.yaml](/backend/config/vendors/huawei_smartax.yaml) | |
