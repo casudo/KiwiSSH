@@ -23,7 +23,7 @@
     "autoprefixer": "^10.4.27",
     "eslint": "^10.1.0",
     "eslint-plugin-vue": "^10.8.0",
-    "postcss": "^8.5.8",
+    "postcss": "^8.5.25",
     "tailwindcss": "^4.2.2",
     "typescript": "^6.0.2",
     "vite": "^8.0.3",
