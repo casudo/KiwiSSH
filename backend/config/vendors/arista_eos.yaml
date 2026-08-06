@@ -57,6 +57,8 @@ processing:
     patterns:
       - search: '^(snmp-server community).*'
         replacement: '\1<secret redacted>'
+      - search: '^(snmp-server host\s\S+(?:\s+trap)?\s+version\s+\S+(?:\s+community)?\s+)\S+$'
+        replacement: '\1<secret redacted>'
       - search: '(secret \w+) (\S+).*'
         replacement: '\1<secret redacted>'
       - search: '(password \d+) (\S+).*'
