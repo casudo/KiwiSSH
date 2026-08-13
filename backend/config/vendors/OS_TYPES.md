@@ -121,6 +121,7 @@
 | TPLink | TL-SL5428 | [edgecore_edgecos.yaml](/backend/config/vendors/edgecore_edgecos.yaml) | Same model as Edgecore EdgeCOS |
 | TPLink | TL-SL3428 | [dell_powerconnect.yaml](/backend/config/vendors/dell_powerconnect.yaml) | Same model as Dell PowerConnect |
 | Ubiquiti          | UniFi                 | [ubiquiti_unifi.yaml](/backend/config/vendors/ubiquiti_unifi.yaml)               | [Ubiquiti](#ubiquiti)                                              |
+| VSOL | GPON OLT | | [vsol_gponolt.yaml](/backend/config/vendors/vsol_gponolt.yaml) | |
 | VyOS Networks     | VyOS                  | [vyos_vyos.yaml](/backend/config/vendors/vyos_vyos.yaml)                         | Fork of Vyatta, tracking the supported versions (>= 1.4.x)         |
 | Watchguard        | FirewareOS            | [watchguard_firewareos.yaml](/backend/config/vendors/watchguard_firewareos.yaml) |
 | Westermo          | WeOS                  | [westermo_weos.yaml](/backend/config/vendors/westermo_weos.yaml)                 |                                                                    |
