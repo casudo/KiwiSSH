@@ -112,6 +112,7 @@
 | Motorola          | RFS                   | [motorola_rfs.yaml](/backend/config/vendors/motorola_rfs.yaml)                   |                                                                    |
 | OneAccess | OneOS | [oneaccess_oneos.yaml](/backend/config/vendors/oneaccess_oneos.yaml) | |
 | OneAccess | TDRE | [oneaccess_tdre.yaml](/backend/config/vendors/oneaccess_tdre.yaml) | |
+| OpenBSD | | [openbsd.yaml](/backend/config/vendors/openbsd.yaml) | |
 | OpenWRT           |                       | [openwrt.yaml](/backend/config/vendors/openwrt.yaml)                             |                                                                    |
 | OPNsense          |                       | [opnsense.yaml](/backend/config/vendors/opnsense.yaml)                           |                                                                    |
 | Palo Alto         | PanOS                 | [paloalto_panos.yaml](/backend/config/vendors/paloalto_panos.yaml)               |                                                                    |
