@@ -117,6 +117,7 @@
 | Palo Alto         | PanOS                 | [paloalto_panos.yaml](/backend/config/vendors/paloalto_panos.yaml)               |                                                                    |
 | Perle             | IOLAN Console Servers | [perle_iolan.yaml](/backend/config/vendors/perle_iolan.yaml)                     |                                                                    |
 | pfSense           |                       | [pfsense.yaml](/backend/config/vendors/pfsense.yaml)                             |                                                                    |
+| Pure Storage | PurityOS | [purestorage_purityos.yaml](/backend/config/vendors/purestorage_purityos.yaml) | |
 | Radware | AlteonOS | [radware_alteonos.yaml](/backend/config/vendors/radware_alteonos.yaml) | |
 | Raisecom | Raisecom | [raisecom_raisecom.yaml](/backend/config/vendors/raisecom_raisecom.yaml) | |
 | Riverbed | SteelHead | [riverbed_steelhead.yaml](/backend/config/vendors/riverbed_steelhead.yaml) | |
