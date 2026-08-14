@@ -110,6 +110,8 @@
 | MRV | MasterOS | [mrv_masteros.yaml](/backend/config/vendors/mrv_masteros.yaml) | |
 | Mikrotik          | RouterOS              | [mikrotik_routeros.yaml](/backend/config/vendors/mikrotik_routeros.yaml)         | [RouterOS](#mikrotik-routeros)                                     |
 | Motorola          | RFS                   | [motorola_rfs.yaml](/backend/config/vendors/motorola_rfs.yaml)                   |                                                                    |
+| OneAccess | OneOS | [oneaccess_oneos.yaml](/backend/config/vendors/oneaccess_oneos.yaml) | |
+| OneAccess | TDRE | [oneaccess_tdre.yaml](/backend/config/vendors/oneaccess_tdre.yaml) | |
 | OpenWRT           |                       | [openwrt.yaml](/backend/config/vendors/openwrt.yaml)                             |                                                                    |
 | OPNsense          |                       | [opnsense.yaml](/backend/config/vendors/opnsense.yaml)                           |                                                                    |
 | Palo Alto         | PanOS                 | [paloalto_panos.yaml](/backend/config/vendors/paloalto_panos.yaml)               |                                                                    |
