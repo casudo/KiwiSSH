@@ -1,0 +1,61 @@
+### Radware AlteonOS Vendor Configuration
+
+vendor:
+  id: "radware_alteonos"
+  name: "Radware AlteonOS"
+  description: "Radware AlteonOS network devices"
+
+### Session-level behavior
+session:
+  comment_prefix: "! "
+  prompt: '^\(?.+\)?\s?[#>]'
+  pagination:
+    enabled: true
+    patterns:
+      - pattern: '^Display private keys\?\s?\[y\/n\]: $'
+        response: "n"
+      - pattern: '^Confirm Sync to Peer\s?\[y\/n\]: $'
+        response: "n"
+      - pattern: '^(WARNING: There are unsaved configuration changes).*'
+        response: "n"
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "cfg/dump"
+      show_command_in_config: true    
+  
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "exit"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  ### Lines to strip from captured config (regex patterns)
+  strip_patterns:
+    - '^([\s\t\/*]*Configuration).*'
+    - '^([\s\t\/*]*Version).*'
+    - '^([\s\t\/*]*To restore).*'
+    - '^([\s\t\/*]*it is recommended).*'
+    - '^([\s\t\/*]*to include).*'
+  ### Lines that mark config boundaries
+  ## If either boundary is missing, keep from/to the file edge.
+  # config_start: "^version \\d+\\.\\d+"
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      - search: '^([\s\t]*admpw ).*'
+        replacement: '\1 <secret hidden>'
+      - search: '^([\s\t]*pswd ).*'
+        replacement: '\1 <secret hidden>'
+      - search: '^([\s\t]*esecret ).*'
+        replacement: '\1 <secret hidden>'
