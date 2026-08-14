@@ -118,6 +118,7 @@
 | Perle             | IOLAN Console Servers | [perle_iolan.yaml](/backend/config/vendors/perle_iolan.yaml)                     |                                                                    |
 | pfSense           |                       | [pfsense.yaml](/backend/config/vendors/pfsense.yaml)                             |                                                                    |
 | Radware | AlteonOS | [radware_alteonos.yaml](/backend/config/vendors/radware_alteonos.yaml) | |
+| Raisecom | Raisecom | [raisecom_raisecom.yaml](/backend/config/vendors/raisecom_raisecom.yaml) | |
 | SONiC             | Enterprise SONiC      | [sonic_enterprise.yaml](/backend/config/vendors/sonic_enterprise.yaml)           |                                                                    |
 | TrueNAS           |                       | [truenas.yaml](/backend/config/vendors/truenas.yaml)                             | [TrueNAS](#truenas)                                                |
 | TPLink | TPLink & DeltaStream GPON OLT | [tplink_tplink.yaml](/backend/config/vendors/tplink_tplink.yaml) | |
