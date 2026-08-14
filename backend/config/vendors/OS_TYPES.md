@@ -113,6 +113,7 @@
 | OneAccess | OneOS | [oneaccess_oneos.yaml](/backend/config/vendors/oneaccess_oneos.yaml) | |
 | OneAccess | TDRE | [oneaccess_tdre.yaml](/backend/config/vendors/oneaccess_tdre.yaml) | |
 | OpenBSD | | [openbsd.yaml](/backend/config/vendors/openbsd.yaml) | |
+| Opengear | Opengear | [opengear_opengear.yaml](/backend/config/vendors/opengear_opengear.yaml) | |
 | OpenWRT           |                       | [openwrt.yaml](/backend/config/vendors/openwrt.yaml)                             |                                                                    |
 | OPNsense          |                       | [opnsense.yaml](/backend/config/vendors/opnsense.yaml)                           |                                                                    |
 | Palo Alto         | PanOS                 | [paloalto_panos.yaml](/backend/config/vendors/paloalto_panos.yaml)               |                                                                    |

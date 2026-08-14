@@ -1,0 +1,57 @@
+### Opengear Vendor Configuration
+
+vendor:
+  id: "opengear_opengear"
+  name: "Opengear"
+  description: "Opengear network devices"
+
+### Session-level behavior
+session:
+  comment_prefix: "# "
+  prompt: '^(\$\s)$'
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "cat /etc/version"
+      metadata: true
+    - command: "ogdeviceinfo -r"
+      metadata: true
+    - command: "showserial"
+      metadata: true
+    - command: "config export" # config -g config
+      show_command_in_config: true    
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  ### Lines to strip from captured config (regex patterns)
+  # strip_patterns:
+  #   - '^Building configuration...'
+  #   - '^Current configuration :'
+  #   - '^version [\d\w()]+'
+  ### Lines that mark config boundaries
+  ## If either boundary is missing, keep from/to the file edge.
+  # config_start: "^version \\d+\\.\\d+"
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      - search: 'password (\S+)'
+        replacement: '<secret hidden>'
+      - search: 'community (\S+)'
+        replacement: '<secret hidden>'
+      - search: 'community=(\S+)'
+        replacement: '<secret hidden>'
+      - search: 'private_key=(\S+)'
+        replacement: '<secret hidden>'
+      - search: ' key=(\S+)'
+        replacement: 'key=<secret hidden>'
+      - search: 'hashed_password=(\S+)'
+        replacement: 'hashed_password=<secret hidden>'
