@@ -25,6 +25,8 @@ commands:
   backup:
     - command: "show version"
       metadata: true
+    - command: "show license"
+      metadata: true
     - command: "show transceiver"
       metadata: true
     - command: "show running-config"
