@@ -7,7 +7,7 @@ import router from "./router"
 import "./style.css"
 
 // Versions
-export const APP_VERSION = "2.5.0" // KiwiSSH backend + frontend bundled together
+export const APP_VERSION = "2.5.1" // KiwiSSH backend + frontend bundled together
 export const FRONTEND_VERSION = "1.4.2" // Frontend version only
 
 function applyInitialTheme(): void {
