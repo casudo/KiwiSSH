@@ -1,0 +1,51 @@
+### Pure Storage PurityOS Vendor Configuration
+
+vendor:
+  id: "purestorage_purityos"
+  name: "Pure Storage PurityOS"
+  description: "Pure Storage PurityOS devices"
+
+### Session-level behavior
+session:
+  comment_prefix: "# "
+  prompt: '\w+@\S+(\s+\S+)*\s?>\s?$'
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Pre-backup commands (prepare the session) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  pre_backup:
+    - command: "terminal page-break disable"
+
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "pureconfig list"
+      show_command_in_config: true    
+  
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "exit"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  ### Lines to strip from captured config (regex patterns)
+  strip_patterns:
+    - '^purealert flag \d+$'
+    - '(.*VEEAM-StorageLUNSnap-[0-9a-f].*)'
+    - '(.*VEEAM-ExportLUNSnap-[0-9A-F].*)'
+  ### Lines that mark config boundaries
+  ## If either boundary is missing, keep from/to the file edge.
+  # config_start: "^version \\d+\\.\\d+"
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    # patterns:
+    #   - search: '\s(^radius-encrypt-key ).*'
+    #     replacement: '\1 <secret hidden>'

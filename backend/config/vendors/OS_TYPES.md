@@ -110,14 +110,27 @@
 | MRV | MasterOS | [mrv_masteros.yaml](/backend/config/vendors/mrv_masteros.yaml) | |
 | Mikrotik          | RouterOS              | [mikrotik_routeros.yaml](/backend/config/vendors/mikrotik_routeros.yaml)         | [RouterOS](#mikrotik-routeros)                                     |
 | Motorola          | RFS                   | [motorola_rfs.yaml](/backend/config/vendors/motorola_rfs.yaml)                   |                                                                    |
+| OneAccess | OneOS | [oneaccess_oneos.yaml](/backend/config/vendors/oneaccess_oneos.yaml) | |
+| OneAccess | TDRE | [oneaccess_tdre.yaml](/backend/config/vendors/oneaccess_tdre.yaml) | |
+| OpenBSD | | [openbsd.yaml](/backend/config/vendors/openbsd.yaml) | |
+| Opengear | Opengear | [opengear_opengear.yaml](/backend/config/vendors/opengear_opengear.yaml) | |
 | OpenWRT           |                       | [openwrt.yaml](/backend/config/vendors/openwrt.yaml)                             |                                                                    |
 | OPNsense          |                       | [opnsense.yaml](/backend/config/vendors/opnsense.yaml)                           |                                                                    |
 | Palo Alto         | PanOS                 | [paloalto_panos.yaml](/backend/config/vendors/paloalto_panos.yaml)               |                                                                    |
 | Perle             | IOLAN Console Servers | [perle_iolan.yaml](/backend/config/vendors/perle_iolan.yaml)                     |                                                                    |
 | pfSense           |                       | [pfsense.yaml](/backend/config/vendors/pfsense.yaml)                             |                                                                    |
+| Pure Storage | PurityOS | [purestorage_purityos.yaml](/backend/config/vendors/purestorage_purityos.yaml) | |
+| Radware | AlteonOS | [radware_alteonos.yaml](/backend/config/vendors/radware_alteonos.yaml) | |
+| Raisecom | Raisecom | [raisecom_raisecom.yaml](/backend/config/vendors/raisecom_raisecom.yaml) | |
+| Riverbed | SteelHead | [riverbed_steelhead.yaml](/backend/config/vendors/riverbed_steelhead.yaml) | |
+| Ruijie Networks | RGOS | [ruijie_rgos.yaml](/backend/config/vendors/ruijie_rgos.yaml) | |
 | SONiC             | Enterprise SONiC      | [sonic_enterprise.yaml](/backend/config/vendors/sonic_enterprise.yaml)           |                                                                    |
 | TrueNAS           |                       | [truenas.yaml](/backend/config/vendors/truenas.yaml)                             | [TrueNAS](#truenas)                                                |
+| TPLink | TPLink & DeltaStream GPON OLT | [tplink_tplink.yaml](/backend/config/vendors/tplink_tplink.yaml) | |
+| TPLink | TL-SL5428 | [edgecore_edgecos.yaml](/backend/config/vendors/edgecore_edgecos.yaml) | Same model as Edgecore EdgeCOS |
+| TPLink | TL-SL3428 | [dell_powerconnect.yaml](/backend/config/vendors/dell_powerconnect.yaml) | Same model as Dell PowerConnect |
 | Ubiquiti          | UniFi                 | [ubiquiti_unifi.yaml](/backend/config/vendors/ubiquiti_unifi.yaml)               | [Ubiquiti](#ubiquiti)                                              |
+| VSOL | GPON OLT | | [vsol_gponolt.yaml](/backend/config/vendors/vsol_gponolt.yaml) | |
 | VyOS Networks     | VyOS                  | [vyos_vyos.yaml](/backend/config/vendors/vyos_vyos.yaml)                         | Fork of Vyatta, tracking the supported versions (>= 1.4.x)         |
 | Watchguard        | FirewareOS            | [watchguard_firewareos.yaml](/backend/config/vendors/watchguard_firewareos.yaml) |
 | Westermo          | WeOS                  | [westermo_weos.yaml](/backend/config/vendors/westermo_weos.yaml)                 |                                                                    |
