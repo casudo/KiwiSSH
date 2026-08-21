@@ -322,3 +322,19 @@ In order to be able to reach the devices via SSH, follow the steps below:
 
 > [!WARNING]
 > In order to connect to the Gateway, you'll need to enable SSH access via the Control Plane.
+
+## Zyxel ZyNOS
+
+### SSH/TelNet
+
+Below is the table from the XGS4600 CLI Reference Guide (Version 3.79~4.50 Edition 1, 07/2017)
+
+> [!NOTE]
+> Level 3 will not allow `show running-config`!
+
+| Privilege Level | Types of commands at this privilege level                                                                                                                                                                                    |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0               | Display basic system information.                                                                                                                                                                                            |
+| 3               | Display configuration or status.                                                                                                                                                                                             |
+| 13              | Configure features except for login accounts, SNMP user accounts, the authentication method sequence and authorization settings, multiple logins, administrator and enable passwords, and configuration information display. |
+| 14              | Configure login accounts, SNMP user accounts, the authentication method sequence and authorization settings, multiple logins, and administrator and enable passwords, and display configuration information.                 |
