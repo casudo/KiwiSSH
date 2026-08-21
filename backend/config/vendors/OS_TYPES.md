@@ -132,6 +132,7 @@
 | Symantec | Blue Coat ProxySG / Security Gateway OS (SGOS) | [symantec_sgos.yaml](/backend/config/vendors/symantec_sgos.yaml) | | 
 | Telco Systems | Telco Systems T-Marc 3306 | [telco_telco.yaml](/backend/config/vendors/telco_telco.yaml) | |
 | Trango Systems | Trango | [trango_trango.yaml](/backend/config/vendors/trango_trango.yaml) | Raw output of `sysinfo` command |
+| TrueNAS           |  TrueNAS                     | [truenas.yaml](/backend/config/vendors/truenas.yaml)                             | [TrueNAS](#truenas)                                                |
 | TPLink | TPLink & DeltaStream GPON OLT | [tplink_tplink.yaml](/backend/config/vendors/tplink_tplink.yaml) | |
 | TPLink | TL-SL5428 | [edgecore_edgecos.yaml](/backend/config/vendors/edgecore_edgecos.yaml) | Same model as Edgecore EdgeCOS |
 | TPLink | TL-SL3428 | [dell_powerconnect.yaml](/backend/config/vendors/dell_powerconnect.yaml) | Same model as Dell PowerConnect |
