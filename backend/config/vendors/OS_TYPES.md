@@ -140,6 +140,8 @@
 | YAMAHA | NVR/RTX Series | [yamaha_yamaha.yaml](/backend/config/vendors/yamaha_yamaha.yaml) | |
 | Zhone | OLT and MX | [zhone_zhone.yaml](/backend/config/vendors/zhone_zhone.yaml) | Zhone OLT/MetroE/DSL devices (ONT uses a completely different CLI) |
 | ZPE | NodegridOS | [zpe_nodegridos.yaml](/backend/config/vendors/zpe_nodegridos.yaml) | |
+| ZTE | C300 and C320 OLT | [zte_zteolt.yaml](/backend/config/vendors/zte_zteolt.yaml) | |
+
 ---
 
 ## Adtran ADVA

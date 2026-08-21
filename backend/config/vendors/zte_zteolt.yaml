@@ -1,0 +1,60 @@
+### ZTE C320 and C300 OLT Vendor Configuration
+
+vendor:
+  id: "zte_zteolt"
+  name: "ZTE C320 and C300 OLT"
+  description: "Tested with C320 and C300 OLT, firmware 1.2.5P3 and 2.1.0"
+
+### Session-level output behavior.
+session:
+  comment_prefix: "! "
+  prompt: '^([\w.@()-]+[#>]\s?)$'
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Pre-backup commands (prepare the session) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  pre_backup:
+    - command: "enable"
+      then: ["{{ enable_password }}"]
+    - command: "terminal length 0"
+  
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "show version-running"
+      metadata: true
+    - command: "show patch-running"
+      metadata: true
+    - command: "show running-config"
+      show_command_in_config: true
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "disable"
+    - command: "exit"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  strip_patterns:
+    - '^% Invalid input detected at'
+    - '^timestamp_write: .*\n'
+  # config_start: "^config "
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      - search: '^(snmp-server community).*'
+        replacement: '\1 <removed>'
+      - search: '^(tacacs-server (.+ )?key) .+'
+        replacement: '\1 <removed>'
+      - search: '^username (\S+) privilege (\d+) (\S+).*'
+        replacement: '\1 <removed>'
+      - search: '^(enable (password|secret)( level \d+)? \d) .+'
+        replacement: '\1 <removed>'
