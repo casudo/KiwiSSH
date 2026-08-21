@@ -139,6 +139,7 @@
 | Yadro | KornfeldOS | [yadro_kornfeldos.yaml](/backend/config/vendors/yadro_kornfeldos.yaml) | |
 | YAMAHA | NVR/RTX Series | [yamaha_yamaha.yaml](/backend/config/vendors/yamaha_yamaha.yaml) | |
 | Zhone | OLT and MX | [zhone_zhone.yaml](/backend/config/vendors/zhone_zhone.yaml) | Zhone OLT/MetroE/DSL devices (ONT uses a completely different CLI) |
+| ZPE | NodegridOS | [zpe_nodegridos.yaml](/backend/config/vendors/zpe_nodegridos.yaml) | |
 ---
 
 ## Adtran ADVA

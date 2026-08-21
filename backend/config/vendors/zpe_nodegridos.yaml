@@ -1,0 +1,45 @@
+### ZPE Nodegrid OS Vendor Configuration
+
+vendor:
+  id: "zpe_nodegrid_os"
+  name: "ZPE Nodegrid OS"
+  description: "ZPE Nodegrid (Tested with Nodegrid Gate/Bold/NSR) https://www.zpesystems.com/products/"
+
+### Session-level output behavior.
+session:
+  comment_prefix: "# "
+  prompt: '(?<!@)\[(.*?\s\/)\]#'
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "show system/about/"
+      metadata: true
+    - command: "show settings/license/"
+      metadata: true
+    - command: "export_settings settings/ --plain-password"
+      show_command_in_config: true
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "exit"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  # strip_patterns:
+    # - "^% Invalid input detected at '\\^' marker\\.$"
+  # config_start: "^config "
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    # patterns:
+    #   - search: '("password"\s*:\s*)".*?"'
+    #     replacement: '\1"<hidden>"'
