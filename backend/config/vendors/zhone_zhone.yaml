@@ -1,0 +1,61 @@
+### Zhone OLT and MX Vendor Configuration
+
+vendor:
+  id: "zhone_zhone"
+  name: "Zhone OLT and MX"
+  description: "Zhone OLT/MetroE/DSL devices (ONT uses a completely different CLI)"
+
+### Session-level output behavior.
+session:
+  comment_prefix: "# "
+  prompt: '^(\r*[\w.@():-]+>\s?)$' # prompt can be anything on zhone, but it defaults to 'zXX>' and we always use hostname>
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "swversion"
+      metadata: true
+    - command: "slots"
+      metadata: true
+    - command: "eeshow card"
+      metadata: true
+    - command: "ethrpshow"
+      metadata: true
+    - command: "dump console"
+      show_command_in_config: true
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "logout"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  strip_patterns:
+    - 'To Abort the operation enter Ctrl-C'
+  # config_start: "^config "
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      - search: '^(set configsyncpasswd = ) \S+'
+        replacement: '\1 <removed>'
+      - search: '^(set user-pass = ) \S+'
+        replacement: '\1 <removed>'
+      - search: '^(set auth-key = ) \S+'
+        replacement: '\1 <removed>'
+      - search: '^(set priv-key = ) \S+'
+        replacement: '\1 <removed>'
+      - search: '^(set ftp-password = ) \S+'
+        replacement: '\1 <removed>'
+      - search: '^(set community-name = ) \S+'
+        replacement: '\1 <removed>'
+      - search: '^(set communityname = ) \S+'
+        replacement: '\1 <removed>'

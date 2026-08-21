@@ -138,6 +138,7 @@
 | Westermo          | WeOS                  | [westermo_weos.yaml](/backend/config/vendors/westermo_weos.yaml)                 |                                                                    |
 | Yadro | KornfeldOS | [yadro_kornfeldos.yaml](/backend/config/vendors/yadro_kornfeldos.yaml) | |
 | YAMAHA | NVR/RTX Series | [yamaha_yamaha.yaml](/backend/config/vendors/yamaha_yamaha.yaml) | |
+| Zhone | OLT and MX | [zhone_zhone.yaml](/backend/config/vendors/zhone_zhone.yaml) | Zhone OLT/MetroE/DSL devices (ONT uses a completely different CLI) |
 ---
 
 ## Adtran ADVA
