@@ -124,6 +124,7 @@
 | Raisecom | Raisecom | [raisecom_raisecom.yaml](/backend/config/vendors/raisecom_raisecom.yaml) | |
 | Riverbed | SteelHead | [riverbed_steelhead.yaml](/backend/config/vendors/riverbed_steelhead.yaml) | |
 | Ruijie Networks | RGOS | [ruijie_rgos.yaml](/backend/config/vendors/ruijie_rgos.yaml) | |
+| SmartByte | SmartCS, SmartCS mini | [smartbyte_smartcs.yaml](/backend/config/vendors/smartbyte_smartcs.yaml) | |
 | SONiC             | Enterprise SONiC      | [sonic_enterprise.yaml](/backend/config/vendors/sonic_enterprise.yaml)           |                                                                    |
 | SNR | DCNOS | [snr_dcnos.yaml](/backend/config/vendors/snr_dcnos.yaml) | SNR-S300G, S2xxx, S3xxx, S4xxx |
 | Speedtouch | Thomson Speedtouch | [speedtouch_speedtouch.yaml](/backend/config/vendors/speedtouch_speedtouch.yaml) | |
