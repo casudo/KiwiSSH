@@ -137,6 +137,7 @@
 | Westell | Westell 8178G / 8266G | [westell_weos.yaml](/backend/config/vendors/westell_weos.yaml) | |
 | Westermo          | WeOS                  | [westermo_weos.yaml](/backend/config/vendors/westermo_weos.yaml)                 |                                                                    |
 | Yadro | KornfeldOS | [yadro_kornfeldos.yaml](/backend/config/vendors/yadro_kornfeldos.yaml) | |
+| YAMAHA | NVR/RTX Series | [yamaha_yamaha.yaml](/backend/config/vendors/yamaha_yamaha.yaml) | |
 ---
 
 ## Adtran ADVA
