@@ -1,0 +1,36 @@
+### Zyxel ZyNOS ADSL Vendor Configuration
+
+vendor:
+  id: "zyxel_zynosadsl"
+  name: "Zyxel ZyNOS ADSL"
+  description: "Used in Zyxel ADSL, such as AAM1212-51"
+
+### Session-level output behavior.
+session:
+  comment_prefix: ";; "
+  prompt: '^.*>\s?$'
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "config show all nopause"
+      show_command_in_config: true
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  # strip_patterns:
+    # - "^% Invalid input detected at '\\^' marker\\.$"
+  # config_start: "^config "
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    # patterns:
+    #   - search: '^(snmp-server get-community) \S+(.*)'
+    #     replacement: '\1 <secret hidden> \2'

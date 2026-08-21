@@ -141,6 +141,12 @@
 | Zhone | OLT and MX | [zhone_zhone.yaml](/backend/config/vendors/zhone_zhone.yaml) | Zhone OLT/MetroE/DSL devices (ONT uses a completely different CLI) |
 | ZPE | NodegridOS | [zpe_nodegridos.yaml](/backend/config/vendors/zpe_nodegridos.yaml) | |
 | ZTE | C300 and C320 OLT | [zte_zteolt.yaml](/backend/config/vendors/zte_zteolt.yaml) | |
+| Zyxel | NDMS | [zyxel_ndms.yaml](/backend/config/vendors/zyxel_ndms.yaml) | Zyxel Keenetic devices NDMS >= 2.0 |
+| Zyxel | ZyNOS | [zyxel_zynos.yaml](/backend/config/vendors/zyxel_zynos.yaml) | [ZyNOS on XGS4600 devices](#zyxel-zynos) |
+| Zyxel | ZyNOS GS-series variant | [zyxel_zynosgs.yaml](/backend/config/vendors/zyxel_zynosgs.yaml) | |
+| Zyxel | ZyNOS ADSL | [zyxel_zynosadsl.yaml](/backend/config/vendors/zyxel_zynosadsl.yaml) | |
+| Zyxel | ZyNOS CLI | [zyxel_zynoscli.yaml](/backend/config/vendors/zyxel_zynoscli.yaml) | DSLAMs, e.g. SAM1316 |
+| Zyxel | ZyNOS MGS series | [zyxel_zynosmgs.yaml](/backend/config/vendors/zyxel_zynosmgs.yaml) | |
 
 ---
 
