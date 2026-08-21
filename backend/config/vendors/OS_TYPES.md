@@ -127,6 +127,8 @@
 | SONiC             | Enterprise SONiC      | [sonic_enterprise.yaml](/backend/config/vendors/sonic_enterprise.yaml)           |                                                                    |
 | SNR | DCNOS | [snr_dcnos.yaml](/backend/config/vendors/snr_dcnos.yaml) | SNR-S300G, S2xxx, S3xxx, S4xxx |
 | Speedtouch | Thomson Speedtouch | [speedtouch_speedtouch.yaml](/backend/config/vendors/speedtouch_speedtouch.yaml) | |
+| Supermicro | SSE-G2252, G2252P | [edgecore_edgecos.yaml](/backend/config/vendors/edgecore_edgecos.yaml) | Same model as Edgecore EdgeCOS |
+| Supermicro | SSE-G48-TG4, SSE-G24-TG4, SSE-X24S, SSE-X24SR, SSE-X3348S, SSE-X3348SR, SSE-X3348T, SSE-X3348TR, SBM-GEM-X2C, GEM-X2C+, GEM-X3S+, XEM-X10SM | [supermicro_aricentiss.yaml](/backend/config/vendors/supermicro_aricentiss.yaml) | |
 | TPLink | TPLink & DeltaStream GPON OLT | [tplink_tplink.yaml](/backend/config/vendors/tplink_tplink.yaml) | |
 | TPLink | TL-SL5428 | [edgecore_edgecos.yaml](/backend/config/vendors/edgecore_edgecos.yaml) | Same model as Edgecore EdgeCOS |
 | TPLink | TL-SL3428 | [dell_powerconnect.yaml](/backend/config/vendors/dell_powerconnect.yaml) | Same model as Dell PowerConnect |

@@ -1,0 +1,52 @@
+### Supermicro / AricentISS Vendor Configuration
+
+vendor:
+  id: "supermicro_aricentiss"
+  name: "Supermicro / AricentISS"
+  description: "Used in Supermicro / AricentISS devices"
+
+### Session-level output behavior.
+session:
+  prompt: '^(\e\[27m)?[ \r]*[\w-]+# ?$'
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Pre-backup commands (prepare the session) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  pre_backup:
+    - command: "no cli pagination"
+    - command: "no cli pagignation"
+      description: "pagination was misspelled in some (earlier) versions (at least 1.0.16-9). 1.0.18-15 is known to include the corrected spelling"
+    - command: "conf t; set cli pagination off; exit"
+      description: "Starting firmware 2.0, pagination is done differently. This configuration is reset after the session ends"
+
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "show system information"
+      metadata: true
+    - command: "show running-config"
+      show_command_in_config: true
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "exit"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  strip_patterns:
+    - '^Building configuration'
+    - '^Switch ID.*Hardware Version.*Firmware Version'
+  # config_start: "^config "
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      - search: '^(snmp community) .*'
+        replacement: '\1 <secret hidden>'
