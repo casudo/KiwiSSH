@@ -140,6 +140,7 @@
 | Ubiquiti | EdgeSwitch | [ubiquiti_edgeswitch.yaml](/backend/config/vendors/ubiquiti_edgeswitch.yaml) | |
 | Ubiquiti | EdgeOS | [ubiquiti_edgeos.yaml](/backend/config/vendors/ubiquiti_edgeos.yaml) | |
 | Ubiquiti          | UniFi                 | [ubiquiti_unifi.yaml](/backend/config/vendors/ubiquiti_unifi.yaml)               | [Ubiquiti](#ubiquiti)                                              |
+| Uplink | EP4440-DP | [uplink_ep4440.yaml](/backend/config/vendors/uplink_ep4440.yaml) | Might support all EP4440 series |
 | VSOL | GPON OLT | | [vsol_gponolt.yaml](/backend/config/vendors/vsol_gponolt.yaml) | |
 | VyOS Networks     | VyOS                  | [vyos_vyos.yaml](/backend/config/vendors/vyos_vyos.yaml)                         | Fork of Vyatta, tracking the supported versions (>= 1.4.x)         |
 | Watchguard        | FirewareOS            | [watchguard_firewareos.yaml](/backend/config/vendors/watchguard_firewareos.yaml) |
