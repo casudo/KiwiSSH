@@ -134,7 +134,7 @@
 | VyOS Networks     | VyOS                  | [vyos_vyos.yaml](/backend/config/vendors/vyos_vyos.yaml)                         | Fork of Vyatta, tracking the supported versions (>= 1.4.x)         |
 | Watchguard        | FirewareOS            | [watchguard_firewareos.yaml](/backend/config/vendors/watchguard_firewareos.yaml) |
 | Westermo          | WeOS                  | [westermo_weos.yaml](/backend/config/vendors/westermo_weos.yaml)                 |                                                                    |
-
+| Yadro | KornfeldOS | [yadro_kornfeldos.yaml](/backend/config/vendors/yadro_kornfeldos.yaml) | |
 ---
 
 ## Adtran ADVA
