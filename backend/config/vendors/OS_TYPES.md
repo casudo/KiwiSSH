@@ -124,6 +124,8 @@
 | Raisecom | Raisecom | [raisecom_raisecom.yaml](/backend/config/vendors/raisecom_raisecom.yaml) | |
 | Riverbed | SteelHead | [riverbed_steelhead.yaml](/backend/config/vendors/riverbed_steelhead.yaml) | |
 | Ruijie Networks | RGOS | [ruijie_rgos.yaml](/backend/config/vendors/ruijie_rgos.yaml) | |
+| Siklu | EtherHaul | [siklu_siklu.yaml](/backend/config/vendors/siklu_siklu.yaml) | |
+| Siklu | Multihaul TG | [siklu_siklumhtg.yaml](/backend/config/vendors/siklu_siklumhtg.yaml) | |
 | Seiko Solutions | SmartCS, SmartCS mini | [seiko_smartcs.yaml](/backend/config/vendors/seiko_smartcs.yaml) | |
 | SmartByte | LT-S8228G series | [smartbyte_smartbyte.yaml](/backend/config/vendors/smartbyte_smartbyte.yaml) | |
 | SONiC             | Enterprise SONiC      | [sonic_enterprise.yaml](/backend/config/vendors/sonic_enterprise.yaml)           |                                                                    |
