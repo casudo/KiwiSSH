@@ -135,6 +135,10 @@
 | TPLink | TPLink & DeltaStream GPON OLT | [tplink_tplink.yaml](/backend/config/vendors/tplink_tplink.yaml) | |
 | TPLink | TL-SL5428 | [edgecore_edgecos.yaml](/backend/config/vendors/edgecore_edgecos.yaml) | Same model as Edgecore EdgeCOS |
 | TPLink | TL-SL3428 | [dell_powerconnect.yaml](/backend/config/vendors/dell_powerconnect.yaml) | Same model as Dell PowerConnect |
+| Ubiquiti | AirFiber | [ubiquiti_airfiber.yaml](/backend/config/vendors/ubiquiti_airfiber.yaml) | |
+| Ubiquiti | AirOS | [ubiquiti_airos.yaml](/backend/config/vendors/ubiquiti_airos.yaml) | |
+| Ubiquiti | EdgeSwitch | [ubiquiti_edgeswitch.yaml](/backend/config/vendors/ubiquiti_edgeswitch.yaml) | |
+| Ubiquiti | EdgeOS | [ubiquiti_edgeos.yaml](/backend/config/vendors/ubiquiti_edgeos.yaml) | |
 | Ubiquiti          | UniFi                 | [ubiquiti_unifi.yaml](/backend/config/vendors/ubiquiti_unifi.yaml)               | [Ubiquiti](#ubiquiti)                                              |
 | VSOL | GPON OLT | | [vsol_gponolt.yaml](/backend/config/vendors/vsol_gponolt.yaml) | |
 | VyOS Networks     | VyOS                  | [vyos_vyos.yaml](/backend/config/vendors/vyos_vyos.yaml)                         | Fork of Vyatta, tracking the supported versions (>= 1.4.x)         |
