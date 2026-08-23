@@ -94,6 +94,7 @@
 | Fortinet          | FortiOS               | [fortinet_fortios.yaml](/backend/config/vendors/fortinet_fortios.yaml)           | [FortiOS](#fortinet-device-types)                                  |
 | Fortinet          | FortiWLC              | [fortinet_wlc.yaml](/backend/config/vendors/fortinet_wlc.yaml)                   |                                                                    |
 | GCOM Technologies | Broadband Network Platform Software | [gcom_bnps.yaml](/backend/config/vendors/gcom_bnps.yaml) | |
+| Grandstream Networks | HT8xx | [grandstream_ht8xx.yaml](/backend/config/vendors/grandstream_ht8xx.yaml) | [HT8xx](#grandstream-ht8xx) |
 | Hatteras | Hatteras | [hatteras_hatteras.yaml](/backend/config/vendors/hatteras_hatteras.yaml) | |
 | Hillstone Networks | StoneOS | [hillstone_stoneos.yaml](/backend/config/vendors/hillstone_stoneos.yaml) | |
 | Hirschmann | Classic | [hirschmann_classic.yaml](/backend/config/vendors/hirschmann_classic.yaml) | |
@@ -254,6 +255,12 @@ There are two models for Fortinet devices:
 FortiGate and FortiOS re-encrypt their passwords every time the configuration is shown. This results in a lot of apparent configuration changes on every pull.
 
 To avoid this, enable the redaction feature inside the vendor YAML file (`redaction.enabled: true`). This will replace all passwords with a fixed string, so the configuration will only change when there are actual changes to the configuration.
+
+## Grandstream HT8xx
+
+You need to have enabled access to device by SSH. Connection using user/password for retrieve the configuration containing XML file with all params stored in device memory.
+
+Tested on hardware: v1 and software version: 1.0.61.2.
 
 ## HPE Aruba Networking
 
