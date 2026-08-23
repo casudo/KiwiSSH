@@ -9,7 +9,7 @@ vendor:
 ### Session-level output behavior.
 session:
   comment_prefix: "! "
-  prompt: '^([\w.@\/()-]+[#>]\s?)$'
+  prompt: '^([\w.@\/() -]+[#>]\s?)$'
   pagination:
     enabled: true
     patterns:
