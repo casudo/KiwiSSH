@@ -94,6 +94,7 @@
 | Fortinet          | FortiOS               | [fortinet_fortios.yaml](/backend/config/vendors/fortinet_fortios.yaml)           | [FortiOS](#fortinet-device-types)                                  |
 | Fortinet          | FortiWLC              | [fortinet_wlc.yaml](/backend/config/vendors/fortinet_wlc.yaml)                   |                                                                    |
 | GCOM Technologies | Broadband Network Platform Software | [gcom_bnps.yaml](/backend/config/vendors/gcom_bnps.yaml) | |
+| Hatteras | Hatteras | [hatteras_hatteras.yaml](/backend/config/vendors/hatteras_hatteras.yaml) | |
 | HP                | ProCurve              | [hp_procurve.yaml](/backend/config/vendors/hp_procurve.yaml)                     |                                                                    |
 | HP | Comware | [hp_comware.yaml](/backend/config/vendors/hp_comware.yaml) | |
 | H3C | S6520X | [h3c_s6520x.yaml](/backend/config/vendors/h3c_s6520x.yaml) | |

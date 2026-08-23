@@ -1,0 +1,57 @@
+### Hatteras Vendor Configuration
+
+vendor:
+  id: "hatteras_hatteras"
+  name: "Hatteras Hatteras"
+  description: "Hatteras Networks devices"
+
+### Session-level output behavior.
+session:
+  comment_prefix: "# "
+  prompt: '^(\r?[\w.@()-]+[#>]\s?)$'
+  pagination:
+    enabled: true
+    patterns:
+      - pattern: 'WARNING: System configuration changes will be lost when the device restarts.'
+        response: "y"
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "show switch"
+      metadata: true
+    - command: "show card"
+      metadata: true
+    - command: "show sfp *"
+      metadata: true
+    - command: "show config run"
+      show_command_in_config: true
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "logout"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  strip_patterns:
+    - 'Card uptime|Card temperature|Last reset reason'
+    - 'TermCpuUtil|^\s+\^$|ERROR: Bad command'
+  # config_start: "^config "
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      - search: '^(community) \S+'
+        replacement: '\1 <secret hidden>'
+      - search: '^(communityString) "\S+"'
+        replacement: '\1 <secret hidden>'
+      - search: '^(key) "\S+"'
+        replacement: '\1 <secret hidden>'
