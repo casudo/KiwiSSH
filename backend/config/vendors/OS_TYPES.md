@@ -96,6 +96,8 @@
 | GCOM Technologies | Broadband Network Platform Software | [gcom_bnps.yaml](/backend/config/vendors/gcom_bnps.yaml) | |
 | Hatteras | Hatteras | [hatteras_hatteras.yaml](/backend/config/vendors/hatteras_hatteras.yaml) | |
 | Hillstone Networks | StoneOS | [hillstone_stoneos.yaml](/backend/config/vendors/hillstone_stoneos.yaml) | |
+| Hirschmann | Classic | [hirschmann_classic.yaml](/backend/config/vendors/hirschmann_classic.yaml) | |
+| Hirschmann | HiOS | [hirschmann_hios.yaml](/backend/config/vendors/hirschmann_hios.yaml) | |
 | HP                | ProCurve              | [hp_procurve.yaml](/backend/config/vendors/hp_procurve.yaml)                     |                                                                    |
 | HP | Comware | [hp_comware.yaml](/backend/config/vendors/hp_comware.yaml) | |
 | H3C | S6520X | [h3c_s6520x.yaml](/backend/config/vendors/h3c_s6520x.yaml) | |
