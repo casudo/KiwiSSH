@@ -48,6 +48,8 @@ processing:
     - 'sys db configsync.localconfigtime {[^}]+}'
     - 'sys db gtm.configtime {[^}]+}'
     - 'sys db ltm.configtime {[^}]+}'
+    - '^\s*(checksum SHA1:|revision |size |create-time|last-update-time|updated-by|created-by)\b.*$'
+    - '^.*\brevision\s+\d+\s*$'
   # config_start: "^config "
   # config_end: "^end$"
   ### Secret masking. When enabled=false, no redaction is applied.
