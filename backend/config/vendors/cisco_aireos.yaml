@@ -9,7 +9,7 @@ vendor:
 ### Session-level behavior
 session:
   comment_prefix: "# "
-  prompt: '^\([^)]+\)\s>$' # (hostname) >
+  prompt: '^\([^)]+\)\s*[>#]$'
 
 ### Commands to execute for backup
 ## Supported step types in command phases:
