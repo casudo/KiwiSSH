@@ -931,11 +931,59 @@ class Settings(BaseSettings):
             password=self.sources.postgres.password,
         )
 
+    @staticmethod
+    def _apply_node_overrides(device_config: dict[str, Any], override: "NodeConfig") -> None:
+        """Apply optional NodeConfig overrides onto device_config in place.
+
+        Only non-None fields override the current value.
+        """
+        if override.ssh_profile is not None:
+            device_config["ssh_profile"] = override.ssh_profile
+        if override.port is not None:
+            device_config["port"] = override.port
+        if override.protocol is not None:
+            device_config["protocol"] = override.protocol
+        if override.vendor is not None:
+            device_config["vendor"] = override.vendor
+        if override.timeout is not None:
+            device_config["timeout"] = override.timeout
+        if override.retry is not None:
+            device_config["retry"] = override.retry
+        if override.username is not None:
+            device_config["username"] = override.username
+        if override.password is not None:
+            device_config["password"] = override.password
+        if override.enable_password is not None:
+            device_config["enable_password"] = override.enable_password
+        if override.ssh_key_file is not None:
+            device_config["ssh_key_file"] = override.ssh_key_file
+
+        ### Merge jumphost overrides into group defaults key-by-key
+        ## This allows partial overrides without duplicating the full block
+        if override.jumphost is not None:
+            resolved_jump_host = dict(device_config.get("jumphost") or {})
+            if override.jumphost.hostname is not None:
+                resolved_jump_host["hostname"] = override.jumphost.hostname
+            if override.jumphost.port is not None:
+                resolved_jump_host["port"] = override.jumphost.port
+            if override.jumphost.username is not None:
+                resolved_jump_host["username"] = override.jumphost.username
+            if override.jumphost.password is not None:
+                resolved_jump_host["password"] = override.jumphost.password
+            if override.jumphost.ssh_key_file is not None:
+                resolved_jump_host["ssh_key_file"] = override.jumphost.ssh_key_file
+            if override.jumphost.ssh_profile is not None:
+                resolved_jump_host["ssh_profile"] = override.jumphost.ssh_profile
+            device_config["jumphost"] = resolved_jump_host or None
+
+        if override.schedule and override.schedule.cron is not None:
+            device_config["schedule"] = override.schedule
+
     def get_device_config(self, group: str, device_name: str) -> dict[str, Any]:
         """
         Resolve device configuration with priority: App defaults < Group defaults < Node-specific
 
-        Group cannot be overridden - it must be changed in the source.
+        The group of a device cannot be overridden - it must be changed in the source.
         Returns a dict with resolved ssh_profile, vendor, and other settings.
         """
         ### Step 0: Start with application-level defaults
@@ -986,49 +1034,7 @@ class Settings(BaseSettings):
         ### Step 2: Apply node-specific overrides
         ### NOTE: Group cannot be overridden here - must be changed in source
         if device_name in self.nodes:
-            node_config = self.nodes[device_name]
-            if node_config.ssh_profile is not None:
-                device_config["ssh_profile"] = node_config.ssh_profile
-            if node_config.port is not None:
-                device_config["port"] = node_config.port
-                port_is_default = False
-            if node_config.protocol is not None:
-                device_config["protocol"] = node_config.protocol
-            if node_config.vendor is not None:
-                device_config["vendor"] = node_config.vendor
-            if node_config.timeout is not None:
-                device_config["timeout"] = node_config.timeout
-            if node_config.retry is not None:
-                device_config["retry"] = node_config.retry
-            if node_config.username is not None:
-                device_config["username"] = node_config.username
-            if node_config.password is not None:
-                device_config["password"] = node_config.password
-            if node_config.enable_password is not None:
-                device_config["enable_password"] = node_config.enable_password
-            if node_config.ssh_key_file is not None:
-                device_config["ssh_key_file"] = node_config.ssh_key_file
-
-            ### Merge node-level jumphost overrides into group defaults key-by-key
-            ## This allows partial node overrides without duplicating the full block
-            if node_config.jumphost is not None:
-                resolved_jump_host = dict(device_config.get("jumphost") or {})
-                if node_config.jumphost.hostname is not None:
-                    resolved_jump_host["hostname"] = node_config.jumphost.hostname
-                if node_config.jumphost.port is not None:
-                    resolved_jump_host["port"] = node_config.jumphost.port
-                if node_config.jumphost.username is not None:
-                    resolved_jump_host["username"] = node_config.jumphost.username
-                if node_config.jumphost.password is not None:
-                    resolved_jump_host["password"] = node_config.jumphost.password
-                if node_config.jumphost.ssh_key_file is not None:
-                    resolved_jump_host["ssh_key_file"] = node_config.jumphost.ssh_key_file
-                if node_config.jumphost.ssh_profile is not None:
-                    resolved_jump_host["ssh_profile"] = node_config.jumphost.ssh_profile
-                device_config["jumphost"] = resolved_jump_host or None
-
-            if node_config.schedule and node_config.schedule.cron is not None:
-                device_config["schedule"] = node_config.schedule
+            self._apply_node_overrides(device_config, self.nodes[device_name])
 
         ### Validate resolved device auth after group+node merging for optional fields
         resolved_protocol = str(device_config.get("protocol")).strip().lower()
