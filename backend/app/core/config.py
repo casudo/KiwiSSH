@@ -940,14 +940,13 @@ class Settings(BaseSettings):
         """
         ### Step 0: Start with application-level defaults
         device_config = {
-            "port": 22,
+            "port": None, # 'port' is left unset so the protocol-specific default (22/23) can be applied at the end
             "timeout": self.app.timeout,
             "retry": self.app.retry,
             "schedule": self.app.schedule,
             "jumphost": None,
             "protocol": self.app.protocol,
         }
-        port_is_default = True
 
         ### Step 1: Apply group-level defaults / overrides
         if group in self.groups:
@@ -981,7 +980,6 @@ class Settings(BaseSettings):
                 device_config["schedule"] = group_config.schedule
             if group_config.port is not None:
                 device_config["port"] = group_config.port
-                port_is_default = False
             if group_config.protocol is not None:
                 device_config["protocol"] = group_config.protocol
 
@@ -1038,8 +1036,9 @@ class Settings(BaseSettings):
             raise ValueError(f"protocol must be one of {SUPPORTED_PROTOCOLS}")
         device_config["protocol"] = resolved_protocol
 
-        if resolved_protocol == "telnet" and port_is_default:
-            device_config["port"] = 23
+        ### Apply the protocol-specific default port only when no override was set explicitly
+        if device_config.get("port") is None:
+            device_config["port"] = 23 if resolved_protocol == "telnet" else 22
 
         resolved_password = str(device_config.get("password") or "").strip()
         resolved_key_file = str(device_config.get("ssh_key_file") or "").strip()
