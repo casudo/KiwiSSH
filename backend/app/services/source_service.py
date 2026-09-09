@@ -6,7 +6,7 @@ import re
 import httpx
 import yaml
 from sqlalchemy import create_engine, text
-from sqlalchemy.exc import OperationalError, ProgrammingError, SQLAlchemyError
+from sqlalchemy.exc import NoSuchTableError, OperationalError, ProgrammingError, SQLAlchemyError
 
 from app.core import get_settings
 from app.models.device import DeviceBase
@@ -223,6 +223,10 @@ class SourceService:
         try:
             with engine.connect() as conn:
                 rows = conn.execute(query).mappings().all()
+        except NoSuchTableError as e:
+            raise ValueError(
+                f"Configured source table '{table_name}' was not found in the PostgreSQL source database."
+            ) from e
         except OperationalError as e:
             details = str(getattr(e, "orig", e)).lower()
             if "password authentication failed" in details or "authentication failed" in details:
