@@ -317,6 +317,20 @@ class NotificationType(BaseModel):
 ## NOTE: Classes which are only used in SourcesConfig
 
 
+### Optional per-device fields a device source may carry to override group/app defaults
+SOURCE_OVERRIDE_FIELDS: tuple[str, ...] = (
+    "username",
+    "password",
+    "enable_password",
+    "ssh_key_file",
+    "ssh_profile",
+    "vendor",
+    "protocol",
+    "port",
+    "timeout",
+    "retry",
+)
+
 
 class PostgresSourceConfig(BaseModel):
     """PostgreSQL device source."""
@@ -807,6 +821,10 @@ class Settings(BaseSettings):
     ssh_profiles: dict[str, Any] = Field(default_factory=dict)
     vendors: dict[str, dict[str, Any]] = Field(default_factory=dict)
 
+    ### Per-device overrides loaded dynamically from the device source (keyed by device_name)
+    ## Populated by SourceService when parsing rows
+    source_node_overrides: dict[str, NodeConfig] = Field(default_factory=dict, exclude=True)
+
     ### Database URL (computed from application_database config)
     database_url: str = ""
 
@@ -1019,9 +1037,21 @@ class Settings(BaseSettings):
             password=self.sources.postgres.password,
         )
 
+    def register_source_overrides(self, device_name: str, override: "NodeConfig") -> None:
+        """Register per-device overrides parsed from the device source.
+
+        This function doesn't apply the overrides yet.
+        """
+        self.source_node_overrides[device_name] = override
+
+    def clear_source_overrides(self) -> None:
+        """Drop all device-source overrides."""
+        self.source_node_overrides.clear()
+
     def get_device_config(self, group: str, device_name: str) -> dict[str, Any]:
         """
-        Resolve device configuration with priority: App defaults < Group defaults < Node-specific
+        Resolve device configuration with priority:
+        Application defaults < Group defaults < Device-source overrides < kiwissh.yaml node overrides
 
         The group of a device cannot be overridden - it must be changed in the source.
         Returns a dict with resolved ssh_profile, vendor, and other settings.
@@ -1071,7 +1101,12 @@ class Settings(BaseSettings):
             if group_config.protocol is not None:
                 device_config["protocol"] = group_config.protocol
 
-        ### Step 2: Apply node-specific overrides
+        ### Step 1.5: Apply device-source overrides (takes precedence over group defaults)
+        source_override = self.source_node_overrides.get(device_name)
+        if source_override is not None:
+            self._apply_node_overrides(device_config, source_override)
+
+        ### Step 2: Apply node-specific overrides (kiwissh.yaml, highest priority)
         ### NOTE: Group cannot be overridden here - must be changed in source
         if device_name in self.nodes:
             self._apply_node_overrides(device_config, self.nodes[device_name])
