@@ -16,12 +16,30 @@ KiwiSSH is a network device configuration backup tool that connects to your devi
 
 It was created as better alternative to RANCID and Oxidized, with a focus on simplicity, ease of use, and modern technologies.
 
-> [!WARNING]
-> KiwiSSH is still in development and may contain bugs and support for only a limited number of vendors. If you want to collaborate, contribute or just have questions, please open an issue or PR.
+# Features <!-- omit from toc -->
+
+The frontend offers:
+
+- Dashboard (statistics, favorite devices, overview of KiwiSSH)
+- Information-rich device list with filtering, search and favorite option, backup contribution calender, group and vendor belonging, status badge, config diff view and more
+- Overview of configured SSH profiles, vendors and groups for easy management and device tracking
+- Detailed backup job logs with timestamps, status and error messages for each backup attempt
+- Swagger API documentation
+
+The backend provides:
+
+- SSH/Telnet connectivity to any kind devices for configuration backup
+- Configurable backup schedules with cron expressions on global, group and device level
+- Local git repositories for each device group to store configuration history and provide diff view
+- Optional remote git repository support to push configuration changes to a central Git server (e.g. GitHub, GitLab, Gitea, etc.)
+- Support for loading device lists from CSV or Ansible inventory files, PostgreSQL databases or HTTP APIs
+- Configurable SSH/Telnet options and backup commands per vendor, group and device, making it flexible to support a wide range of devices
+- Configurable processing rules for captured configurations, including line stripping, cropping and regex-based redaction of sensitive information
+- The ability to easily add support for new vendors by creating YAML configuration files that define how to interact with the device CLI and process the output
+- RESTful API endpoints for device management, backup job logs and configuration retrieval to enable integration with other tools and automation
 
 # Table of Contents <!-- omit from toc -->
 
-- [Features](#features)
 - [Supported OS/Device Types](#supported-osdevice-types)
 - [Screenshots](#screenshots)
 - [Installation](#installation)
@@ -62,28 +80,6 @@ It was created as better alternative to RANCID and Oxidized, with a focus on sim
 - [Acknowledgements](#acknowledgements)
 - [Support](#support)
 
-# Features
-
-The frontend offers:
-
-- Dashboard (statistics, favorite devices, overview of KiwiSSH)
-- Information-rich device list with filtering, search and favorite option, backup contribution calender, group and vendor belonging, status badge, config diff view and more
-- Overview of configured SSH profiles, vendors and groups for easy management and device tracking
-- Detailed backup job logs with timestamps, status and error messages for each backup attempt
-- Swagger API documentation
-
-The backend provides:
-
-- SSH/Telnet connectivity to any kind devices for configuration backup
-- Configurable backup schedules with cron expressions on global, group and device level
-- Local git repositories for each device group to store configuration history and provide diff view
-- Optional remote git repository support to push configuration changes to a central Git server (e.g. GitHub, GitLab, Gitea, etc.)
-- Support for loading device lists from CSV or Ansible inventory files, PostgreSQL databases or HTTP APIs
-- Configurable SSH/Telnet options and backup commands per vendor, group and device, making it flexible to support a wide range of devices
-- Configurable processing rules for captured configurations, including line stripping, cropping and regex-based redaction of sensitive information
-- The ability to easily add support for new vendors by creating YAML configuration files that define how to interact with the device CLI and process the output
-- RESTful API endpoints for device management, backup job logs and configuration retrieval to enable integration with other tools and automation
-
 # Supported OS/Device Types
 
 For a detailed overview of supported OS/Device types, please refer to the [OS_TYPES.md](/backend/config/vendors/OS_TYPES.md) file.
@@ -108,6 +104,9 @@ For a detailed overview of supported OS/Device types, please refer to the [OS_TY
 ---
 
 # Installation
+
+> [!TIP]
+> It is completely optional to use KiwiSSH's frontend. Everything the frontend provides can be achieved through the backend API. The frontend is just a convenience for users who prefer a GUI.
 
 ## Bare Metal
 
@@ -661,7 +660,6 @@ The endpoint will return the following information about the device:
 
 - Checks for device source: No duplicate hostnames, valid IPs, ... (What if multiple groups hold the same IP address range?)
 - Update ssh_service to use FQDN instead of IP to avoid?
-- Add new vendors
 - Cache backup history response for a device so it doesnt need to fetch again
   
 **Mid-term:**
@@ -677,6 +675,7 @@ The endpoint will return the following information about the device:
 - Put redaction boolean switch as group/node level override instead of per vendor to be able to easily turn on/off redaction for specific groups/nodes without having to modify the vendor YAML files?
 - Full-text config search ([#48](https://github.com/casudo/KiwiSSH/issues/48))
 - Config file browser on the frontend ([#47](https://github.com/casudo/KiwiSSH/issues/47))
+- Fetch device config via HTTP ([#72](https://github.com/casudo/KiwiSSH/issues/72))
 
 **Long Term:**
 
