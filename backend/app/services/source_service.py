@@ -5,11 +5,12 @@ from pathlib import Path
 import re
 import httpx
 import yaml
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.exc import NoSuchTableError, OperationalError, ProgrammingError, SQLAlchemyError
 
 from app.core import get_settings
 from app.models.device import DeviceBase
+from app.core.config import NodeConfig, SOURCE_OVERRIDE_FIELDS
 
 
 class SourceService:
@@ -24,6 +25,32 @@ class SourceService:
     ### SourceService Class Helper Functions
     ### =============================================================================
 
+
+    def _register_source_overrides(self, row: dict, device_name: str, row_num: int | str) -> None:
+        """Validate and register per-device overrides parsed from a source row."""
+        overrides: dict = {}
+        for field in SOURCE_OVERRIDE_FIELDS:
+            if field not in row:
+                continue
+            value = row[field]
+            if value is None:
+                continue
+            if isinstance(value, str):
+                value = value.strip()
+                if not value:
+                    continue
+            overrides[field] = value
+        
+        if not overrides:
+            return
+        try:
+            node_override = NodeConfig(**overrides)
+        except ValueError as exc:
+            raise ValueError(
+                f"Row {row_num} (device '{device_name}'): invalid override value(s): {exc}"
+            ) from exc
+        self.settings.register_source_overrides(device_name, node_override)
+
     def _cache_device_from_row(self, row: dict, row_num: int | str) -> None:
         """Build and cache a device from a normalized source row."""
 
@@ -37,6 +64,9 @@ class SourceService:
                 f"Row {row_num} (device '{device_name}'): Group '{group}' not found in kiwissh.yaml. "
                 f"Available groups: {', '.join(self.settings.groups.keys())}"
             )
+
+        ### Register any per-device overrides before resolving the config so they take effect
+        self._register_source_overrides(row, device_name, row_num)
 
         device_config = self.settings.get_device_config(group, device_name)
 
@@ -203,17 +233,6 @@ class SourceService:
         table_name = self._validate_table_name(src.table)
         quoted_table_name = f'"{table_name}"'
 
-        query = text(
-            f"""
-            SELECT
-                "group" AS "group",
-                device_name,
-                ip_address,
-                enabled
-            FROM {quoted_table_name}
-            """
-        )
-
         engine = create_engine(
             source_url,
             future=True,
@@ -222,6 +241,22 @@ class SourceService:
         )
         try:
             with engine.connect() as conn:
+                ### Include optional per-device override columns ONLY when they exist in the table!
+                ## Required columns: "group", "device_name", "ip_address", "enabled"
+                available_cols = {col["name"] for col in inspect(conn).get_columns(table_name)}
+                override_cols = [f for f in SOURCE_OVERRIDE_FIELDS if f in available_cols] # find optional override columns
+                select_extra = "".join(f',\n                "{col}"' for col in override_cols) # apply optional override columns to the SELECT statement
+
+                query = text(
+                    f"""
+                    SELECT
+                        "group" AS "group",
+                        device_name,
+                        ip_address,
+                        enabled{select_extra}
+                    FROM {quoted_table_name}
+                    """
+                )
                 rows = conn.execute(query).mappings().all()
         except NoSuchTableError as e:
             raise ValueError(
@@ -407,6 +442,7 @@ class SourceService:
     def invalidate_cache(self) -> None:
         """Clear the device cache to force reload."""
         self.settings = get_settings()
+        self.settings.clear_source_overrides()
         self._devices_cache.clear()
         self._loaded = False
 
