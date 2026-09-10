@@ -22,6 +22,9 @@ logger = logging.getLogger(__name__)
 
 SUPPORTED_PROTOCOLS = {"ssh", "telnet"}
 
+### =============================================================================
+### Config Helper Functions
+### =============================================================================
 
 def _normalize_protocol(value: str | None, *, allow_none: bool) -> str | None:
     """Normalize protocol value.
@@ -49,7 +52,6 @@ def _normalize_protocol(value: str | None, *, allow_none: bool) -> str | None:
         raise ValueError("protocol must be 'ssh' or 'telnet'")
     return text
 
-
 def _resolve_config_dir() -> Path:
     """Resolve the default configuration directory.
 
@@ -65,8 +67,13 @@ def _resolve_config_dir() -> Path:
     ### Will resolve three (parents[0,1,2]) directories up from this file
     return Path(__file__).resolve().parents[2] / "config"
 
+### =============================================================================
+### Sub-Classes Definitions
+### =============================================================================
 
-### =====================================================================
+### =========== GLOBAL SUBCLASSES ===========
+## NOTE: Classes which are used in multiple other classes
+
 
 class ApiConfig(BaseModel):
     """API server configuration."""
@@ -127,7 +134,30 @@ class ScheduleConfig(BaseModel):
             logger.warning(f"Invalid timezone '{tz}', falling back to UTC")
             return "UTC"
         return tz
-    
+
+
+class JumphostBaseConfig(BaseModel):
+    """Shared reusable jumphost fields for group and node-level config."""
+    hostname: str | None = None
+    username: str | None = None
+    password: str | None = None
+    ssh_key_file: str | None = None
+    ssh_profile: str | None = None
+    port: int | None = Field(default=None, ge=1, le=65535)
+
+    @field_validator("hostname", "username", "password", "ssh_key_file", "ssh_profile", mode="before")
+    @classmethod
+    def normalize_optional_text(cls, value: str | None) -> str | None:
+        """Normalize optional string values and convert blanks to None."""
+        if value is None:
+            return None
+        text = str(value).strip()
+        return text or None
+
+
+### =========== AppConfig SUBCLASSES ===========
+## NOTE: Classes which are only used in AppConfig
+
 
 class RetentionConfig(BaseModel):
     """Backup job log retention configuration."""
@@ -136,25 +166,8 @@ class RetentionConfig(BaseModel):
     max_age_days: int = Field(default=90, ge=1, description="Delete jobs older than this many days")
 
 
-### Application configuration models
-class AppConfig(BaseModel):
-    """Application-level settings."""
-    debug: bool = False
-    threads: int = Field(default=20, ge=1)
-    timeout: int = Field(default=30, ge=1)
-    retry: int = Field(default=3, ge=0)
-    protocol: str = "ssh"
-    api: ApiConfig = Field(default_factory=ApiConfig)
-    schedule: ScheduleConfig = Field(default_factory=ScheduleConfig)
-    retention: RetentionConfig = Field(default_factory=RetentionConfig)
-
-    @field_validator("protocol", mode="before")
-    @classmethod
-    def validate_protocol(cls, value: str) -> str:
-        """Validate default protocol setting."""
-        normalized = _normalize_protocol(value, allow_none=False)
-        return "ssh" if normalized is None else normalized
-
+### =========== GroupConfig SUBCLASSES ===========
+## NOTE: Classes which are only used in GroupConfig
 
 class GroupGitRemoteConfig(BaseModel):
     """Optional per-group override for remote git target."""
@@ -195,6 +208,40 @@ class GroupGitConfig(BaseModel):
         return text or None
 
 
+class GroupJumphostConfig(JumphostBaseConfig):
+    """Group-level jumphost defaults applied to all devices in the group."""
+    hostname: str
+    username: str
+    ssh_profile: str
+    port: int = Field(default=22, ge=1, le=65535)
+
+    @field_validator("hostname", "username", "ssh_profile", mode="before")
+    @classmethod
+    def validate_required_text(cls, value: str | None) -> str:
+        """Enforce non-empty required strings for configured group jumphost."""
+        text = "" if value is None else str(value).strip()
+        if not text:
+            raise ValueError("jumphost hostname, username, and ssh_profile must be non-empty strings")
+        return text
+
+    @model_validator(mode="after")
+    def validate_group_jumphost_auth(self) -> "GroupJumphostConfig":
+        """Require at least one auth method for group-level jumphost config."""
+        if not self.password and not self.ssh_key_file:
+            raise ValueError(
+                "groups.<group>.jumphost requires either 'password' or 'ssh_key_file'"
+            )
+        return self
+
+
+### =========== NodeConfig SUBCLASSES ===========
+## NOTE: Classes which are only used in NodeConfig
+
+
+class NodeJumphostConfig(JumphostBaseConfig):
+    """Node-level jumphost overrides (all fields optional for partial override)."""
+
+
 class NodeGitConfig(BaseModel):
     """Optional per-node git configuration overrides."""
     commit_message_template: str | None = None
@@ -210,8 +257,9 @@ class NodeGitConfig(BaseModel):
         return text or None
 
 
-### =====================================================================
-### Notification Configuration
+### =========== NotificationsConfig SUBCLASSES ===========
+## NOTE: Classes which are only used in NotificationsConfig
+
 
 class NotificationTrigger(str, Enum):
     """Controls when backup notifications are sent."""
@@ -265,80 +313,155 @@ class NotificationType(BaseModel):
     # TODO: webhook, slack, teams, ...
 
 
-class NotificationsConfig(BaseModel):
-    """Global notification configuration."""
-    enabled: bool = False
-    trigger: NotificationTrigger = NotificationTrigger.FAILURE
-    type: NotificationType = Field(default_factory=NotificationType)
-    large_diff_threshold: int = Field(
-        default=500,
-        ge=1,
-        description="Send a major change notification when lines added or removed reaches this threshold. Set to a very high number to effectively disable.",
-    )
-
-    @model_validator(mode="after")
-    def validate_type_config(self) -> "NotificationsConfig":
-        """Require at least one channel config block when notifications are enabled."""
-        if not self.enabled:
-            return self
-        if self.type.smtp is None:
-            raise ValueError(
-                "At least one notification channel must be configured under notifications.type "
-                "(e.g. notifications.type.smtp) when notifications.enabled is true"
-            )
-        ### TODO: Update check for multiple channels
-        return self
+### =========== SourcesConfig SUBCLASSES ===========
+## NOTE: Classes which are only used in SourcesConfig
 
 
-### =====================================================================
 
-class JumphostBaseConfig(BaseModel):
-    """Shared reusable jumphost fields for group and node-level config."""
-    hostname: str | None = None
-    username: str | None = None
-    password: str | None = None
-    ssh_key_file: str | None = None
-    ssh_profile: str | None = None
-    port: int | None = Field(default=None, ge=1, le=65535)
+class PostgresSourceConfig(BaseModel):
+    """PostgreSQL device source."""
+    host: str
+    port: int = Field(default=5432, ge=1, le=65535)
+    database: str
+    table: str
+    username: str
+    password: str
 
-    @field_validator("hostname", "username", "password", "ssh_key_file", "ssh_profile", mode="before")
+    @field_validator("host", "database", "table", "username", "password", mode="before")
+    @classmethod
+    def validate_non_empty_text(cls, value: str | None) -> str:
+        """Require non-empty strings for PostgreSQL source connection fields."""
+        text = "" if value is None else str(value).strip()
+        if not text:
+            raise ValueError("postgres source connection fields must be non-empty strings")
+        return text
+
+
+class HttpSourceConfig(BaseModel):
+    """Generic HTTP device source.
+
+    Fetches a JSON list of devices from an HTTP(S) endpoint and maps each item onto the source fields used by KiwiSSH.
+    Vendor, credentials and SSH profile are still resolved from the matching group/node config in `kiwissh.yaml`.
+    """
+    url: str
+    headers: dict[str, str] = Field(default_factory=dict)
+    map: dict[str, str] = Field(default_factory=dict) # Maps KiwiSSH field -> field name in the JSON response
+    default_group: str | None = None # Fallback group when a response item has no (mapped) group value
+    items_key: str | None = None # Optional key to locate the device list when the response is an object
+    verify_tls: bool = True
+    timeout: int = Field(default=10, ge=1)
+
+    @field_validator("url", mode="before")
+    @classmethod
+    def validate_url(cls, value: str | None) -> str:
+        """Require an http(s) URL for the HTTP source."""
+        text = "" if value is None else str(value).strip()
+        if not text:
+            raise ValueError("sources.http.url must be a non-empty string")
+        if not (text.startswith("http://") or text.startswith("https://")):
+            raise ValueError("sources.http.url must start with 'http://' or 'https://'")
+        return text
+
+    @field_validator("headers", mode="before")
+    @classmethod
+    def normalize_headers(cls, value: dict | None) -> dict[str, str]:
+        """Coerce header keys/values to strings and drop blanks."""
+        if value is None:
+            return {}
+        if not isinstance(value, dict):
+            raise ValueError("sources.http.headers must be a mapping of header name to value")
+        return {str(k).strip(): str(v) for k, v in value.items() if str(k).strip()}
+
+    @field_validator("map", mode="before")
+    @classmethod
+    def normalize_map(cls, value: dict | None) -> dict[str, str]:
+        """Validate the field map keys against the supported canonical fields."""
+        if value is None:
+            return {}
+        if not isinstance(value, dict):
+            raise ValueError("sources.http.map must be a mapping of canonical field to JSON field")
+        allowed = {"device_name", "ip_address", "group", "enabled", *SOURCE_OVERRIDE_FIELDS}
+        
+        normalized: dict[str, str] = {}
+        for key, mapped in value.items():
+            canonical = str(key).strip()
+            if canonical not in allowed:
+                raise ValueError(
+                    f"sources.http.map contains unsupported field '{canonical}'. "
+                    f"Allowed fields: {', '.join(sorted(allowed))}"
+                )
+            mapped_field = str(mapped).strip()
+            if mapped_field:
+                normalized[canonical] = mapped_field
+        return normalized
+
+    @field_validator("default_group", "items_key", mode="before")
     @classmethod
     def normalize_optional_text(cls, value: str | None) -> str | None:
-        """Normalize optional string values and convert blanks to None."""
+        """Normalize optional text fields and convert blanks to None."""
         if value is None:
             return None
         text = str(value).strip()
         return text or None
 
 
-class GroupJumphostConfig(JumphostBaseConfig):
-    """Group-level jumphost defaults applied to all devices in the group."""
-    hostname: str
-    username: str
-    ssh_profile: str
-    port: int = Field(default=22, ge=1, le=65535)
+### =========== GitConfig SUBCLASSES ===========
+## NOTE: Classes which are only used in GitConfig
 
-    @field_validator("hostname", "username", "ssh_profile", mode="before")
+
+class GitRemoteConfig(BaseModel):
+    """Git remote repository configuration."""
+    url: str | None = None
+    branch: str = "main"
+
+    @field_validator("url", mode="before")
     @classmethod
-    def validate_required_text(cls, value: str | None) -> str:
-        """Enforce non-empty required strings for configured group jumphost."""
-        text = "" if value is None else str(value).strip()
-        if not text:
-            raise ValueError("jumphost hostname, username, and ssh_profile must be non-empty strings")
-        return text
+    def normalize_url(cls, url: str | None) -> str | None:
+        """Normalize optional URL values by trimming whitespace."""
+        if url is None:
+            return None
+        text = str(url).strip()
+        return text or None
+
+    @field_validator("branch", mode="before")
+    @classmethod
+    def normalize_branch(cls, branch: str | None) -> str:
+        """Normalize branch value by trimming whitespace and defaulting to main."""
+        if branch is None:
+            return "main"
+        text = str(branch).strip()
+        return text or "main"
 
     @model_validator(mode="after")
-    def validate_group_jumphost_auth(self) -> "GroupJumphostConfig":
-        """Require at least one auth method for group-level jumphost config."""
-        if not self.password and not self.ssh_key_file:
-            raise ValueError(
-                "groups.<group>.jumphost requires either 'password' or 'ssh_key_file'"
-            )
+    def validate_remote(self) -> "GitRemoteConfig":
+        """Validate required fields when git.remote is configured."""
+        if self.url is None:
+            raise ValueError("git.remote.url is required when git.remote is configured")
         return self
 
 
-class NodeJumphostConfig(JumphostBaseConfig):
-    """Node-level jumphost overrides (all fields optional for partial override)."""
+### =============================================================================
+### Main / Root Classes Definitions
+### =============================================================================
+
+
+class AppConfig(BaseModel):
+    """Application-level settings."""
+    debug: bool = False
+    threads: int = Field(default=20, ge=1)
+    timeout: int = Field(default=30, ge=1)
+    retry: int = Field(default=3, ge=0)
+    protocol: str = "ssh"
+    api: ApiConfig = Field(default_factory=ApiConfig)
+    schedule: ScheduleConfig = Field(default_factory=ScheduleConfig)
+    retention: RetentionConfig = Field(default_factory=RetentionConfig)
+
+    @field_validator("protocol", mode="before")
+    @classmethod
+    def validate_protocol(cls, value: str) -> str:
+        """Validate default protocol setting."""
+        normalized = _normalize_protocol(value, allow_none=False)
+        return "ssh" if normalized is None else normalized
 
 
 class GroupConfig(BaseModel):
@@ -503,91 +626,29 @@ class NodeConfig(BaseModel):
         return _normalize_protocol(value, allow_none=True)
 
 
-class PostgresSourceConfig(BaseModel):
-    """PostgreSQL device source."""
-    host: str
-    port: int = Field(default=5432, ge=1, le=65535)
-    database: str
-    table: str
-    username: str
-    password: str
+class NotificationsConfig(BaseModel):
+    """Global notification configuration."""
+    enabled: bool = False
+    trigger: NotificationTrigger = NotificationTrigger.FAILURE
+    type: NotificationType = Field(default_factory=NotificationType)
+    large_diff_threshold: int = Field(
+        default=500,
+        ge=1,
+        description="Send a major change notification when lines added or removed reaches this threshold. Set to a very high number to effectively disable.",
+    )
 
-    @field_validator("host", "database", "table", "username", "password", mode="before")
-    @classmethod
-    def validate_non_empty_text(cls, value: str | None) -> str:
-        """Require non-empty strings for PostgreSQL source connection fields."""
-        text = "" if value is None else str(value).strip()
-        if not text:
-            raise ValueError("postgres source connection fields must be non-empty strings")
-        return text
-
-
-class HttpSourceConfig(BaseModel):
-    """Generic HTTP device source.
-
-    Fetches a JSON list of devices from an HTTP(S) endpoint and maps each item onto the source fields used by KiwiSSH.
-    Vendor, credentials and SSH profile are still resolved from the matching group/node config in `kiwissh.yaml`.
-    """
-    url: str
-    headers: dict[str, str] = Field(default_factory=dict)
-    map: dict[str, str] = Field(default_factory=dict) # Maps KiwiSSH field -> field name in the JSON response
-    default_group: str | None = None # Fallback group when a response item has no (mapped) group value
-    items_key: str | None = None # Optional key to locate the device list when the response is an object
-    verify_tls: bool = True
-    timeout: int = Field(default=10, ge=1)
-
-    @field_validator("url", mode="before")
-    @classmethod
-    def validate_url(cls, value: str | None) -> str:
-        """Require an http(s) URL for the HTTP source."""
-        text = "" if value is None else str(value).strip()
-        if not text:
-            raise ValueError("sources.http.url must be a non-empty string")
-        if not (text.startswith("http://") or text.startswith("https://")):
-            raise ValueError("sources.http.url must start with 'http://' or 'https://'")
-        return text
-
-    @field_validator("headers", mode="before")
-    @classmethod
-    def normalize_headers(cls, value: dict | None) -> dict[str, str]:
-        """Coerce header keys/values to strings and drop blanks."""
-        if value is None:
-            return {}
-        if not isinstance(value, dict):
-            raise ValueError("sources.http.headers must be a mapping of header name to value")
-        return {str(k).strip(): str(v) for k, v in value.items() if str(k).strip()}
-
-    @field_validator("map", mode="before")
-    @classmethod
-    def normalize_map(cls, value: dict | None) -> dict[str, str]:
-        """Validate the field map keys against the supported canonical fields."""
-        if value is None:
-            return {}
-        if not isinstance(value, dict):
-            raise ValueError("sources.http.map must be a mapping of canonical field to JSON field")
-        allowed = {"device_name", "ip_address", "group", "enabled"}
-        
-        normalized: dict[str, str] = {}
-        for key, mapped in value.items():
-            canonical = str(key).strip()
-            if canonical not in allowed:
-                raise ValueError(
-                    f"sources.http.map contains unsupported field '{canonical}'. "
-                    f"Allowed fields: {', '.join(sorted(allowed))}"
-                )
-            mapped_field = str(mapped).strip()
-            if mapped_field:
-                normalized[canonical] = mapped_field
-        return normalized
-
-    @field_validator("default_group", "items_key", mode="before")
-    @classmethod
-    def normalize_optional_text(cls, value: str | None) -> str | None:
-        """Normalize optional text fields and convert blanks to None."""
-        if value is None:
-            return None
-        text = str(value).strip()
-        return text or None
+    @model_validator(mode="after")
+    def validate_type_config(self) -> "NotificationsConfig":
+        """Require at least one channel config block when notifications are enabled."""
+        if not self.enabled:
+            return self
+        if self.type.smtp is None:
+            raise ValueError(
+                "At least one notification channel must be configured under notifications.type "
+                "(e.g. notifications.type.smtp) when notifications.enabled is true"
+            )
+        ### TODO: Update check for multiple channels
+        return self
 
 
 class SourcesConfig(BaseModel):
@@ -638,38 +699,6 @@ class SourcesConfig(BaseModel):
                 "One source is required under 'sources': configure either 'file', 'ansible', 'postgres' or 'http'"
             )
 
-        return self
-
-
-### Git Configuration
-class GitRemoteConfig(BaseModel):
-    """Git remote repository configuration."""
-    url: str | None = None
-    branch: str = "main"
-
-    @field_validator("url", mode="before")
-    @classmethod
-    def normalize_url(cls, url: str | None) -> str | None:
-        """Normalize optional URL values by trimming whitespace."""
-        if url is None:
-            return None
-        text = str(url).strip()
-        return text or None
-
-    @field_validator("branch", mode="before")
-    @classmethod
-    def normalize_branch(cls, branch: str | None) -> str:
-        """Normalize branch value by trimming whitespace and defaulting to main."""
-        if branch is None:
-            return "main"
-        text = str(branch).strip()
-        return text or "main"
-
-    @model_validator(mode="after")
-    def validate_remote(self) -> "GitRemoteConfig":
-        """Validate required fields when git.remote is configured."""
-        if self.url is None:
-            raise ValueError("git.remote.url is required when git.remote is configured")
         return self
 
 
@@ -743,6 +772,11 @@ class ApplicationDatabaseConfig(BaseModel):
         return self
 
 
+### =============================================================================
+### Base Setting Class
+### =============================================================================
+
+
 class Settings(BaseSettings):
     """Application settings loaded from environment and config files."""
 
@@ -776,7 +810,6 @@ class Settings(BaseSettings):
     ### Database URL (computed from application_database config)
     database_url: str = ""
 
-
     @model_validator(mode="after")
     def use_test_config_if_enabled(self) -> "Settings":
         """If LOCAL_TEST_MODE=true, use the default config location for local testing."""
@@ -784,6 +817,10 @@ class Settings(BaseSettings):
             self.config_dir = _resolve_config_dir()
 
         return self
+
+    ### =============================================================
+    ### Private Settings Class Helper Functions
+    ### =============================================================
 
     def _resolve_config_relative_path(self, path_value: str) -> str:
         """Resolve a possibly-relative path against the configuration directory.
@@ -799,6 +836,106 @@ class Settings(BaseSettings):
             return str(candidate)
         ### return resolved relative path
         return str((self.config_dir / candidate).resolve())
+
+    def _validate_git_remote_configuration(self) -> None:
+        """Validate global and group-level git remote URL requirements."""
+        if self.git.remote is not None:
+            return
+
+        invalid_groups = [
+            group_name
+            for group_name, group_cfg in self.groups.items()
+            if group_cfg.git is not None
+            and group_cfg.git.remote is not None
+            and group_cfg.git.remote.url is None
+        ] # If no URL is configured
+
+        if invalid_groups:
+            raise ValueError(
+                "groups.<group>.git.remote.url is required when no global git.remote.url is configured. "
+                f"Missing URL for groups: {', '.join(invalid_groups)}"
+            )
+
+    def _build_database_url(self) -> str:
+        """Build application database URL from the configured backend.
+
+        Returns:
+            SQLAlchemy database URL string
+        """
+        if self.application_database is None:
+            raise ValueError("Missing required 'application_database' section in kiwissh.yaml")
+
+        if self.application_database.type == "sqlite":
+            ### Resolve relative SQLite paths against the configuration directory
+            resolved = self._resolve_config_relative_path(self.application_database.path)
+            return f"sqlite:///{Path(resolved).as_posix()}"
+
+        return self._build_postgres_url(
+            host=self.application_database.host,
+            port=self.application_database.port,
+            database=self.application_database.database,
+            user=self.application_database.username,
+            password=self.application_database.password,
+        )
+
+    @staticmethod
+    def _build_postgres_url(*, host: str, port: int, database: str, user: str, password: str) -> str:
+        """Build a SQLAlchemy PostgreSQL URL from raw connection fields."""
+        escaped_user = quote_plus(user)
+        escaped_password = quote_plus(password)
+        return f"postgresql+psycopg://{escaped_user}:{escaped_password}@{host}:{port}/{database}"
+
+    @staticmethod
+    def _apply_node_overrides(device_config: dict[str, Any], override: "NodeConfig") -> None:
+        """Apply optional NodeConfig overrides onto device_config in place.
+
+        Only non-None fields override the current value.
+        """
+        if override.ssh_profile is not None:
+            device_config["ssh_profile"] = override.ssh_profile
+        if override.port is not None:
+            device_config["port"] = override.port
+        if override.protocol is not None:
+            device_config["protocol"] = override.protocol
+        if override.vendor is not None:
+            device_config["vendor"] = override.vendor
+        if override.timeout is not None:
+            device_config["timeout"] = override.timeout
+        if override.retry is not None:
+            device_config["retry"] = override.retry
+        if override.username is not None:
+            device_config["username"] = override.username
+        if override.password is not None:
+            device_config["password"] = override.password
+        if override.enable_password is not None:
+            device_config["enable_password"] = override.enable_password
+        if override.ssh_key_file is not None:
+            device_config["ssh_key_file"] = override.ssh_key_file
+
+        ### Merge jumphost overrides into group defaults key-by-key
+        ## This allows partial overrides without duplicating the full block
+        if override.jumphost is not None:
+            resolved_jump_host = dict(device_config.get("jumphost") or {})
+            if override.jumphost.hostname is not None:
+                resolved_jump_host["hostname"] = override.jumphost.hostname
+            if override.jumphost.port is not None:
+                resolved_jump_host["port"] = override.jumphost.port
+            if override.jumphost.username is not None:
+                resolved_jump_host["username"] = override.jumphost.username
+            if override.jumphost.password is not None:
+                resolved_jump_host["password"] = override.jumphost.password
+            if override.jumphost.ssh_key_file is not None:
+                resolved_jump_host["ssh_key_file"] = override.jumphost.ssh_key_file
+            if override.jumphost.ssh_profile is not None:
+                resolved_jump_host["ssh_profile"] = override.jumphost.ssh_profile
+            device_config["jumphost"] = resolved_jump_host or None
+
+        if override.schedule and override.schedule.cron is not None:
+            device_config["schedule"] = override.schedule
+
+    ### =============================================================
+    ### Public Settings Class Functions
+    ### =============================================================
 
     def load_yaml_configs(self) -> None:
         """Load YAML configuration files."""
@@ -872,55 +1009,6 @@ class Settings(BaseSettings):
         """Get vendor-specific configuration by ID."""
         return self.vendors.get(vendor_id)
 
-    def _validate_git_remote_configuration(self) -> None:
-        """Validate global and group-level git remote URL requirements."""
-        if self.git.remote is not None:
-            return
-
-        invalid_groups = [
-            group_name
-            for group_name, group_cfg in self.groups.items()
-            if group_cfg.git is not None
-            and group_cfg.git.remote is not None
-            and group_cfg.git.remote.url is None
-        ] # If no URL is configured
-
-        if invalid_groups:
-            raise ValueError(
-                "groups.<group>.git.remote.url is required when no global git.remote.url is configured. "
-                f"Missing URL for groups: {', '.join(invalid_groups)}"
-            )
-
-    def _build_database_url(self) -> str:
-        """Build application database URL from the configured backend.
-
-        Returns:
-            SQLAlchemy database URL string
-        """
-        if self.application_database is None:
-            raise ValueError("Missing required 'application_database' section in kiwissh.yaml")
-
-        if self.application_database.type == "sqlite":
-            ### Resolve relative SQLite paths against the configuration directory
-            resolved = self._resolve_config_relative_path(self.application_database.path)
-            return f"sqlite:///{Path(resolved).as_posix()}"
-
-        return self._build_postgres_url(
-            host=self.application_database.host,
-            port=self.application_database.port,
-            database=self.application_database.database,
-            user=self.application_database.username,
-            password=self.application_database.password,
-        )
-
-    @staticmethod
-    def _build_postgres_url(*, host: str, port: int, database: str, user: str, password: str) -> str:
-        """Build a SQLAlchemy PostgreSQL URL from raw connection fields."""
-
-        escaped_user = quote_plus(user)
-        escaped_password = quote_plus(password)
-        return f"postgresql+psycopg://{escaped_user}:{escaped_password}@{host}:{port}/{database}"
-
     def get_source_postgres_url(self) -> str | None:
         """Build PostgreSQL URL for device source when configured."""
         return self._build_postgres_url(
@@ -930,54 +1018,6 @@ class Settings(BaseSettings):
             user=self.sources.postgres.username,
             password=self.sources.postgres.password,
         )
-
-    @staticmethod
-    def _apply_node_overrides(device_config: dict[str, Any], override: "NodeConfig") -> None:
-        """Apply optional NodeConfig overrides onto device_config in place.
-
-        Only non-None fields override the current value.
-        """
-        if override.ssh_profile is not None:
-            device_config["ssh_profile"] = override.ssh_profile
-        if override.port is not None:
-            device_config["port"] = override.port
-        if override.protocol is not None:
-            device_config["protocol"] = override.protocol
-        if override.vendor is not None:
-            device_config["vendor"] = override.vendor
-        if override.timeout is not None:
-            device_config["timeout"] = override.timeout
-        if override.retry is not None:
-            device_config["retry"] = override.retry
-        if override.username is not None:
-            device_config["username"] = override.username
-        if override.password is not None:
-            device_config["password"] = override.password
-        if override.enable_password is not None:
-            device_config["enable_password"] = override.enable_password
-        if override.ssh_key_file is not None:
-            device_config["ssh_key_file"] = override.ssh_key_file
-
-        ### Merge jumphost overrides into group defaults key-by-key
-        ## This allows partial overrides without duplicating the full block
-        if override.jumphost is not None:
-            resolved_jump_host = dict(device_config.get("jumphost") or {})
-            if override.jumphost.hostname is not None:
-                resolved_jump_host["hostname"] = override.jumphost.hostname
-            if override.jumphost.port is not None:
-                resolved_jump_host["port"] = override.jumphost.port
-            if override.jumphost.username is not None:
-                resolved_jump_host["username"] = override.jumphost.username
-            if override.jumphost.password is not None:
-                resolved_jump_host["password"] = override.jumphost.password
-            if override.jumphost.ssh_key_file is not None:
-                resolved_jump_host["ssh_key_file"] = override.jumphost.ssh_key_file
-            if override.jumphost.ssh_profile is not None:
-                resolved_jump_host["ssh_profile"] = override.jumphost.ssh_profile
-            device_config["jumphost"] = resolved_jump_host or None
-
-        if override.schedule and override.schedule.cron is not None:
-            device_config["schedule"] = override.schedule
 
     def get_device_config(self, group: str, device_name: str) -> dict[str, Any]:
         """
@@ -1103,6 +1143,11 @@ class Settings(BaseSettings):
             jumphost_cfg["port"] = int(jumphost_cfg.get("port") or 22)
 
         return device_config
+
+
+### =============================================================================
+### Public Functions from config.py module 
+### =============================================================================
 
 @lru_cache  # Last Recently Used cache to store settings instance
 def get_settings() -> Settings:
