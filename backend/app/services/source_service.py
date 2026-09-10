@@ -161,14 +161,17 @@ class SourceService:
                 host_vars = host_vars if isinstance(host_vars, dict) else {}
                 ip_address = str(host_vars.get("ansible_host")).strip()
                 ### Map Ansible inventory hosts to canonical KiwiSSH device rows
-                rows.append(
-                    {
-                        "group": group_name,
-                        "device_name": str(host_name).strip(),
-                        "ip_address": ip_address,
-                        "enabled": host_vars.get("enabled", True),
-                    }
-                )
+                device_row = {
+                    "group": group_name,
+                    "device_name": str(host_name).strip(),
+                    "ip_address": ip_address,
+                    "enabled": host_vars.get("enabled", True),
+                }
+                ### Carry optional per-device overrides declared as host vars
+                for field in SOURCE_OVERRIDE_FIELDS:
+                    if field in host_vars and host_vars[field] is not None:
+                        device_row[field] = host_vars[field]
+                rows.append(device_row)
 
         ### Handle children groups recursively, if present
         children = group_data.get("children") or {}
