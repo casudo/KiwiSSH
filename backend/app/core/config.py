@@ -20,7 +20,7 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-SUPPORTED_PROTOCOLS = {"ssh", "telnet"}
+SUPPORTED_PROTOCOLS = {"ssh", "telnet", "http", "https"}
 
 ### =============================================================================
 ### Config Helper Functions
@@ -46,10 +46,10 @@ def _normalize_protocol(value: str | None, *, allow_none: bool) -> str | None:
     if not text:
         if allow_none:
             return None
-        raise ValueError("protocol must be 'ssh' or 'telnet'")
+        raise ValueError("protocol must be one of 'ssh', 'telnet', 'http', 'https'")
 
     if text not in SUPPORTED_PROTOCOLS:
-        raise ValueError("protocol must be 'ssh' or 'telnet'")
+        raise ValueError("protocol must be one of 'ssh', 'telnet', 'http', 'https'")
     return text
 
 def _resolve_config_dir() -> Path:
@@ -542,11 +542,10 @@ class GroupConfig(BaseModel):
 
     @model_validator(mode="after")
     def validate_group_protocol(self) -> "GroupConfig":
-        """Require ssh_profile unless protocol is explicitly telnet."""
-        if self.protocol == "telnet":
-            return self
-        if not self.ssh_profile:
-            raise ValueError("ssh_profile is required for SSH protocol")
+        """Require ssh_profile unless protocol is not SSH."""
+        if self.protocol in (None, "ssh"):
+            if not self.ssh_profile:
+                raise ValueError("ssh_profile is required for SSH protocol")
         return self
     
     @field_validator("password", mode="before")
@@ -1119,7 +1118,14 @@ class Settings(BaseSettings):
 
         ### Apply the protocol-specific default port only when no override was set explicitly
         if device_config.get("port") is None:
-            device_config["port"] = 23 if resolved_protocol == "telnet" else 22
+            if resolved_protocol == "telnet":
+                device_config["port"] = 23
+            if resolved_protocol == "http":
+                device_config["port"] = 80
+            elif resolved_protocol == "https":
+                device_config["port"] = 443
+            else: # SSH as default
+                device_config["port"] = 22
 
         resolved_password = str(device_config.get("password") or "").strip()
         resolved_key_file = str(device_config.get("ssh_key_file") or "").strip()
@@ -1132,6 +1138,12 @@ class Settings(BaseSettings):
             if device_config.get("jumphost") is not None:
                 raise ValueError(
                     f"Device '{device_name}' in group '{group}' uses telnet protocol which does not support jumphost"
+                )
+        elif resolved_protocol in {"http", "https"}:
+            if device_config.get("jumphost") is not None:
+                raise ValueError(
+                    f"Device '{device_name}' in group '{group}' uses {resolved_protocol} protocol "
+                    "which does not support jumphost"
                 )
         elif resolved_protocol == "ssh":
             if not resolved_password and not resolved_key_file:
