@@ -16,6 +16,7 @@ from app.models.backup import BackupRecord, BackupStatus
 from app.models.device import DeviceBase
 from app.services.ssh_service import ssh_service
 from app.services.telnet_service import telnet_service
+from app.services.http_service import http_service
 from app.services.git_service import git_service
 from app.services.backup_job_service import backup_job_service
 from app.services.notification_service import notification_service
@@ -477,9 +478,14 @@ class BackupService:
                         device,
                         device_config=device_config,
                     )
+                if protocol in ("http", "https"):
+                    return await http_service.get_config(
+                        device,
+                        device_config=device_config,
+                    )
                 raise RuntimeError(f"Unsupported protocol: {protocol}")
 
-            ### Get config from device via SSH or Telnet (or simulator)
+            ### Get config from device via SSH, Telnet or HTTP(S) (or simulator)
             for attempt in range(2):
                 config, metadata_output = await _fetch_config()
                 logger.debug(f"Got config for {device.device_name} ({len(config)} bytes)")
