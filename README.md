@@ -12,7 +12,7 @@
 
 # About KiwiSSH <!-- omit from toc -->
 
-KiwiSSH is a network device configuration backup tool that connects to your devices via SSH/Telnet, fetches their configurations, and stores them in git repositories for easy version control and change tracking. It also provides a user-friendly web interface to manage your devices, view backup logs, and see configuration changes over time.
+KiwiSSH is a network device configuration backup tool that connects to your devices via SSH, Telnet or HTTP/HTTPS, fetches their configurations, and stores them in git repositories for easy version control and change tracking. It also provides a user-friendly web interface to manage your devices, view backup logs, and see configuration changes over time.
 
 It was created as better alternative to RANCID and Oxidized, with a focus on simplicity, ease of use, and modern technologies.
 
@@ -28,12 +28,12 @@ The frontend offers:
 
 The backend provides:
 
-- SSH/Telnet connectivity to any kind devices for configuration backup
+- SSH/Telnet/HTTP/HTTPS connectivity to any kind devices for configuration backup
 - Configurable backup schedules with cron expressions on global, group and device level
 - Local git repositories for each device group to store configuration history and provide diff view
 - Optional remote git repository support to push configuration changes to a central Git server (e.g. GitHub, GitLab, Gitea, etc.)
 - Support for loading device lists from CSV or Ansible inventory files, PostgreSQL databases or HTTP APIs
-- Configurable SSH/Telnet options and backup commands per vendor, group and device, making it flexible to support a wide range of devices
+- Configurable SSH/Telnet/HTTP/HTTPS options and backup commands per vendor, group and device, making it flexible to support a wide range of devices
 - Configurable processing rules for captured configurations, including line stripping, cropping and regex-based redaction of sensitive information
 - The ability to easily add support for new vendors by creating YAML configuration files that define how to interact with the device CLI and process the output
 - RESTful API endpoints for device management, backup job logs and configuration retrieval to enable integration with other tools and automation
@@ -183,7 +183,7 @@ Full available options:
 | `app.threads` | The maximum number of concurrent SSH sessions for backups. | No | `20` |
 | `app.timeout` | The global connection timeout in seconds. This can be overridden for specific groups or nodes. | No | `30` |
 | `app.retry` | The global retry count, which defines how many additional attempts should be made after the first failed attempt. This can also be overridden for specific groups or nodes. | No | `3` |
-| `app.protocol` | Default protocol for device connections (`ssh` or `telnet`). | No | `ssh` |
+| `app.protocol` | Default protocol for device connections (`ssh`, `telnet`, `http` or `https`). | No | `ssh` |
 | `app.api.host` | The host on which the API server will run. Should be set to 0.0.0.0 when running in Docker. | No | `127.0.0.1` |
 | `app.api.port` | The port on which the API server will run. | No | `8000` |
 | `app.api.cors_origins` | A list of allowed CORS origins for the API server. | No | `["http://localhost:5173", "http://127.0.0.1:5173"]` |
@@ -389,10 +389,11 @@ KiwiSSH will always store the device configurations in local git repositories to
 | `groups.<group>.password` | The password for SSH authentication for devices in this group (optional when `ssh_key_file` is used). | No | - |
 | `groups.<group>.enable_password` | Optional enable password for devices in this group. Vendor YAML `then` values can reference it with `{{ enable_password }}`. | No | - |
 | `groups.<group>.ssh_key_file` | The private key file path for SSH authentication for devices in this group (alternative to password). | No | - |
-| `groups.<group>.ssh_profile` | The SSH profile to use for devices in this group. This is used to determine the SSH options to use when connecting to the devices. | **Yes** | - |
-| `groups.<group>.protocol` | Protocol to use for devices in this group (`ssh` or `telnet`). | No | Global `app.protocol` |
-| `groups.<group>.port` | Protocol port for devices in this group. | No | `22` (or `23` when `protocol: telnet`) |
-| `groups.<group>.vendor` | The vendor of the devices in this group. This is used to determine the CLI commands to run for fetching the configuration. | **Yes** | - |
+| `groups.<group>.ssh_profile` | The SSH profile to use for devices in this group. This is used to determine the SSH options to use when connecting to the devices. Required only for the `ssh` protocol. | **Yes** (for `ssh`) | - |
+| `groups.<group>.protocol` | Protocol to use for devices in this group (`ssh`, `telnet`, `http` or `https`). | No | Global `app.protocol` |
+| `groups.<group>.port` | Protocol port for devices in this group. | No | `22` for `ssh`, `23` for `telnet`, `80` for `http`, `443` for `https` |
+| `groups.<group>.verify_ssl` | Whether to verify the device TLS certificate for `https` backups. Set to `false` for self-signed certificates. | No | `true` |
+| `groups.<group>.vendor` | The vendor of the devices in this group. This is used to determine the CLI commands (or HTTP requests) to run for fetching the configuration. | **Yes** | - |
 | `groups.<group>.jumphost.hostname` | Jumphost hostname or IP for this group. If set, devices in this group are reached through this jumphost. | **Yes**, if `jumphost` | - |
 | `groups.<group>.jumphost.port` | Jumphost SSH port. | No | `22` |
 | `groups.<group>.jumphost.username` | Jumphost SSH username. | **Yes**, if `jumphost` | - |
@@ -418,9 +419,10 @@ KiwiSSH will always store the device configurations in local git repositories to
 | `nodes.<device_name>.enable_password` | Optional enable password for this device. This overrides `groups.<group>.enable_password` and can be referenced from vendor YAML `then` values with `{{ enable_password }}`. | No | `groups.<group>.enable_password` |
 | `nodes.<device_name>.ssh_key_file` | The private key file path for SSH authentication for this device. | No | `groups.<group>.ssh_key_file` |
 | `nodes.<device_name>.ssh_profile` | The SSH profile to use for this device. This is used to determine the SSH options to use when connecting to the device. | No | `groups.<group>.ssh_profile` |
-| `nodes.<device_name>.protocol` | Protocol override for this device (`ssh` or `telnet`). | No | `groups.<group>.protocol` or Global `app.protocol` |
-| `nodes.<device_name>.port` | Port override for this device. | No | `groups.<group>.port` or `22` (or `23` when `protocol: telnet`) |
-| `nodes.<device_name>.vendor` | The vendor of this device. This is used to determine the CLI commands to run for fetching the configuration. | No | `groups.<group>.vendor` |
+| `nodes.<device_name>.protocol` | Protocol override for this device (`ssh`, `telnet`, `http` or `https`). | No | `groups.<group>.protocol` or Global `app.protocol` |
+| `nodes.<device_name>.port` | Port override for this device. | No | `groups.<group>.port` or `22` for `ssh`, `23` for `telnet`, `80` for `http`, `443` for `https` |
+| `nodes.<device_name>.verify_ssl` | Node-level TLS verification override for `https` backups. | No | `groups.<group>.verify_ssl` |
+| `nodes.<device_name>.vendor` | The vendor of this device. This is used to determine the CLI commands (or HTTP requests) to run for fetching the configuration. | No | `groups.<group>.vendor` |
 | `nodes.<device_name>.jumphost.hostname` | Node-level jumphost hostname/IP override. | **Yes**, if `jumphost` | `groups.<group>.jumphost.hostname` |
 | `nodes.<device_name>.jumphost.port` | Node-level jumphost SSH port override. | No | `groups.<group>.jumphost.port` or `22` |
 | `nodes.<device_name>.jumphost.username` | Node-level jumphost username override. | **Yes**, if `jumphost` | `groups.<group>.jumphost.username` |
@@ -454,7 +456,8 @@ Each vendor file contains these top-level sections:
 - `vendor`: metadata (`id`, `name`, `description`)
 - `session`: session-level output settings (`comment_prefix`, `prompt`, `pagination`, `login`, `include_metadata_in_config`)
 - `commands`: command phases (`pre_backup`, `backup`, `post_backup`); you can nest protocol-specific overrides under `commands.ssh` or `commands.telnet`
-- `processing`: optional output cleanup/redaction rules
+- `http`: HTTP(S) backup definition used when a device/group sets `protocol: http` or `protocol: https` (`headers`, `auth`, `requests`)
+- `processing`: optional output cleanup/redaction rules (shared by all protocols)
 
 Each segment is explained in detail below.
 
@@ -514,6 +517,38 @@ You can use the following keys for each command step:
 | `metadata` | If set to true, the output of this command will be saved as comment-prefixed metadata block in the backup job log. This is useful for adding important information to the backup job log. | No | `false` |
 | `wait_for_prompt` | If set to false, KiwiSSH will not wait for the command prompt to return after running this command before proceeding to the next step. Use with caution. | No | `true` |
 | `show_command_in_config` | If set to true, the command will be included directly in the main config body above its output, prefixed with the comment prefix. This provides better context for the captured output when viewing the saved config file. `show_command_in_config: true` and `metadata: true` cannot be used together and will fail validation. | No | `false` |
+
+#### http
+
+The `http` section defines how KiwiSSH fetches configuration when a device or group uses `protocol: http` or `protocol: https`. Credentials are still resolved from [kiwissh.yaml](#kiwisshyaml). The following placeholders can be used in any string value: `{{ username }}`, `{{ password }}`.
+
+```yaml
+http:
+  headers:                       # OPTIONAL default headers for every request
+    Accept: "text/plain"
+  auth:                          # OPTIONAL authentication flow
+    type: "basic"                # none | basic
+  requests:                      # REQUIRED, full response bodies form the stored config
+    - method: "GET"
+      path: "/api/v2/monitor/system/config/backup"
+      label: "system config backup"
+      expected_status: [200]     # OPTIONAL, defaults to any 2xx
+      show_command_in_config: true
+    - method: "GET"
+      path: "/api/device/modules"
+      label: "installed modules"
+      expected_status: [200]
+      show_command_in_config: false
+```
+
+| Key | Description | Required | Default Value |
+| --- | ----------- | -------- | ------------- |
+| `http.headers` | Default headers sent on every request. | No | - |
+| `http.auth.type` | Authentication mode: `none`, `basic` (HTTP Basic auth using `username`/`password`). | No | `none` |
+| `http.requests` | List of requests whose full response bodies form the stored configuration. Each request supports `method`, `path`, `headers`, `params`, one of `form`/`json`/`body`, `label`, `expected_status` and `show_command_in_config`. | **Yes** | - |
+
+> [!NOTE]
+> Every request stores its full response body as a normal config backup. `show_command_in_config` and the `processing` rules (e.g. `strip_patterns`, `redaction`) behave the same way as for SSH/Telnet backups, so HTTP-fetched configs are stored and processed consistently.
 
 #### processing
 
