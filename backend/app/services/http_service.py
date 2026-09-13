@@ -8,6 +8,7 @@ from typing import Any
 from app.core import get_settings
 from app.models.device import DeviceBase
 from app.services.vendor_service import vendor_service
+from app.services.local_ssh_simulator import local_ssh_simulator
 from app.services.ssh_service import SSHService
 
 logger = logging.getLogger(__name__)
@@ -36,6 +37,7 @@ class HTTPService:
         if isinstance(value, list):
             return [HTTPService._render_placeholders(item, context) for item in value]
         return value
+
     @staticmethod
     def _build_request_kwargs(step: dict[str, Any], context: dict[str, str]) -> dict[str, Any]:
         """Build httpx request kwargs (method/url/body/headers/params) from a step."""
@@ -81,6 +83,7 @@ class HTTPService:
             raise RuntimeError(
                 f"Unexpected HTTP status {response.status_code} (expected {expected_codes})"
             )
+
     async def _collect_vendor_config(
         self,
         device: DeviceBase,
@@ -179,7 +182,28 @@ class HTTPService:
 
         ### HTTP backups have no separate metadata section
         return processed_config, None
+
+    async def _collect_local_vendor_config(
+        self,
+        device: DeviceBase,
+        vendor_id: str,
+        timeout_seconds: int,
     ) -> tuple[str, str | None]:
+        """Collect config in local test mode while reusing vendor processing rules."""
+        ### Keep vendor validation parity with the real HTTP path
+        http_config = vendor_service.get_http_config(vendor_id)
+        if not http_config or not http_config.get("requests"):
+            raise ValueError(f"Vendor '{vendor_id}' has no http.requests configured")
+
+        raw_config = await asyncio.wait_for(
+            local_ssh_simulator.get_config(device),
+            timeout=timeout_seconds,
+        )
+        if not raw_config.strip():
+            raise RuntimeError("Local simulator returned empty config output")
+
+        processing_rules = vendor_service.get_processing_rules(vendor_id)
+        return SSHService._apply_processing_rules(raw_config, processing_rules), None
 
     ### =============================================================================
     ### HTTPService Class PUBLIC Functions
@@ -211,6 +235,14 @@ class HTTPService:
         device_password = str(device_config.get("password") or "").strip()
 
         max_attempts = retry_count + 1
+
+        ### Use the local simulator if test mode is enabled
+        if self.settings.local_test_mode:
+            return await self._collect_local_vendor_config(
+                device=device,
+                vendor_id=vendor_id,
+                timeout_seconds=timeout_seconds,
+            )
 
         ### Try to fetch config from device, applying retries on failure
         last_exception: Exception | None = None
@@ -267,7 +299,6 @@ class HTTPService:
         if last_exception is not None:
             raise last_exception
         raise RuntimeError("HTTP config fetch failed without a captured exception!!")
-
 
 ### Singleton instance
 http_service = HTTPService()
