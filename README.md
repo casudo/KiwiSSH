@@ -66,6 +66,7 @@ The backend provides:
       - [vendor](#vendor)
       - [session](#session)
       - [commands](#commands)
+      - [http](#http-1)
       - [processing](#processing)
   - [SSH Profiles YAML file](#ssh-profiles-yaml-file)
 - [FAQ](#faq)
@@ -711,6 +712,7 @@ The endpoint will return the following information about the device:
 - Full-text config search ([#48](https://github.com/casudo/KiwiSSH/issues/48))
 - Config file browser on the frontend ([#47](https://github.com/casudo/KiwiSSH/issues/47))
 - Fetch device config via HTTP ([#72](https://github.com/casudo/KiwiSSH/issues/72))
+- Move `SSHService._apply_processing_rules()` into a more centralized file? It's used by all protocols, not explicitly by SSH.
 
 **Long Term:**
 
@@ -721,6 +723,7 @@ The endpoint will return the following information about the device:
 - Optional share anonymouse usage data for statistics (needs opt-in, privacy policy and telemetry server)
 - Login Screen, User management and RBAC
 - Allow merging of multiple device sources
+- Rename Draw.io page names to their actual filenames
 
 ---
 
