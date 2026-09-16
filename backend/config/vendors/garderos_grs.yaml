@@ -1,0 +1,48 @@
+### Garderos GRS (Garderos Router Software) Vendor Configuration
+
+vendor:
+  id: "garderos_grs"
+  name: "Garderos GRS"
+  description: "Garderos GRS devices"
+
+### Session-level output behavior.
+session:
+  comment_prefix: "# "
+  prompt: '[\w-]+# '
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "show system version"
+      metadata: true
+    - command: "show system serial"
+      metadata: true
+    - command: "show hardware wwan wwan0 sim"
+      metadata: true
+      description: "If we have a radio modem installed, we'd like to list the SIM Card"
+    - command: "show configuration running"
+      show_command_in_config: true
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "exit"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  strip_patterns:
+    # - "^% Invalid input detected at '\\^' marker\\.$"
+  # config_start: "^config "
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    # patterns:
+    #   - search: "^(#private-encryption-key=).+"
+    #     replacement: "\\1<secret hidden>"
