@@ -129,6 +129,7 @@
 | NEC | NEC IX | [nec_necix.yaml](/backend/config/vendors/nec_necix.yaml) | |
 | Netgate | TNSR | [netgate_tnsr.yaml](/backend/config/vendors/netgate_tnsr.yaml) | |
 | Netgear | Netgear Switches | [netgear_netgear.yaml](/backend/config/vendors/netgear_netgear.yaml) | |
+| Netonix | WISP Switch | [netonix_netonix.yaml](/backend/config/vendors/netonix_netonix.yaml) | |
 | OneAccess                | OneOS                                                                                                                                       | [oneaccess_oneos.yaml](/backend/config/vendors/oneaccess_oneos.yaml)                       |                                                                          |
 | OneAccess                | TDRE                                                                                                                                        | [oneaccess_tdre.yaml](/backend/config/vendors/oneaccess_tdre.yaml)                         |                                                                          |
 | OpenBSD                  |                                                                                                                                             | [openbsd.yaml](/backend/config/vendors/openbsd.yaml)                                       |                                                                          |
