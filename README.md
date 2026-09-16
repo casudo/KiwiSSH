@@ -657,45 +657,12 @@ The endpoint will return the following information about the device:
 
 # Future Goals
 
-Alvarion - BreezeACCESS (TFTP)
-APC - AOS (TFTP/FTP)
-Cisco - VPN3000 (FTP)
-
-
-Cambium - Cambium (HTTP)
-Cisco - CiscoCE (Cisco Catalyst Express) (HTTP)
-Grandstream Networks - GSX (HTTP)
-Ingate - SIParator/Firewalls (HTTP)
-Ivanti - Ivanti Connect Secure (ICS) (HTTP (in JSON))
-Mimosa - Mimosa (B11) (HTTP)
-Palo Alto - PanOS API (HTTP)
-VMWare - NSX Edge (configuration)
-VMWare - NSX Edge (firewall rules)
-VMWare - NSX Distributed Firewall
-Zyxel - 1308 (HTTP)
-
-
-Eaton - Gigabit Network Card (SSH, but JSON)
-Linkys - SRW (SSH, but weird GUI stuff too)
-Linuxgeneric - CentOS (SSH)
-MRV - FiberDriver (SSH)
-NEC 	NEC IX
-Netgate 	TNSR
-Netgear 	Netgear switches
-Netonix 	WISP Switch (As Netonix)
-Nokia (formerly TiMetra, Alcatel, Alcatel-Lucent) 	SR OS (TiMOS)
-Nokia (formerly TiMetra, Alcatel, Alcatel-Lucent) 	SR OS Model-Driven CLI (7705 SAR, 7210 SAS, 7450 ESS, 7750 SR, 7950 XRS, NSP)
-PLANET SG/SGS Switches (SSH)
-SonicWALL 	SonicOS
-
-
 **Short Term:**
 
 - Checks for device source: No duplicate hostnames, valid IPs, ... (What if multiple groups hold the same IP address range?)
 - Update ssh_service to use FQDN instead of IP to avoid?
 - Add new vendors
 - Cache backup history response for a device so it doesnt need to fetch again
-- Rename "Fiberstorm (fs.com)" to "Fiberstore (fs.com)"
   
 **Mid-term:**
 
@@ -704,7 +671,7 @@ SonicWALL 	SonicOS
 - Rework Pydantic models (required vs optional fields, default values, validators, etc.)
 - Update Ruff linter and formatter
 - Add Vue linter/formatter?
-- SCP/TFTP support?
+- SCP support?
 - Update ssh_profile legacy with Synology NAS ssh settings "Low"
 - Show "backup time" when NO_CHANGES" in log line "No configuration changes detected for {device_name}"?
 - Put redaction boolean switch as group/node level override instead of per vendor to be able to easily turn on/off redaction for specific groups/nodes without having to modify the vendor YAML files?
