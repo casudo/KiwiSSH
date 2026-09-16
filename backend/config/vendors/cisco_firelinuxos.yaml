@@ -1,0 +1,65 @@
+### Cisco FireLinuxOS Vendor Configuration
+
+vendor:
+  id: "cisco_firelinuxos"
+  name: "Cisco FireLinuxOS"
+  description: "Fire Linux OS is what the new FTD (FirePOWER) series devices from Cisco run. At the backend, it's mostly identical to ASA's."
+
+### Session-level behavior
+session:
+  comment_prefix: "! "
+  prompt: '^[#>]\(?.+\)? ?$'
+  pagination:
+    enabled: true
+    patterns:
+      - pattern: '^Syntax error: .*\n.*$'
+        response: '\x15\n' # Send CTRL-U and \n for a fresh prompt
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "show version system"
+      metadata: true
+    - command: "show inventory" 
+      metadata: true
+    # - command: "show inventory all" # not supported on older models
+    #   metadata: true
+    - command: "show running-config all"
+      show_command_in_config: true
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "exit"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  ### Lines to strip from captured config (regex patterns)
+  strip_patterns:
+    - '^% Invalid input detected at'
+  ### Lines that mark config boundaries
+  ## If either boundary is missing, keep from/to the file edge.
+  # config_start: "^# unifi$"
+  # config_end: "^# misc$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      - search: 'enable password (\S+) (.*)'
+        replacement: 'enable password <secret redacted>'
+      - search: 'username (\S+) password (\S+) (.*)'
+        replacement: 'username \1 password <secret redacted> \3'
+      - search: '(ikev[12] ((remote|local)-authentication )?pre-shared-key) (\S+)'
+        replacement: '\1 <secret redacted>'
+      - search: '^(aaa-server TACACS\+? \(\S+\) host.*\n\skey) \S+$'
+        replacement: '\1<secret redacted>'
+      - search: 'ldap-login-password (\S+)'
+        replacement: 'ldap-login-password <secret redacted>'
+      - search: '^snmp-server host (.*) community (\S+)'
+        replacement: 'snmp-server host \1 community <secret redacted>'
