@@ -84,6 +84,17 @@ git:
 ### Groups configuration
 ## Priority for device configuration (default to most specific): app < groups < nodes
 ## KiwiSSH closes shell sessions automatically after backup command phases, you don't need to explicitly add "exit" or "logout" but you can.
+##
+## TIP: You can externalize the `groups` and `nodes` sections into separate files
+## using the `!include` tag. This keeps large/dynamic device data out of this file
+## and makes automation (CI/CD, Ansible, scripts) much easier. For example:
+##
+##   groups: !include groups.yaml         # single file (see groups.yaml.example)
+##   nodes: !include nodes.yaml           # single file (see nodes.yaml.example)
+##   nodes: !include nodes.d/             # merge every *.yaml file in a directory
+##
+## Paths may be absolute (e.g. /config/groups.yaml) or relative to the kiwissh.yaml file's
+## directory. Included files hold the mapping directly (no leading groups:/nodes: key needed).
 groups:
   <your-group-name-here>:
     username: "admin"
