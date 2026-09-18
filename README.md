@@ -174,6 +174,9 @@ Below you'll find a detailed overview of all available configuration options in 
 > [!IMPORTANT]
 > Changes to the `kiwissh.yaml` file will require a restart of the backend and frontend applications to take effect.
 
+> [!TIP]
+> You can externalize large sections of your `groups` and `nodes` configuration into separate files using the `!include` tag. This helps keep your `kiwissh.yaml` file clean and makes automation easier. [Read more in the example files](backend/config/kiwissh.yaml.example).
+
 ### app
 
 Full available options:
