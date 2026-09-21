@@ -1,0 +1,70 @@
+### HP BladeSystem Vendor Configuration
+
+vendor:
+  id: "hp_bladesystem"
+  name: "HP BladeSystem"
+  description: "HP BladeSystem devices"
+
+### Session-level output behavior.
+session:
+  comment_prefix: "# "
+  prompt: '.*> '
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Pre-backup commands (prepare the session) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  pre_backup:
+    - command: "set script mode on"
+
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "show oa info"
+      metadata: true
+    - command: "show oa network"
+      metadata: true
+    - command: "show oa certificate"
+      metadata: true
+    - command: "show sshfingerprint"
+      metadata: true
+    - command: "show fru"
+      metadata: true
+    - command: "show network"
+      metadata: true
+    - command: "show vlan"
+      metadata: true
+    - command: "show rack name"
+      metadata: true
+    - command: "show server list"
+      metadata: true
+    - command: "show server names"
+      metadata: true
+    - command: "show server port map all"
+      metadata: true
+    - command: "show server info all"
+      metadata: true
+    - command: "show config"
+      show_command_in_config: true
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "exit"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  strip_patterns:
+    # - "^% Invalid input detected at '\\^' marker\\.$"
+  # config_start: "^config "
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      - search: '^(SET SNMP COMMUNITY (READ|WRITE)).*'
+        replacement: '\1 <secret hidden>'

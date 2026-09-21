@@ -1,0 +1,64 @@
+### Extreme Baystack Operating System Software (BOSS) Vendor Configuration
+
+vendor:
+  id: "avaya_boss"
+  name: "Avaya BOSS"
+  description: "Extreme Baystack Operating System Software (BOSS) devices"
+
+### Session-level output behavior.
+session:
+  comment_prefix: "! "
+  prompt: '^[^\s#>]+[#>]$'
+  pagination:
+    enabled: true
+    patterns:
+      - pattern: 'Enter Ctrl-Y to begin\.' # handle banner
+        response: '\cY'
+      - pattern: 'Press ENTER to continue' # handle failed retries since last login
+        response: ' '
+      - pattern: 'ommand Line Interface\.\.\.' # handle the menu on the older BOSS example
+        response: 'c'
+      
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Pre-backup commands (prepare the session) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  pre_backup:
+    - command: "terminal length 0"
+    - command: "terminal width 132"
+
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "show stack-info"
+      metadata: true
+    - command: "show sys-info"
+      metadata: true
+    - command: "show running-config"
+      show_command_in_config: true
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "logout"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  strip_patterns:
+    - '^[^\s#>]+[#>]$'
+    - '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} .*'
+    - '^! clock set.*'
+    - '^show running-config'
+  # config_start: "^config "
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    # patterns:
+    #   - search: '(.+)\s+encrypted-password\s+\w+\s+(.*)'
+    #     replacement: '\1 <secret hidden> \2'

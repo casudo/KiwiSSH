@@ -1,0 +1,66 @@
+### Netgear Vendor Configuration
+
+vendor:
+  id: "netgear_netgear"
+  name: "Netgear"
+  description: "Netgear devices"
+
+### Session-level output behavior.
+session:
+  comment_prefix: "! "
+  prompt: '^\(?[\w \-+.]+\)? ?[#>] ?$'
+  pagination:
+    enabled: true
+    patterns:
+      - pattern: '^--More--(?: or \(q\)uit)?$'
+        response: " "
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Pre-backup commands (prepare the session) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  pre_backup:
+    - command: "enable"
+      then: ["{{ enable_password }}"]
+    - command: 'terminal length 0'
+
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "show version"
+      metadata: true
+    - command: "show bootvar"
+      metadata: true
+    - command: "show running-config"
+      show_command_in_config: true
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "quit"
+      then: ["n"]
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  strip_patterns:
+    - '(System Up Time:?\s+).*'
+    - '(Current SNTP Synchronized Time:).*'
+    - '(Current System Time:).*'
+  # config_start: "^config "
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      - search: 'password (\S+)'
+        replacement: 'password <secret-hidden>'
+      - search: 'encrypted (\S+)'
+        replacement: 'encrypted <secret-hidden>'
+      - search: 'snmp-server community (\S+)$'
+        replacement: 'snmp-server community <secret-hidden>'
+      - search: 'snmp-server community (\S+) (\S+) (\S+)'
+        replacement: 'snmp-server community <secret-hidden> <secret-hidden> <secret-hidden>'

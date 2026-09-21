@@ -307,10 +307,46 @@ class SmtpConfig(BaseModel):
         return self
 
 
+class WebhookFormat(str, Enum):
+    """Shape the payload to how a webhook endpoint expects it."""
+    GENERIC = "generic" # Flat JSON with all backup fields
+    DISCORD = "discord" # Discord-compatible {"content": ...} body
+
+
+class WebhookConfig(BaseModel):
+    """Webhook configuration for notifications."""
+    url: str
+    method: str = "POST"
+    format: WebhookFormat = WebhookFormat.GENERIC
+    headers: dict[str, str] = Field(default_factory=dict)
+    timeout_seconds: float = Field(default=10.0, gt=0)
+    verify_ssl: bool = True
+
+    @field_validator("url", mode="before")
+    @classmethod
+    def validate_url(cls, value: str | None) -> str:
+        """Require a non-empty http(s) URL."""
+        text = "" if value is None else str(value).strip()
+        if not text:
+            raise ValueError("notifications.webhook.url must be a non-empty string")
+        if not (text.startswith("http://") or text.startswith("https://")):
+            raise ValueError("notifications.webhook.url must start with http:// or https://")
+        return text
+
+    @field_validator("method", mode="before")
+    @classmethod
+    def validate_method(cls, value: str | None) -> str:
+        """Restrict to HTTP methods that carry a request body."""
+        text = "POST" if value is None else str(value).strip().upper()
+        if text not in ("POST", "PUT", "PATCH"):
+            raise ValueError("notifications.webhook.method must be one of POST, PUT, PATCH")
+        return text
+
+
 class NotificationType(BaseModel):
     """Notification delivery channel."""
     smtp: SmtpConfig | None = None
-    # TODO: webhook, slack, teams, ...
+    webhook: WebhookConfig | None = None
 
 
 ### =========== SourcesConfig SUBCLASSES ===========
@@ -365,51 +401,31 @@ class HttpSourceConfig(BaseModel):
     verify_tls: bool = True
     timeout: int = Field(default=10, ge=1)
 
-    @field_validator("url", mode="before")
-    @classmethod
-    def validate_url(cls, value: str | None) -> str:
-        """Require an http(s) URL for the HTTP source."""
-        text = "" if value is None else str(value).strip()
-        if not text:
-            raise ValueError("sources.http.url must be a non-empty string")
-        if not (text.startswith("http://") or text.startswith("https://")):
-            raise ValueError("sources.http.url must start with 'http://' or 'https://'")
-        return text
+    @model_validator(mode="after")
+    def validate_type_config(self) -> "NotificationsConfig":
+        """Require at least one channel config block when notifications are enabled."""
+        if not self.enabled:
+            return self
+        if self.type.smtp is None and self.type.webhook is None:
+            raise ValueError(
+                "At least one notification channel must be configured under notifications.type "
+                "(e.g. notifications.type.smtp or notifications.type.webhook) when notifications.enabled is true"
+            )
+        return self
 
-    @field_validator("headers", mode="before")
-    @classmethod
-    def normalize_headers(cls, value: dict | None) -> dict[str, str]:
-        """Coerce header keys/values to strings and drop blanks."""
-        if value is None:
-            return {}
-        if not isinstance(value, dict):
-            raise ValueError("sources.http.headers must be a mapping of header name to value")
-        return {str(k).strip(): str(v) for k, v in value.items() if str(k).strip()}
 
-    @field_validator("map", mode="before")
-    @classmethod
-    def normalize_map(cls, value: dict | None) -> dict[str, str]:
-        """Validate the field map keys against the supported canonical fields."""
-        if value is None:
-            return {}
-        if not isinstance(value, dict):
-            raise ValueError("sources.http.map must be a mapping of canonical field to JSON field")
-        allowed = {"device_name", "ip_address", "group", "enabled", *SOURCE_OVERRIDE_FIELDS}
-        
-        normalized: dict[str, str] = {}
-        for key, mapped in value.items():
-            canonical = str(key).strip()
-            if canonical not in allowed:
-                raise ValueError(
-                    f"sources.http.map contains unsupported field '{canonical}'. "
-                    f"Allowed fields: {', '.join(sorted(allowed))}"
-                )
-            mapped_field = str(mapped).strip()
-            if mapped_field:
-                normalized[canonical] = mapped_field
-        return normalized
+### =====================================================================
 
-    @field_validator("default_group", "items_key", mode="before")
+class JumphostBaseConfig(BaseModel):
+    """Shared reusable jumphost fields for group and node-level config."""
+    hostname: str | None = None
+    username: str | None = None
+    password: str | None = None
+    ssh_key_file: str | None = None
+    ssh_profile: str | None = None
+    port: int | None = Field(default=None, ge=1, le=65535)
+
+    @field_validator("hostname", "username", "password", "ssh_key_file", "ssh_profile", mode="before")
     @classmethod
     def normalize_optional_text(cls, value: str | None) -> str | None:
         """Normalize optional text fields and convert blanks to None."""
