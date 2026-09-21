@@ -67,6 +67,52 @@ def _resolve_config_dir() -> Path:
     ### Will resolve three (parents[0,1,2]) directories up from this file
     return Path(__file__).resolve().parents[2] / "config"
 
+
+### =====================================================================
+### YAML `!include` support
+### =====================================================================
+
+
+class KiwiSSHYamlLoader(yaml.SafeLoader):
+    """`yaml.SafeLoader` extended with the `!include` tag.
+    
+    kiwissh.yaml can pull large sections out into separate files, e.g.:
+    ```yaml
+    groups: !include groups.yaml   # a single file is loaded
+    nodes:  !include nodes.d/      # a directory merges every *.yaml inside
+    ```
+    Relative paths are resolved against the kiwissh.yaml file's directory.
+    """
+
+
+def _yaml_include(loader: KiwiSSHYamlLoader, node: yaml.Node) -> Any:
+    """Load the file or directory referenced by an `!include` tag."""
+    target = Path(loader.construct_scalar(node)).expanduser()
+    ### Resolve relative paths against the kiwissh.yaml file's directory
+    if not target.is_absolute():
+        target = Path(loader.name).parent / target
+
+    def _load(path: Path) -> Any:
+        with open(path, encoding="utf-8") as f:
+            return yaml.load(f, Loader=KiwiSSHYamlLoader)
+
+    ### A single file is returned as-is; a directory merges every *.yaml it holds
+    if not target.is_dir():
+        return _load(target)
+
+    ### Merge all YAML files in the directory into a single dictionary
+    merged: dict[str, Any] = {}
+    for file in sorted(p for p in target.iterdir() if p.suffix in {".yaml"}):
+        for key, value in (_load(file) or {}).items():
+            if key in merged:
+                raise yaml.YAMLError(f"!include '{node.value}': duplicate key '{key}' in {file.name}")
+            merged[key] = value
+    return merged
+
+
+KiwiSSHYamlLoader.add_constructor("!include", _yaml_include)
+
+
 ### =============================================================================
 ### Sub-Classes Definitions
 ### =============================================================================
@@ -979,7 +1025,7 @@ class Settings(BaseSettings):
             raise ValueError(f"Main configuration file not found: {config_file}.")
 
         with open(config_file, encoding="utf-8") as f:
-            file_content = yaml.safe_load(f) or {}
+            file_content = yaml.load(f, Loader=KiwiSSHYamlLoader) or {}
 
             ### TODO: Check for required sections and handle missing sections gracefully with defaults or warnings
 
@@ -1018,14 +1064,14 @@ class Settings(BaseSettings):
         ssh_profiles_file = self.config_dir / "ssh_profiles.yaml"
         if ssh_profiles_file.exists():
             with open(ssh_profiles_file, encoding="utf-8") as f:
-                self.ssh_profiles = yaml.safe_load(f) or {}
+                self.ssh_profiles = yaml.load(f, Loader=KiwiSSHYamlLoader) or {}
 
         ### Load vendor configs
         vendors_dir = self.config_dir / "vendors"
         if vendors_dir.exists():
             for vendor_file in vendors_dir.glob("*.yaml"):
                 with open(vendor_file, encoding="utf-8") as f:
-                    vendor_data = yaml.safe_load(f) or {}
+                    vendor_data = yaml.load(f, Loader=KiwiSSHYamlLoader) or {}
                     vendor_id = vendor_data["vendor"].get("id")
                     self.vendors[vendor_id] = vendor_data
 

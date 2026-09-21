@@ -173,6 +173,9 @@ Below you'll find a detailed overview of all available configuration options in 
 > [!IMPORTANT]
 > Changes to the `kiwissh.yaml` file will require a restart of the backend and frontend applications to take effect.
 
+> [!TIP]
+> You can externalize large sections of your `groups` and `nodes` configuration into separate files using the `!include` tag. This helps keep your `kiwissh.yaml` file clean and makes automation easier. [Read more in the example files](backend/config/kiwissh.yaml.example).
+
 ### app
 
 Full available options:
@@ -681,7 +684,6 @@ The endpoint will return the following information about the device:
 - Put redaction boolean switch as group/node level override instead of per vendor to be able to easily turn on/off redaction for specific groups/nodes without having to modify the vendor YAML files?
 - Full-text config search ([#48](https://github.com/casudo/KiwiSSH/issues/48))
 - Config file browser on the frontend ([#47](https://github.com/casudo/KiwiSSH/issues/47))
-- Fetch device config via HTTP ([#72](https://github.com/casudo/KiwiSSH/issues/72))
 
 **Long Term:**
 
