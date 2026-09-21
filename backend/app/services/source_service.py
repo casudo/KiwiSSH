@@ -70,9 +70,12 @@ class SourceService:
 
         device_config = self.settings.get_device_config(group, device_name)
 
+        resolved_protocol = str(device_config.get("protocol")).strip().lower()
         resolved_ssh_profile = str(device_config.get("ssh_profile") or "").strip()
-        if not resolved_ssh_profile and str(device_config.get("protocol")) == "telnet":
-            resolved_ssh_profile = "telnet"
+        ### DeviceBase requires a non-empty ssh_profile; non-SSH protocols use the
+        ## protocol name as a placeholder since they dont rely on an SSH profile
+        if not resolved_ssh_profile and resolved_protocol != "ssh":
+            resolved_ssh_profile = resolved_protocol
 
         enabled_raw = row.get("enabled", True)
         if isinstance(enabled_raw, bool):
@@ -86,7 +89,7 @@ class SourceService:
             ip_address=str(row.get("ip_address", "")).strip(),
             vendor=device_config["vendor"],
             ssh_profile=resolved_ssh_profile,
-            protocol=str(device_config.get("protocol")).strip().lower(),
+            protocol=resolved_protocol,
             port=int(device_config.get("port") or 22),
             enabled=enabled,
         )
