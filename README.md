@@ -684,7 +684,6 @@ The endpoint will return the following information about the device:
 - Put redaction boolean switch as group/node level override instead of per vendor to be able to easily turn on/off redaction for specific groups/nodes without having to modify the vendor YAML files?
 - Full-text config search ([#48](https://github.com/casudo/KiwiSSH/issues/48))
 - Config file browser on the frontend ([#47](https://github.com/casudo/KiwiSSH/issues/47))
-- Fetch device config via HTTP ([#72](https://github.com/casudo/KiwiSSH/issues/72))
 
 **Long Term:**
 
