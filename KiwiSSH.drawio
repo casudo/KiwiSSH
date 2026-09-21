@@ -1,6 +1,6 @@
 <mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.0.3 Chrome/140.0.7339.249 Electron/38.7.0 Safari/537.36" version="29.0.3" pages="4">
   <diagram name="Backup Services" id="o8xVrSfJphuazaFM1u5R">
-    <mxGraphModel dx="2505" dy="2158" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="2864" dy="2370" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -114,7 +114,7 @@
             <mxPoint x="25" as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="3-DM7hDD2dwEg7yY99-Z-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="rmfFexarqkWoB4NCqTo8-1" source="rmfFexarqkWoB4NCqTo8-25" target="3-DM7hDD2dwEg7yY99-Z-1">
+        <mxCell id="3-DM7hDD2dwEg7yY99-Z-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="rmfFexarqkWoB4NCqTo8-1" source="rmfFexarqkWoB4NCqTo8-25" target="3-DM7hDD2dwEg7yY99-Z-1" edge="1">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="250" y="800" />
@@ -122,7 +122,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="3-DM7hDD2dwEg7yY99-Z-3" value="await" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="3-DM7hDD2dwEg7yY99-Z-2">
+        <mxCell id="3-DM7hDD2dwEg7yY99-Z-3" value="await" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="3-DM7hDD2dwEg7yY99-Z-2" vertex="1" connectable="0">
           <mxGeometry x="0.2924" y="-1" relative="1" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
@@ -272,7 +272,7 @@
         <mxCell id="rmfFexarqkWoB4NCqTo8-45" value="QUEUE LEVEL" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#82b366;strokeWidth=4;fontSize=15;fontStyle=1;fontColor=#97D077;labelPosition=center;verticalLabelPosition=top;align=center;verticalAlign=bottom;" parent="rmfFexarqkWoB4NCqTo8-1" vertex="1">
           <mxGeometry x="60" y="458.25" width="1120" height="121.75" as="geometry" />
         </mxCell>
-        <mxCell id="3-DM7hDD2dwEg7yY99-Z-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="rmfFexarqkWoB4NCqTo8-1" source="3-DM7hDD2dwEg7yY99-Z-1" target="rmfFexarqkWoB4NCqTo8-33">
+        <mxCell id="3-DM7hDD2dwEg7yY99-Z-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="rmfFexarqkWoB4NCqTo8-1" source="3-DM7hDD2dwEg7yY99-Z-1" target="rmfFexarqkWoB4NCqTo8-33" edge="1">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="620" y="900" />
@@ -280,12 +280,12 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="3-DM7hDD2dwEg7yY99-Z-6" value="await" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="3-DM7hDD2dwEg7yY99-Z-5">
+        <mxCell id="3-DM7hDD2dwEg7yY99-Z-6" value="await" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="3-DM7hDD2dwEg7yY99-Z-5" vertex="1" connectable="0">
           <mxGeometry x="-0.2752" relative="1" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="3-DM7hDD2dwEg7yY99-Z-1" value="http_service.get_config()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" vertex="1" parent="rmfFexarqkWoB4NCqTo8-1">
+        <mxCell id="3-DM7hDD2dwEg7yY99-Z-1" value="http_service.get_config()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="rmfFexarqkWoB4NCqTo8-1" vertex="1">
           <mxGeometry x="525" y="820" width="190" height="60" as="geometry" />
         </mxCell>
         <mxCell id="rmfFexarqkWoB4NCqTo8-58" value="" style="group" parent="1" connectable="0" vertex="1">
@@ -534,6 +534,9 @@
               <mxPoint x="1880" y="400" />
             </Array>
           </mxGeometry>
+        </mxCell>
+        <mxCell id="TifLb4YZhCG6_eTbBv43-1" value="TODO: Make calls clearer&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Some funcs are missing too&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontStyle=1;fontSize=30;fontColor=#FF0000;" vertex="1" parent="1">
+          <mxGeometry x="-770" y="610" width="190" height="380" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
