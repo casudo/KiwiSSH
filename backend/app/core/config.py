@@ -447,17 +447,58 @@ class HttpSourceConfig(BaseModel):
     verify_tls: bool = True
     timeout: int = Field(default=10, ge=1)
 
-    @model_validator(mode="after")
-    def validate_type_config(self) -> "NotificationsConfig":
-        """Require at least one channel config block when notifications are enabled."""
-        if not self.enabled:
-            return self
-        if self.type.smtp is None and self.type.webhook is None:
-            raise ValueError(
-                "At least one notification channel must be configured under notifications.type "
-                "(e.g. notifications.type.smtp or notifications.type.webhook) when notifications.enabled is true"
-            )
-        return self
+    @field_validator("url", mode="before")
+    @classmethod
+    def validate_url(cls, value: str | None) -> str:
+        """Require an http(s) URL for the HTTP source."""
+        text = "" if value is None else str(value).strip()
+        if not text:
+            raise ValueError("sources.http.url must be a non-empty string")
+        if not (text.startswith("http://") or text.startswith("https://")):
+            raise ValueError("sources.http.url must start with 'http://' or 'https://'")
+        return text
+
+    @field_validator("headers", mode="before")
+    @classmethod
+    def normalize_headers(cls, value: dict | None) -> dict[str, str]:
+        """Coerce header keys/values to strings and drop blanks."""
+        if value is None:
+            return {}
+        if not isinstance(value, dict):
+            raise ValueError("sources.http.headers must be a mapping of header name to value")
+        return {str(k).strip(): str(v) for k, v in value.items() if str(k).strip()}
+
+    @field_validator("map", mode="before")
+    @classmethod
+    def normalize_map(cls, value: dict | None) -> dict[str, str]:
+        """Validate the field map keys against the supported canonical fields."""
+        if value is None:
+            return {}
+        if not isinstance(value, dict):
+            raise ValueError("sources.http.map must be a mapping of canonical field to JSON field")
+        allowed = {"device_name", "ip_address", "group", "enabled", *SOURCE_OVERRIDE_FIELDS}
+        
+        normalized: dict[str, str] = {}
+        for key, mapped in value.items():
+            canonical = str(key).strip()
+            if canonical not in allowed:
+                raise ValueError(
+                    f"sources.http.map contains unsupported field '{canonical}'. "
+                    f"Allowed fields: {', '.join(sorted(allowed))}"
+                )
+            mapped_field = str(mapped).strip()
+            if mapped_field:
+                normalized[canonical] = mapped_field
+        return normalized
+
+    @field_validator("default_group", "items_key", mode="before")
+    @classmethod
+    def normalize_optional_text(cls, value: str | None) -> str | None:
+        """Normalize optional text fields and convert blanks to None."""
+        if value is None:
+            return None
+        text = str(value).strip()
+        return text or None
 
 
 ### =====================================================================
@@ -719,12 +760,11 @@ class NotificationsConfig(BaseModel):
         """Require at least one channel config block when notifications are enabled."""
         if not self.enabled:
             return self
-        if self.type.smtp is None:
+        if self.type.smtp is None and self.type.webhook is None:
             raise ValueError(
                 "At least one notification channel must be configured under notifications.type "
-                "(e.g. notifications.type.smtp) when notifications.enabled is true"
+                "(e.g. notifications.type.smtp or notifications.type.webhook) when notifications.enabled is true"
             )
-        ### TODO: Update check for multiple channels
         return self
 
 
