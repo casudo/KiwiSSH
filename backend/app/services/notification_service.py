@@ -6,9 +6,11 @@ import smtplib
 import ssl
 from datetime import datetime
 from email.message import EmailMessage
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from app.core.config import NotificationsConfig, SmtpConfig
+import httpx
+
+from app.core.config import NotificationsConfig, SmtpConfig, WebhookConfig, WebhookFormat
 from app.models.backup import BackupStatus
 
 if TYPE_CHECKING:
@@ -19,6 +21,10 @@ logger = logging.getLogger(__name__)
 
 class NotificationService:
     """Service for dispatching backup notifications to configured channels."""
+
+    ### =============================================================================
+    ### NotificationService Class Helper Functions
+    ### =============================================================================
 
     def _should_notify(
         self,
@@ -54,9 +60,9 @@ class NotificationService:
 
         return False
 
-    ### ==================================================================================
+    ### ==============================================
     ### SMTP Helpers
-    ### ==================================================================================
+    ### ==============================================
 
     def _build_subject(self, device_name: str, group: str, status: BackupStatus) -> str:
         """Build email subject line."""
@@ -131,10 +137,6 @@ class NotificationService:
                     server.login(smtp_config.username, smtp_config.password)
                 server.send_message(msg)
 
-    ### ==================================================================================
-    ### Send Notification for Type N Methods
-    ### ==================================================================================
-
     async def _notify_smtp(
         self,
         device_name: str,
@@ -201,9 +203,195 @@ class NotificationService:
             len(smtp_config.recipients),
         )
 
-    ### TODO: _notify_XYZ()
+    ### ==============================================
+    ### Webhook Helpers
+    ### ==============================================
 
-    ### Main entrypoint
+    def _build_payload(
+        self,
+        device_name: str,
+        group: str,
+        status: BackupStatus,
+        previous_status: str | None,
+        job_id: str | None,
+        error_message: str | None,
+        duration_seconds: float | None,
+        timestamp: datetime | None,
+        event: str,
+        webhook_format: WebhookFormat,
+        lines_added: int = 0,
+        lines_removed: int = 0,
+    ) -> dict[str, Any]:
+        """Build the JSON payload sent to a webhook endpoint, shaped per format."""
+        if webhook_format == WebhookFormat.DISCORD:
+            return self._build_discord_payload(
+                device_name=device_name,
+                group=group,
+                status=status,
+                previous_status=previous_status,
+                job_id=job_id,
+                error_message=error_message,
+                duration_seconds=duration_seconds,
+                timestamp=timestamp,
+                event=event,
+                lines_added=lines_added,
+                lines_removed=lines_removed,
+            )
+        return {
+            "event": event,
+            "source": "KiwiSSH",
+            "device_name": device_name,
+            "group": group,
+            "status": status.value,
+            "previous_status": previous_status,
+            "job_id": job_id,
+            "error_message": error_message,
+            "duration_seconds": duration_seconds,
+            "timestamp": timestamp.isoformat() if timestamp else None,
+            "lines_added": lines_added,
+            "lines_removed": lines_removed,
+        }
+
+    def _build_discord_payload(
+        self,
+        device_name: str,
+        group: str,
+        status: BackupStatus,
+        previous_status: str | None,
+        job_id: str | None,
+        error_message: str | None,
+        duration_seconds: float | None,
+        timestamp: datetime | None,
+        event: str,
+        lines_added: int = 0,
+        lines_removed: int = 0,
+    ) -> dict[str, Any]:
+        """Build a Discord-compatible webhook body."""
+        ### Header
+        if event == "large_diff":
+            header = f"**[KiwiSSH] Major Config Change: {device_name} ({group})**"
+        else:
+            header = f"**[KiwiSSH] Backup {status.value.upper()}: {device_name} ({group})**"
+
+        ### Body
+        lines: list[str] = []
+        if previous_status is not None:
+            lines.append(f"Prev. Status: `{previous_status.upper()}`")
+        lines.append(f"Status: `{status.value.upper()}`")
+        if timestamp:
+            lines.append(f"Timestamp: {timestamp.strftime('%Y-%m-%d %H:%M:%S UTC')}")
+        if duration_seconds is not None:
+            lines.append(f"Duration: {duration_seconds:.1f}s")
+        if job_id:
+            lines.append(f"Job ID: `{job_id}`")
+        if lines_added or lines_removed:
+            lines.append(f"Config Change: +{lines_added} / -{lines_removed} lines")
+        if error_message:
+            lines.append(f"Error: ```{error_message}```")
+
+        return {
+            "content": "\n".join(lines),
+            "embeds": [
+                {
+                    "title": header,
+                    "description": "\n".join(lines),
+                    "color": 16254727 if status == BackupStatus.FAILED else 1767431 if status == BackupStatus.SUCCESS else 16311559
+                }
+            ],
+            "username": "KiwiSSH",
+            "attachments": [],
+        }
+
+    async def _send_webhook(
+        self,
+        webhook_config: WebhookConfig,
+        payload: dict[str, Any],
+    ) -> None:
+        """POST a JSON payload to the configured webhook endpoint."""
+        async with httpx.AsyncClient(
+            timeout=webhook_config.timeout_seconds,
+            verify=webhook_config.verify_ssl,
+        ) as client:
+            response = await client.request(
+                webhook_config.method,
+                webhook_config.url,
+                json=payload,
+                headers=webhook_config.headers or None,
+            )
+            response.raise_for_status()
+
+    async def _notify_webhook(
+        self,
+        device_name: str,
+        group: str,
+        previous_status: str | None,
+        result: "BackupRecord",
+        webhook_config: WebhookConfig,
+        lines_added: int = 0,
+        lines_removed: int = 0,
+    ) -> None:
+        """Send a webhook notification for a backup result."""
+        payload = self._build_payload(
+            device_name=device_name,
+            group=group,
+            status=result.status,
+            previous_status=previous_status,
+            job_id=result.job_id,
+            error_message=result.error_message,
+            duration_seconds=result.duration_seconds,
+            timestamp=result.timestamp,
+            event="backup",
+            webhook_format=webhook_config.format,
+            lines_added=lines_added,
+            lines_removed=lines_removed,
+        )
+
+        await self._send_webhook(webhook_config, payload)
+        logger.info(
+            "Sent webhook notification for %s (status=%s) to %s",
+            device_name,
+            result.status.value,
+            webhook_config.url,
+        )
+
+    async def _notify_webhook_large_diff(
+        self,
+        device_name: str,
+        group: str,
+        result: "BackupRecord",
+        webhook_config: WebhookConfig,
+        lines_added: int,
+        lines_removed: int,
+    ) -> None:
+        """Send a webhook notification specifically for a major config change."""
+        payload = self._build_payload(
+            device_name=device_name,
+            group=group,
+            status=result.status,
+            previous_status=None,
+            job_id=result.job_id,
+            error_message=None,
+            duration_seconds=result.duration_seconds,
+            timestamp=result.timestamp,
+            event="large_diff",
+            webhook_format=webhook_config.format,
+            lines_added=lines_added,
+            lines_removed=lines_removed,
+        )
+
+        await self._send_webhook(webhook_config, payload)
+        logger.info(
+            "Sent large diff webhook notification for %s (+%d / -%d lines) to %s",
+            device_name,
+            lines_added,
+            lines_removed,
+            webhook_config.url,
+        )
+
+    ### =============================================================================
+    ### NotificationService Class PUBLIC Functions
+    ### =============================================================================
+
     async def send_notification(
         self,
         device_name: str,
@@ -231,6 +419,7 @@ class NotificationService:
 
         ### Trigger-based notification (always / failure / failure_new)
         if self._should_notify(notifications.trigger.value, result.status, previous_status):
+            ### SMTP (Mail)
             if notifications.type.smtp is not None:
                 try:
                     await self._notify_smtp(
@@ -239,7 +428,15 @@ class NotificationService:
                     )
                 except Exception as ex:
                     logger.warning("Failed to send smtp notification for %s: %s", device_name, ex)
-            ### TODO: If notification.type.XYZ is not None...
+            ### Webhook (HTTP)
+            if notifications.type.webhook is not None:
+                try:
+                    await self._notify_webhook(
+                        device_name, group, previous_status, result, notifications.type.webhook,
+                        lines_added=lines_added, lines_removed=lines_removed,
+                    )
+                except Exception as ex:
+                    logger.warning("Failed to send webhook notification for %s: %s", device_name, ex)
         else:
             logger.debug(
                 "Notification suppressed for %s (trigger=%s, status=%s, previous=%s)",
@@ -258,9 +455,15 @@ class NotificationService:
                     )
                 except Exception as ex:
                     logger.warning("Failed to send large diff smtp notification for %s: %s", device_name, ex)
+            if notifications.type.webhook is not None:
+                try:
+                    await self._notify_webhook_large_diff(
+                        device_name, group, result, notifications.type.webhook, lines_added, lines_removed
+                    )
+                except Exception as ex:
+                    logger.warning("Failed to send large diff webhook notification for %s: %s", device_name, ex)
             ### TODO: If notification.type.XYZ is not None...
 
 
 ### Singleton instance
 notification_service = NotificationService()
-

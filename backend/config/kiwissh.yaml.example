@@ -46,6 +46,14 @@ notifications:
       sender: "kiwissh@example.com"
       recipients:
         - "admin@example.com"
+    # webhook:
+    #   url: "https://example.com/hooks/kiwissh"
+    #   method: "POST"
+    #   format: "generic"
+    #   headers:
+    #     Authorization: "Bearer 1d73fabef8a44f5714b585cf0xxxxx"
+    #   timeout_seconds: 10
+    #   verify_ssl: true
 
 ### Device sources
 ## Load from a CSV file, an Ansible inventory YAML, PostgreSQL or an HTTP endpoint. Exactly one source is required.
