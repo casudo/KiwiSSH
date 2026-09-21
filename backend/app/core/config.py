@@ -259,10 +259,46 @@ class SmtpConfig(BaseModel):
         return self
 
 
+class WebhookFormat(str, Enum):
+    """Shape the payload to how a webhook endpoint expects it."""
+    GENERIC = "generic" # Flat JSON with all backup fields
+    DISCORD = "discord" # Discord-compatible {"content": ...} body
+
+
+class WebhookConfig(BaseModel):
+    """Webhook configuration for notifications."""
+    url: str
+    method: str = "POST"
+    format: WebhookFormat = WebhookFormat.GENERIC
+    headers: dict[str, str] = Field(default_factory=dict)
+    timeout_seconds: float = Field(default=10.0, gt=0)
+    verify_ssl: bool = True
+
+    @field_validator("url", mode="before")
+    @classmethod
+    def validate_url(cls, value: str | None) -> str:
+        """Require a non-empty http(s) URL."""
+        text = "" if value is None else str(value).strip()
+        if not text:
+            raise ValueError("notifications.webhook.url must be a non-empty string")
+        if not (text.startswith("http://") or text.startswith("https://")):
+            raise ValueError("notifications.webhook.url must start with http:// or https://")
+        return text
+
+    @field_validator("method", mode="before")
+    @classmethod
+    def validate_method(cls, value: str | None) -> str:
+        """Restrict to HTTP methods that carry a request body."""
+        text = "POST" if value is None else str(value).strip().upper()
+        if text not in ("POST", "PUT", "PATCH"):
+            raise ValueError("notifications.webhook.method must be one of POST, PUT, PATCH")
+        return text
+
+
 class NotificationType(BaseModel):
     """Notification delivery channel."""
     smtp: SmtpConfig | None = None
-    # TODO: webhook, slack, teams, ...
+    webhook: WebhookConfig | None = None
 
 
 class NotificationsConfig(BaseModel):
@@ -281,12 +317,11 @@ class NotificationsConfig(BaseModel):
         """Require at least one channel config block when notifications are enabled."""
         if not self.enabled:
             return self
-        if self.type.smtp is None:
+        if self.type.smtp is None and self.type.webhook is None:
             raise ValueError(
                 "At least one notification channel must be configured under notifications.type "
-                "(e.g. notifications.type.smtp) when notifications.enabled is true"
+                "(e.g. notifications.type.smtp or notifications.type.webhook) when notifications.enabled is true"
             )
-        ### TODO: Update check for multiple channels
         return self
 
 

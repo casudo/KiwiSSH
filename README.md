@@ -252,6 +252,12 @@ You can get notified if the backup of a device fails or succeeds.
 | `notifications.smtp.password` | The password for the SMTP server. | No | - |
 | `notifications.smtp.use_tls` | Whether to use STARTTLS. Change the port accordingly. | No | `False` |
 | `notifications.smtp.use_ssl` | Whether to use SSL/TLS. Change the port accordingly. | No | `False` |
+| `notifications.webhook.url` | The webhook endpoint URL (must start with `http://` or `https://`). | **Yes** | - |
+| `notifications.webhook.method` | The HTTP method used for the request. One of `POST`, `PUT`, `PATCH`. | No | `POST` |
+| `notifications.webhook.format` | The payload shape the endpoint expects. `generic` sends a flat JSON body with all backup fields; `discord` sends a Discord-compatible `{"content": ...}` body. | No | `generic` |
+| `notifications.webhook.headers` | Additional HTTP headers to send (e.g. an `Authorization` header). | No | - |
+| `notifications.webhook.timeout_seconds` | Request timeout in seconds. | No | `10` |
+| `notifications.webhook.verify_ssl` | Whether to verify the endpoint's TLS certificate. | No | `True` |
 
 ### sources
 
