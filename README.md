@@ -711,7 +711,6 @@ The endpoint will return the following information about the device:
 - Put redaction boolean switch as group/node level override instead of per vendor to be able to easily turn on/off redaction for specific groups/nodes without having to modify the vendor YAML files?
 - Full-text config search ([#48](https://github.com/casudo/KiwiSSH/issues/48))
 - Config file browser on the frontend ([#47](https://github.com/casudo/KiwiSSH/issues/47))
-- Fetch device config via HTTP ([#72](https://github.com/casudo/KiwiSSH/issues/72))
 - Move `SSHService._apply_processing_rules()` into a more centralized file? It's used by all protocols, not explicitly by SSH.
 
 **Long Term:**
@@ -719,7 +718,6 @@ The endpoint will return the following information about the device:
 - i18n localization support
 - Fix logging strings to use lazy formatting instead of f-strings ([Ruff G004](https://docs.astral.sh/ruff/rules/logging-f-string/)) (Add to ruff.toml)
 - Swagger API documentation on GitHub Pages
-- Allow group passwords to bet set via env vars or other input
 - Optional share anonymouse usage data for statistics (needs opt-in, privacy policy and telemetry server)
 - Login Screen, User management and RBAC
 - Allow merging of multiple device sources
