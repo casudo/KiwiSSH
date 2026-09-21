@@ -94,6 +94,22 @@ class VendorService:
 
         return vendor.get("processing", {})
 
+    def get_http_config(self, vendor_id: str) -> dict[str, Any]:
+        """
+        Get HTTP(S) backup configuration for a vendor.
+
+        Args:
+            vendor_id: Vendor identifier
+
+        Returns:
+            Dictionary describing the HTTP requests.
+        """
+        vendor = self.get_vendor(vendor_id)
+        if not vendor:
+            raise ValueError(f"Unknown vendor '{vendor_id}'")
+
+        return vendor.get("http", {})
+
     def list_vendors(self) -> list[dict[str, str]]:
         """
         List all available vendors.

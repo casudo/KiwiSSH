@@ -20,7 +20,7 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-SUPPORTED_PROTOCOLS = {"ssh", "telnet"}
+SUPPORTED_PROTOCOLS = {"ssh", "telnet", "http", "https"}
 
 ### =============================================================================
 ### Config Helper Functions
@@ -46,10 +46,10 @@ def _normalize_protocol(value: str | None, *, allow_none: bool) -> str | None:
     if not text:
         if allow_none:
             return None
-        raise ValueError("protocol must be 'ssh' or 'telnet'")
+        raise ValueError("protocol must be one of 'ssh', 'telnet', 'http', 'https'")
 
     if text not in SUPPORTED_PROTOCOLS:
-        raise ValueError("protocol must be 'ssh' or 'telnet'")
+        raise ValueError("protocol must be one of 'ssh', 'telnet', 'http', 'https'")
     return text
 
 def _resolve_config_dir() -> Path:
@@ -503,6 +503,7 @@ class GroupConfig(BaseModel):
     ssh_profile: str | None = None
     port: int | None = Field(default=None, ge=1, le=65535)
     protocol: str | None = None
+    verify_ssl: bool | None = None
     vendor: str
     jumphost: GroupJumphostConfig | None = None
     timeout: int | None = Field(default=None, ge=1)
@@ -558,11 +559,10 @@ class GroupConfig(BaseModel):
 
     @model_validator(mode="after")
     def validate_group_protocol(self) -> "GroupConfig":
-        """Require ssh_profile unless protocol is explicitly telnet."""
-        if self.protocol == "telnet":
-            return self
-        if not self.ssh_profile:
-            raise ValueError("ssh_profile is required for SSH protocol")
+        """Require ssh_profile unless protocol is not SSH."""
+        if self.protocol in (None, "ssh"):
+            if not self.ssh_profile:
+                raise ValueError("ssh_profile is required for SSH protocol")
         return self
     
     @field_validator("password", mode="before")
@@ -593,6 +593,7 @@ class NodeConfig(BaseModel):
     ssh_profile: str | None = None
     port: int | None = Field(default=None, ge=1, le=65535)
     protocol: str | None = None
+    verify_ssl: bool | None = None
     vendor: str | None = None
     jumphost: NodeJumphostConfig | None = None
     timeout: int | None = Field(default=None, ge=1)
@@ -945,6 +946,8 @@ class Settings(BaseSettings):
             device_config["enable_password"] = override.enable_password
         if override.ssh_key_file is not None:
             device_config["ssh_key_file"] = override.ssh_key_file
+        if override.verify_ssl is not None:
+            device_config["verify_ssl"] = override.verify_ssl
 
         ### Merge jumphost overrides into group defaults key-by-key
         ## This allows partial overrides without duplicating the full block
@@ -1080,6 +1083,7 @@ class Settings(BaseSettings):
             "schedule": self.app.schedule,
             "jumphost": None,
             "protocol": self.app.protocol,
+            "verify_ssl": True,
         }
 
         ### Step 1: Apply group-level defaults / overrides
@@ -1116,6 +1120,8 @@ class Settings(BaseSettings):
                 device_config["port"] = group_config.port
             if group_config.protocol is not None:
                 device_config["protocol"] = group_config.protocol
+            if group_config.verify_ssl is not None:
+                device_config["verify_ssl"] = group_config.verify_ssl
 
         ### Step 1.5: Apply device-source overrides (takes precedence over group defaults)
         source_override = self.source_node_overrides.get(device_name)
@@ -1135,7 +1141,14 @@ class Settings(BaseSettings):
 
         ### Apply the protocol-specific default port only when no override was set explicitly
         if device_config.get("port") is None:
-            device_config["port"] = 23 if resolved_protocol == "telnet" else 22
+            if resolved_protocol == "telnet":
+                device_config["port"] = 23
+            if resolved_protocol == "http":
+                device_config["port"] = 80
+            elif resolved_protocol == "https":
+                device_config["port"] = 443
+            else: # SSH as default
+                device_config["port"] = 22
 
         resolved_password = str(device_config.get("password") or "").strip()
         resolved_key_file = str(device_config.get("ssh_key_file") or "").strip()
@@ -1148,6 +1161,12 @@ class Settings(BaseSettings):
             if device_config.get("jumphost") is not None:
                 raise ValueError(
                     f"Device '{device_name}' in group '{group}' uses telnet protocol which does not support jumphost"
+                )
+        elif resolved_protocol in {"http", "https"}:
+            if device_config.get("jumphost") is not None:
+                raise ValueError(
+                    f"Device '{device_name}' in group '{group}' uses {resolved_protocol} protocol "
+                    "which does not support jumphost"
                 )
         elif resolved_protocol == "ssh":
             if not resolved_password and not resolved_key_file:

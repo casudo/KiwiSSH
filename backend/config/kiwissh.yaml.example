@@ -115,8 +115,18 @@ groups:
       remote:
         url: "ssh://git@<domain>/customer-bbb/firewalls.git"
 
+  <http-group-name>:
+    username: "admin"
+    password: "password"
+    protocol: "https" # Fetch config over HTTP(S) API instead of SSH/Telnet
+    verify_ssl: false # Optional, default true. Set false for self-signed device certs
+    vendor: "paloalto_panosapi"
+    git:
+      remote:
+        url: "ssh://git@<domain>/customer-ccc/https-http-routers.git"
+
 ### Per-node overrides
-## Nodes can override: ssh_profile, protocol, port, vendor, timeout, retry, username, password, ssh_key_file, jumphost, schedule, git.commit_message_template
+## Nodes can override: ssh_profile, protocol, port, vendor, timeout, retry, username, password, ssh_key_file, verify_ssl, jumphost, schedule, git.commit_message_template
 ## Group CANNOT be overridden - change it in the source instead
 ## Remove this section if no overrides needed
 nodes:
