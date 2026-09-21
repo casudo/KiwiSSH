@@ -259,10 +259,17 @@ class SmtpConfig(BaseModel):
         return self
 
 
+class WebhookFormat(str, Enum):
+    """Shape the payload to how a webhook endpoint expects it."""
+    GENERIC = "generic" # Flat JSON with all backup fields
+    DISCORD = "discord" # Discord-compatible {"content": ...} body
+
+
 class WebhookConfig(BaseModel):
     """Webhook configuration for notifications."""
     url: str
     method: str = "POST"
+    format: WebhookFormat = WebhookFormat.GENERIC
     headers: dict[str, str] = Field(default_factory=dict)
     timeout_seconds: float = Field(default=10.0, gt=0)
     verify_ssl: bool = True
