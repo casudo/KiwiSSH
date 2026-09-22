@@ -223,7 +223,7 @@ class NotificationService:
         lines_removed: int = 0,
     ) -> dict[str, Any]:
         """Build the JSON payload sent to a webhook endpoint, shaped per format."""
-        if webhook_format == WebhookFormat.DISCORD:
+        if webhook_format == WebhookFormat.DISCORD: ## discord
             return self._build_discord_payload(
                 device_name=device_name,
                 group=group,
@@ -237,20 +237,21 @@ class NotificationService:
                 lines_added=lines_added,
                 lines_removed=lines_removed,
             )
-        return {
-            "event": event,
-            "source": "KiwiSSH",
-            "device_name": device_name,
-            "group": group,
-            "status": status.value,
-            "previous_status": previous_status,
-            "job_id": job_id,
-            "error_message": error_message,
-            "duration_seconds": duration_seconds,
-            "timestamp": timestamp.isoformat() if timestamp else None,
-            "lines_added": lines_added,
-            "lines_removed": lines_removed,
-        }
+        else: ## Generic
+            return {
+                "event": event,
+                "source": "KiwiSSH",
+                "device_name": device_name,
+                "group": group,
+                "status": status.value,
+                "previous_status": previous_status,
+                "job_id": job_id,
+                "error_message": error_message,
+                "duration_seconds": duration_seconds,
+                "timestamp": timestamp.isoformat() if timestamp else None,
+                "lines_added": lines_added,
+                "lines_removed": lines_removed,
+            }
 
     def _build_discord_payload(
         self,
