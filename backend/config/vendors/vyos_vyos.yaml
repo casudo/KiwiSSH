@@ -24,6 +24,8 @@ commands:
   backup:
     - command: "show version"
       metadata: true
+    - command: "show system commit"
+      metadata: true
     - command: "show configuration commands | no-more"
       show_command_in_config: true
 
