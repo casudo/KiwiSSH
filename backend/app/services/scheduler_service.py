@@ -115,9 +115,54 @@ class SchedulerService:
         except Exception as ex:
             logger.error("Scheduled log retention failed: %s", ex)
 
+    def _schedule_device(self, device: DeviceBase) -> bool:
+        """Add or replace the backup job of a device.
+
+        Returns True if the device has a schedule and was scheduled.
+        """
+        if self.scheduler is None:
+            return False
+
+        if not device.enabled:
+            logger.debug(
+                "Skipping scheduler for disabled device: %s",
+                device.device_name,
+            )
+            return False
+
+        ### Resolve the schedule inside the try so a misconfigured device cant stop the whole scheduler
+        try:
+            schedule = self._get_device_schedule(device)
+            if schedule and schedule.cron:
+                ### Create timezone object
+                tz = ZoneInfo(schedule.timezone)
+
+                ### Schedule the backup job
+                trigger = self._build_device_trigger(schedule.cron, tz, device.device_name)
+                job = self.scheduler.add_job(
+                    self._trigger_device_backup,
+                    trigger=trigger,
+                    args=(device,),
+                    id=f"backup_{device.device_name}",
+                    name=f"Backup {device.device_name}",
+                    replace_existing=True,
+                    misfire_grace_time=300,
+                    coalesce=True,
+                    max_instances=1,
+                )
+                self.scheduled_devices[device.device_name] = job.id
+
+                logger.debug(
+                    f"Scheduled backup for {device.device_name}: {schedule.cron} ({schedule.timezone})"
+                )
+                return True
+        except Exception as ex:
+            logger.error(f"Failed to schedule backup for {device.device_name}: {ex}")
+        return False
+
     def start_scheduler(self, devices: list[DeviceBase]) -> None:
         """Start the scheduler and schedule all configured tasks.
-        
+
         Args:
             devices: List of all available devices
         """
@@ -133,46 +178,11 @@ class SchedulerService:
                     "max_instances": 1,
                 }
             )
-            
+
             ### Schedule backups for all devices with enabled schedules
-            scheduled_count = 0
             for device in devices:
-                if not device.enabled:
-                    logger.debug(
-                        "Skipping scheduler for disabled device: %s",
-                        device.device_name,
-                    )
-                    continue
+                self._schedule_device(device)
 
-                ### Resolve the schedule inside the try so a misconfigured device cant stop the whole scheduler
-                try:
-                    schedule = self._get_device_schedule(device)
-                    if schedule and schedule.cron:
-                        ### Create timezone object
-                        tz = ZoneInfo(schedule.timezone)
-
-                        ### Schedule the backup job
-                        trigger = self._build_device_trigger(schedule.cron, tz, device.device_name)
-                        job = self.scheduler.add_job(
-                            self._trigger_device_backup,
-                            trigger=trigger,
-                            args=(device,),
-                            id=f"backup_{device.device_name}",
-                            name=f"Backup {device.device_name}",
-                            replace_existing=True,
-                            misfire_grace_time=300,
-                            coalesce=True,
-                            max_instances=1,
-                        )
-                        self.scheduled_devices[device.device_name] = job.id
-                        scheduled_count += 1
-
-                        logger.debug(
-                            f"Scheduled backup for {device.device_name}: {schedule.cron} ({schedule.timezone})"
-                        )
-                except Exception as ex:
-                    logger.error(f"Failed to schedule backup for {device.device_name}: {ex}")
-            
             ### Schedule daily log retention cleanup (runs at 03:00 UTC)
             if self.settings.app.retention.enabled:
                 self.scheduler.add_job(
