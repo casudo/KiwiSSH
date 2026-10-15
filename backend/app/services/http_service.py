@@ -9,7 +9,7 @@ from app.core import Settings, get_settings
 from app.models.device import DeviceBase
 from app.services.vendor_service import vendor_service
 from app.services.local_ssh_simulator import local_ssh_simulator
-from app.services.ssh_service import SSHService
+from app.services.protocol_common import apply_processing_rules, fetch_with_retries
 
 logger = logging.getLogger(__name__)
 
@@ -180,7 +180,7 @@ class HTTPService:
             raise RuntimeError("HTTP backup requests completed but returned empty config output")
 
         ### Reuse the shared vendor processing pipeline (strip_patterns, redaction, etc.)
-        processed_config = SSHService._apply_processing_rules(raw_config, processing_rules)
+        processed_config = apply_processing_rules(raw_config, processing_rules)
 
         ### HTTP backups have no separate metadata section
         return processed_config, None
@@ -205,7 +205,7 @@ class HTTPService:
             raise RuntimeError("Local simulator returned empty config output")
 
         processing_rules = vendor_service.get_processing_rules(vendor_id)
-        return SSHService._apply_processing_rules(raw_config, processing_rules), None
+        return apply_processing_rules(raw_config, processing_rules), None
 
     ### =============================================================================
     ### HTTPService Class PUBLIC Functions
@@ -236,8 +236,6 @@ class HTTPService:
         device_username = str(device_config.get("username") or "").strip()
         device_password = str(device_config.get("password") or "").strip()
 
-        max_attempts = retry_count + 1
-
         ### Use the local simulator if test mode is enabled
         if self.settings.local_test_mode:
             return await self._collect_local_vendor_config(
@@ -246,61 +244,31 @@ class HTTPService:
                 timeout_seconds=timeout_seconds,
             )
 
-        ### Try to fetch config from device, applying retries on failure
-        last_exception: Exception | None = None
-        for attempt in range(1, max_attempts + 1):
+        async def fetch_once() -> tuple[str, str | None]:
             context: dict[str, str] = {
                 "host": str(device.ip_address),
                 "username": device_username,
                 "password": device_password,
             }
-            try:
-                config, metadata_output = await self._collect_vendor_config(
-                    device=device,
-                    vendor_id=vendor_id,
-                    scheme=protocol,
-                    port=device_port,
-                    default_timeout=timeout_seconds,
-                    verify_ssl=verify_ssl,
-                    context=context,
-                )
-                if attempt > 1:
-                    logger.warning(
-                        "Config fetch for device '%s' succeeded on retry attempt %d/%d",
-                        device.device_name,
-                        attempt,
-                        max_attempts,
-                    )
-                return config, metadata_output
-            except httpx.TimeoutException as ex:
-                last_exception = TimeoutError(
-                    f"HTTP config fetch timed out after {timeout_seconds}s "
-                    f"(attempt {attempt}/{max_attempts})"
-                )
-                logger.warning(
-                    "Config fetch timeout for device '%s' on attempt %d/%d",
-                    device.device_name,
-                    attempt,
-                    max_attempts,
-                )
-                logger.debug("Timeout details: %s", ex)
-            except Exception as ex:
-                last_exception = ex
-                logger.warning(
-                    "Config fetch failed for device '%s' on attempt %d/%d: %s",
-                    device.device_name,
-                    attempt,
-                    max_attempts,
-                    ex,
-                )
+            return await self._collect_vendor_config(
+                device=device,
+                vendor_id=vendor_id,
+                scheme=protocol,
+                port=device_port,
+                default_timeout=timeout_seconds,
+                verify_ssl=verify_ssl,
+                context=context,
+            )
 
-            ### Wait 0.25sec and try again if there are remaining attempts
-            if attempt < max_attempts:
-                await asyncio.sleep(0.25)
-
-        if last_exception is not None:
-            raise last_exception
-        raise RuntimeError("HTTP config fetch failed without a captured exception!!")
+        ### Try to fetch config from device, applying retries on failure
+        return await fetch_with_retries(
+            device,
+            fetch_once,
+            max_attempts=retry_count + 1,
+            timeout_seconds=timeout_seconds,
+            protocol_label="HTTP",
+            timeout_exceptions=(httpx.TimeoutException,),
+        )
 
 ### Singleton instance
 http_service = HTTPService()
