@@ -168,11 +168,7 @@ def get_backup_jobs(
         }
     except Exception as e:
         logger.error(f"Error fetching backup jobs: {e}")
-        return {
-            "jobs": [],
-            "count": 0,
-            "error": str(e),
-        }
+        raise HTTPException(status_code=500, detail=f"Failed to fetch backup jobs: {e}")
 
 
 @router.get("/status/{job_id}")
@@ -210,15 +206,8 @@ async def get_device_backup_history(
             "offset": offset,
         }
     except Exception as e:
-        return {
-            "device_name": device_name,
-            "history": [],
-            "count": 0,
-            "total_count": 0,
-            "limit": limit,
-            "offset": offset,
-            "error": str(e),
-        }
+        logger.error(f"Error fetching backup history for {device_name}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch backup history: {e}")
 
 
 @router.get("/history/graph/{device_name}")
@@ -256,13 +245,8 @@ async def get_device_backup_graph(
             "counts": counts,
         }
     except Exception as e:
-        return {
-            "device_name": device_name,
-            "days": days,
-            "tz_offset_minutes": tz_offset_minutes,
-            "counts": [],
-            "error": str(e),
-        }
+        logger.error(f"Error fetching backup graph for {device_name}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch backup graph: {e}")
 
 
 @router.get("/diff/{device_name}")
@@ -290,13 +274,8 @@ async def get_config_diff(
             "lines_removed": diff.lines_removed,
         }
     except Exception as e:
-        return {
-            "device_name": device_name,
-            "from_commit": from_commit,
-            "to_commit": to_commit,
-            "error": str(e),
-            "diff": "",
-        }
+        logger.error(f"Error building diff for {device_name}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to build diff: {e}")
 
 
 @router.get("/latest/{device_name}")
@@ -347,11 +326,8 @@ async def get_latest_config(device_name: str, commit: str | None = None) -> dict
                 "version_number": latest.get("version_number"),
             }
     except Exception as e:
-        return {
-            "device_name": device_name,
-            "config": None,
-            "error": str(e),
-        }
+        logger.error(f"Error fetching config for {device_name}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch config: {e}")
 
 
 @router.delete("/flush")
