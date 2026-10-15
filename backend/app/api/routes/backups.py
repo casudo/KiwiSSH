@@ -292,17 +292,16 @@ async def get_latest_config(device_name: str, commit: str | None = None) -> dict
         ### If commit is specified, use that, otherwise get the latest
         if commit:
             config = await git_service.get_config_at_commit(device_name, commit, group=device.group)
-            ### Get commit info from history
-            history = await git_service.get_config_history(device_name, group=device.group, limit=None, offset=0)
-            commit_info = next((c for c in history if c["hash"] == commit), None)
+            ### Look up only this commit instead of loading the device's whole history
+            commit_info = await git_service.get_commit_info(device_name, commit, group=device.group)
 
             return {
                 "device_name": device_name,
                 "config": config,
                 "commit": commit,
-                "timestamp": commit_info["timestamp"] if commit_info else None,
-                "message": commit_info["message"] if commit_info else None,
-                "version_number": commit_info.get("version_number") if commit_info else None,
+                "timestamp": commit_info["timestamp"],
+                "message": commit_info["message"],
+                "version_number": commit_info["version_number"],
             }
         else:
             ### Get latest
