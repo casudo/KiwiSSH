@@ -58,6 +58,7 @@ The backend provides:
       - [PostgreSQL](#postgresql-1)
       - [HTTP](#http)
       - [Ansible Inventory](#ansible-inventory)
+      - [Per-device overrides](#per-device-overrides)
     - [git](#git)
     - [groups](#groups)
     - [nodes](#nodes)
@@ -267,7 +268,7 @@ You can get notified if the backup of a device fails or succeeds.
 Configure where KiwiSSH load the devices to backup from. You can choose between loading the devices from a CSV file, an Ansible inventory file, a PostgreSQL database, or a generic HTTP endpoint.
 
 > [!IMPORTANT]
-> At least one source must be configured (and only one). The following fields are required for every device in the source: `group`, `device_name`, `ip_address`, `enabled`.
+> At least one source must be configured (and only one). The following fields are required for every device in the source: `group`, `device_name`, `ip_address`, `enabled`. A source can optionally carry [per-device overrides](#per-device-overrides) such as credentials or a port as well.
 
 #### CSV File
 
@@ -306,13 +307,13 @@ Loads devices from an HTTP(S) endpoint that returns a JSON array of device objec
 | --- | ----------- | -------- | ------------- |
 | `sources.http.url` | The HTTP(S) URL to fetch the device list from. Must start with `http://` or `https://`. | **Yes** | - |
 | `sources.http.headers` | Map of HTTP request headers, e.g. an authentication token. | No | `{}` |
-| `sources.http.map` | Maps KiwiSSH's canonical fields (`device_name`, `ip_address`, `group`, `enabled`) to the field names in the JSON response. | **Yes** | - |
+| `sources.http.map` | Maps KiwiSSH's canonical fields (`device_name`, `ip_address`, `group`, `enabled`) and optionally any [per-device override](#per-device-overrides) field to the field names in the JSON response. | **Yes** | - |
 | `sources.http.default_group` | Fallback group used when a response item has no (mapped) group value. | No | - |
 | `sources.http.items_key` | Key to locate the device list when the response is an object instead of a top-level array. | No | - |
 | `sources.http.verify_tls` | Whether to verify the server's TLS certificate. | No | `true` |
 | `sources.http.timeout` | Request timeout in seconds. | No | `10` |
 
-As with the file and PostgreSQL sources, Vendors, credentials and SSH profile are **not** taken from the HTTP response — they are resolved from the matching `group` (and optional per-device `node`) configuration in `kiwissh.yaml`. The HTTP source only provides `group`, `device_name`, `ip_address` and `enabled`.
+By default, vendor, credentials and SSH profile are resolved from the matching `group` (and optional per-device `node`) configuration in `kiwissh.yaml`. Like every other source, the HTTP source can override them per device: add the fields to `sources.http.map` (see [Per-device overrides](#per-device-overrides)).
 
 Whatever the outer shape, the device list must ultimately be a **JSON array of flat objects**, where each object holds the fields referenced by `sources.http.map`. KiwiSSH reads the mapped field names as **direct keys** on each item — it does not descend into nested objects or use object keys as device names.
 
@@ -376,6 +377,21 @@ sources:
 The devices will be loaded from the specified Ansible inventory YAML file. The hosts must be defined under the appropriate groups, and the `ansible_host` variable must be present (will be used as the IP address).
 
 [See an example Ansible inventory YAML file here](backend/config/sources/inventory.yaml.example).
+
+#### Per-device overrides
+
+Every source can optionally carry per-device overrides next to the required fields. This is useful when credentials, ports or vendors differ per device and you don't want to maintain a `nodes.<device_name>` entry in `kiwissh.yaml` for each of them.
+
+Supported fields: `username`, `password`, `enable_password`, `ssh_key_file`, `ssh_profile`, `vendor`, `protocol`, `port`, `timeout`, `retry`.
+
+| Source | How to provide an override |
+| ------ | -------------------------- |
+| CSV File | Add a column named after the field, e.g. `password`. |
+| PostgreSQL | Add a column named after the field to the source table. Override columns are only queried if they exist. |
+| HTTP | Add the field to `sources.http.map`, e.g. `password: device_password`. |
+| Ansible Inventory | Set a host variable named after the field, e.g. `password: ...`. |
+
+Empty values are ignored, so the device falls back to the value of its group. Settings are resolved in this order, where later entries win: `app` defaults < `groups.<group>` < source overrides < `nodes.<device_name>`.
 
 ### git
 
