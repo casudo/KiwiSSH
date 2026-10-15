@@ -378,7 +378,7 @@ sources:
 | --- | ----------- | -------- | ------------- |
 | `sources.ansible` | Path to the Ansible inventory YAML file containing the device entries. Absolute, or relative to the config directory. | **Yes** | - |
 
-The devices will be loaded from the specified Ansible inventory YAML file. The hosts must be defined under the appropriate groups, and the `ansible_host` variable must be present (will be used as the IP address).
+The devices will be loaded from the specified Ansible inventory YAML file. The hosts must be defined under the appropriate groups. The `ansible_host` variable is used as the device address; falls back to the inventory host name if not set.
 
 [See an example Ansible inventory YAML file here](backend/config/sources/inventory.yaml.example).
 

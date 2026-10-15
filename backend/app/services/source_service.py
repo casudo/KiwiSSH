@@ -186,7 +186,7 @@ class SourceService:
         """Recursively collect device rows from an Ansible inventory group node.
 
         A device's group is the immediate Ansible group under which it is listed in 'hosts'.
-        The connection IP is taken from 'ansible_host'.
+        The connection address is taken from 'ansible_host'; falls back to the inventory host name if not set.
         """
         if not isinstance(group_data, dict):
             return
@@ -196,7 +196,8 @@ class SourceService:
             ### Scan through all hosts in the group
             for host_name, host_vars in hosts.items():
                 host_vars = host_vars if isinstance(host_vars, dict) else {}
-                ip_address = str(host_vars.get("ansible_host")).strip()
+                ansible_host = host_vars.get("ansible_host")
+                ip_address = str(ansible_host if ansible_host is not None else host_name).strip()
                 ### Map Ansible inventory hosts to canonical KiwiSSH device rows
                 device_row = {
                     "group": group_name,
