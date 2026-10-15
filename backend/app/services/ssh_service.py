@@ -26,7 +26,7 @@ ANSI_ESCAPE_RE = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
 ## Notes:
 ## - Excludes '=' to avoid matching config assignment lines
 GENERIC_PROMPT_PATTERNS = [
-        re.compile(r"[^\r\n=]*[A-Za-z0-9][^\r\n=]*[>#]\s*$"),
+        re.compile(r"(?=[^\r\n=]*[A-Za-z0-9])[^\r\n=]*[>#]\s*$"),
     ]
 
 ### Generic pagination patterns to handle common pagination for all vendors as default
