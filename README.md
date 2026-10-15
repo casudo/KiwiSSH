@@ -398,6 +398,8 @@ Empty values are ignored, so the device falls back to the value of its group. Se
 
 KiwiSSH will always store the device configurations in local git repositories to provide diff view, history and download options. You can optionally set a remote git location to push the commits (the device config) to.
 
+Commits are not pushed one by one: each group is pushed once the backup queue is empty, and at most every 60 seconds while backups are still running. If a push fails, the commits stay local and are pushed together with the next commit of that group.
+
 > [!CAUTION]
 > DO NOT delete the "backups" folder ever unless you want to lose all your local git repositories and their history.
 

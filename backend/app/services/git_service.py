@@ -39,6 +39,10 @@ class GitService:
         self._repo_locks: dict[str, threading.RLock] = {}
         self._repo_locks_guard = threading.Lock()
         self._history_count_cache: dict[tuple[str, str], tuple[int, float]] = {}
+        ### Groups with local commits that still need to be pushed (see push_pending)
+        self._pending_push_groups: set[str] = set()
+        self._pending_push_guard = threading.Lock()
+        self._push_locks: dict[str, threading.Lock] = {}
 
     @property
     def settings(self) -> Settings:
@@ -52,6 +56,15 @@ class GitService:
             if lock is None:
                 lock = threading.RLock()
                 self._repo_locks[group] = lock
+            return lock
+
+    def _get_push_lock(self, group: str) -> threading.Lock:
+        """Get per-group lock that keeps two pushes of the same repository from running at once."""
+        with self._repo_locks_guard:
+            lock = self._push_locks.get(group)
+            if lock is None:
+                lock = threading.Lock()
+                self._push_locks[group] = lock
             return lock
 
     @property
@@ -284,14 +297,11 @@ class GitService:
             actor = Actor("KiwiSSH Backup System", "backup@kiwissh.local")
             commit = repo.index.commit(message, author=actor, committer=actor)
 
+            ### Don't push here: pushing per commit holds the repo lock during network I/O and..
+            ## ..pushes N times for N changed devices. The group is pushed once later instead (see push_pending)
             if self._has_remote_target(group):
-                push_ok = self._push_to_remote_sync(group=group)
-                if not push_ok:
-                    logger.warning(
-                        "Local commit created for %s but push to remote failed (group: %s)",
-                        device_name,
-                        group,
-                    )
+                with self._pending_push_guard:
+                    self._pending_push_groups.add(group)
 
             commit_stats = commit.stats.files.get(config_file.name, {})
             lines_added = commit_stats.get("insertions", 0)
@@ -500,6 +510,26 @@ class GitService:
             tz_offset_minutes,
         )
 
+    def _get_config_at_commit_sync(self, device_name: str, commit_hash: str, group: str) -> str:
+        """Blocking lookup of a config file's content at a specific commit."""
+        lock = self._get_repo_lock(group)
+        with lock:
+            ### Check that repo exists
+            repo = self._ensure_repo(group)
+
+            try:
+                commit = repo.commit(commit_hash)
+            except Exception as e:
+                raise GitObjectNotFoundError(f"Commit {commit_hash} not found") from e
+
+            ### Look up the file by path instead of walking the whole tree
+            config_file = f"{device_name}.conf"
+            try:
+                blob = commit.tree / config_file
+            except KeyError as e:
+                raise GitObjectNotFoundError(f"No config found for {device_name} at commit {commit_hash}") from e
+            return blob.data_stream.read().decode("utf-8")
+
     async def get_config_at_commit(
         self,
         device_name: str,
@@ -518,8 +548,10 @@ class GitService:
             Configuration content at that commit
 
         Raises:
-            ValueError: If commit not found
+            GitObjectNotFoundError: If the commit or the device's config at that commit doesn't exist
         """
+        return await asyncio.to_thread(self._get_config_at_commit_sync, device_name, commit_hash, group)
+
     def _get_commit_info_sync(self, device_name: str, commit_hash: str, group: str) -> dict[str, Any]:
         """Blocking lookup of a single commit's metadata and its version number for a device."""
         lock = self._get_repo_lock(group)
@@ -552,24 +584,14 @@ class GitService:
         """Get metadata (timestamp, message, version number) for a single commit."""
         return await asyncio.to_thread(self._get_commit_info_sync, device_name, commit_hash, group)
 
+    def _get_diff_sync(
         self,
         device_name: str,
         from_commit: str,
         to_commit: str,
         group: str,
     ) -> BackupDiff:
-        """
-        Get diff between two config versions.
-
-        Args:
-            device_name: Name of the device
-            from_commit: Starting commit hash
-            to_commit: Ending commit hash
-            group: Device group (determines which repo)
-
-        Returns:
-            BackupDiff object with diff information
-        """
+        """Blocking diff between two config versions."""
         lock = self._get_repo_lock(group)
         with lock:
             ### Check if repo exists
@@ -579,12 +601,13 @@ class GitService:
                 from_commit_obj = repo.commit(from_commit)
                 to_commit_obj = repo.commit(to_commit)
             except Exception as e:
-                raise ValueError(f"Commits not found: {e}") from e
+                raise GitObjectNotFoundError(f"Commits not found: {e}") from e
 
             ### Generate unified diff scoped to this device file only.
             ### Without path scoping, git includes changes from other devices in the same repo.
+            ### The resolved hashes are passed instead of the raw request values so they can never be read as git options
             config_file = f"{device_name}.conf"
-            diff_text = repo.git.diff(from_commit, to_commit, "--", config_file)
+            diff_text = repo.git.diff(from_commit_obj.hexsha, to_commit_obj.hexsha, "--", config_file)
 
             ### Calculate statistics
             added_lines = diff_text.count("\n+") - diff_text.count("\n+++")
@@ -604,6 +627,30 @@ class GitService:
                 lines_removed=max(0, removed_lines),
             )
 
+    async def get_diff(
+        self,
+        device_name: str,
+        from_commit: str,
+        to_commit: str,
+        group: str,
+    ) -> BackupDiff:
+        """
+        Get diff between two config versions.
+
+        Args:
+            device_name: Name of the device
+            from_commit: Starting commit hash
+            to_commit: Ending commit hash
+            group: Device group (determines which repo)
+
+        Returns:
+            BackupDiff object with diff information
+
+        Raises:
+            GitObjectNotFoundError: If one of the commits doesn't exist
+        """
+        return await asyncio.to_thread(self._get_diff_sync, device_name, from_commit, to_commit, group)
+
     async def get_latest_commit(self, device_name: str) -> dict[str, Any] | None:
         """
         Get the latest commit for a device.
@@ -619,54 +666,35 @@ class GitService:
         """
         raise NotImplementedError("Latest commit retrieval not yet implemented")
 
-    def _push_to_remote_sync(self, group: str | None = None) -> bool:
+    def _push_group_sync(self, group_name: str) -> bool:
         """
-        Push local commits to remote repository.
-
-        If group is provided, pushes only that group's repository.
-        Otherwise pushes all repositories loaded in this process.
+        Push a group's local commits to its remote repository.
 
         Returns:
-            True if push successful, False otherwise
+            True if push successful (or nothing to push), False otherwise
         """
-        ### Determine target groups to push
-        target_groups: list[str]
-        if group is not None:
-            target_groups = [group]
-        else:
-            target_groups = list(self._repos.keys())
+        with self._get_push_lock(group_name):
+            try:
+                ### Step 0: Prepare the local repo (remote URL, branch) under the repo lock
+                lock = self._get_repo_lock(group_name)
+                with lock:
+                    repo = self._ensure_repo(group_name)
 
-        if not target_groups:
-            logger.info("Remote push skipped because no repositories are initialized yet")
-            return False
+                    ### Step 0: Check remote target
+                    try:
+                        remote_url, branch_name = self._resolve_remote_target(group_name)
+                    except ValueError as ex:
+                        logger.warning("Remote push skipped for group %s: %s", group_name, ex)
+                        return True
 
-        overall_success = True
-        attempted_push = False
+                    if not self._has_commits(repo):
+                        logger.warning(
+                            "Remote push skipped for group %s because repository has no commits",
+                            group_name,
+                        )
+                        return True
 
-        ### Iterate over target groups and attempt push if remote is configured
-        for group_name in target_groups:
-            lock = self._get_repo_lock(group_name)
-            with lock:
-                repo = self._ensure_repo(group_name)
-
-                ### Step 0: Check remote target
-                try:
-                    remote_url, branch_name = self._resolve_remote_target(group_name)
-                except ValueError as ex:
-                    logger.warning("Remote push skipped for group %s: %s", group_name, ex)
-                    continue
-
-                if not self._has_commits(repo):
-                    logger.warning(
-                        "Remote push skipped for group %s because repository has no commits",
-                        group_name,
-                    )
-                    continue
-
-                ### Step 1: Push commits to remote and handle errors
-                try:
-                    attempted_push = True
-                    remote = self._ensure_origin_remote(repo, remote_url)
+                    self._ensure_origin_remote(repo, remote_url)
 
                     try:
                         current_branch = repo.active_branch.name
@@ -677,49 +705,64 @@ class GitService:
                     if current_branch != branch_name:
                         repo.git.checkout("-B", branch_name)
 
-                    push_results = remote.push(refspec=f"{branch_name}:{branch_name}")
-                    if not push_results:
-                        overall_success = False
-                        logger.error("Remote push returned no result for group %s", group_name)
-                        continue
+                ### Step 1: Push outside the repo lock so backups, history and diffs of this group aren't blocked by network I/O
+                with Repo(self._get_repo_path(group_name)) as push_repo:
+                    push_results = push_repo.remote("origin").push(refspec=f"{branch_name}:{branch_name}")
 
-                    errors = [
-                        result.summary
-                        for result in push_results
-                        if self._push_result_has_error(result)
-                    ]
+                if not push_results:
+                    logger.error("Remote push returned no result for group %s", group_name)
+                    return False
 
-                    if errors:
-                        overall_success = False
-                        logger.error(
-                            "Remote push failed for group %s: %s",
-                            group_name,
-                            "; ".join(errors),
-                        )
-                        continue
+                errors = [
+                    result.summary
+                    for result in push_results
+                    if self._push_result_has_error(result)
+                ]
 
-                    ### Relief..
-                    logger.info(
-                        "Successfully pushed group %s to remote branch %s",
-                        group_name,
-                        branch_name,
-                    )
-                except GitCommandError as ex:
-                    overall_success = False
+                if errors:
                     logger.error(
                         "Remote push failed for group %s: %s",
                         group_name,
-                        ex,
+                        "; ".join(errors),
                     )
-                except Exception as ex:
-                    overall_success = False
-                    logger.error("Remote push failed for group %s: %s", group_name, ex)
+                    return False
 
-        if not attempted_push:
-            logger.info("Remote push skipped because no configured remotes had commits to push")
-            return False
+                ### Relief..
+                logger.info(
+                    "Successfully pushed group %s to remote branch %s",
+                    group_name,
+                    branch_name,
+                )
+                return True
+            except GitCommandError as ex:
+                logger.error(
+                    "Remote push failed for group %s: %s",
+                    group_name,
+                    ex,
+                )
+                return False
+            except Exception as ex:
+                logger.error("Remote push failed for group %s: %s", group_name, ex)
+                return False
 
-        return overall_success
+    def has_pending_pushes(self) -> bool:
+        """Return True when at least one group has commits that haven't been pushed yet."""
+        with self._pending_push_guard:
+            return bool(self._pending_push_groups)
+
+    def _push_pending_sync(self) -> None:
+        """Push every group that received commits since the last push."""
+        with self._pending_push_guard:
+            groups = sorted(self._pending_push_groups)
+            self._pending_push_groups.clear()
+
+        ### A failed push isn't re-queued here: the group's next commit marks it again
+        for group_name in groups:
+            self._push_group_sync(group_name)
+
+    async def push_pending(self) -> None:
+        """Push all groups with unpushed commits without blocking the event loop."""
+        await asyncio.to_thread(self._push_pending_sync)
 
 
 ### Singleton instance
