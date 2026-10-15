@@ -4,9 +4,11 @@ from datetime import datetime
 
 from fastapi import APIRouter
 from pydantic import BaseModel
+from sqlalchemy import text
 
 from app import __version__
 from app.core import get_settings
+from app.db import database
 from app.utils.timezone import get_utc_now
 
 
@@ -36,6 +38,18 @@ async def health_check() -> HealthResponse:
     )
 
 
+def _database_reachable() -> bool:
+    """Run a trivial query to check that the application database answers."""
+    if database.engine is None:
+        return False
+    try:
+        with database.engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        return True
+    except Exception:
+        return False
+
+
 @router.get("/ready")
 async def readiness_check() -> dict:
     """Check if application is ready to serve requests."""
@@ -46,6 +60,7 @@ async def readiness_check() -> dict:
         "main_config_exists": (settings.config_dir / "kiwissh.yaml").exists(),
         "ssh_profiles_loaded": bool(settings.ssh_profiles),
         "vendors_loaded": bool(settings.vendors),
+        "database_connected": _database_reachable(),
     }
 
     all_ready = all(checks.values())
