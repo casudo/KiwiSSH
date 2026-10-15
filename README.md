@@ -274,6 +274,11 @@ Configure where KiwiSSH load the devices to backup from. You can choose between 
 > [!IMPORTANT]
 > At least one source must be configured (and only one). The following fields are required for every device in the source: `group`, `device_name`, `ip_address`, `enabled`. A source can optionally carry [per-device overrides](#per-device-overrides) such as credentials or a port as well.
 
+> [!NOTE]
+> `ip_address` can be an IPv4 or IPv6 address or a hostname/FQDN.
+>
+> Invalid rows (e.g. unknown group, invalid address, invalid override value, a `device_name` that already appeared in an earlier row) are skipped, all other devices still load. Skipped rows are logged, returned by `POST /api/v1/devices/reload` and listed at `GET /api/v1/devices/source/skipped`, each with its row and the reason.
+
 #### CSV File
 
 | Key | Description | Required | Default Value |
@@ -725,8 +730,6 @@ The endpoint will return the following information about the device:
 
 **Short Term:**
 
-- Checks for device source: No duplicate hostnames, valid IPs, ... (What if multiple groups hold the same IP address range?)
-- Update ssh_service to use FQDN instead of IP to avoid?
 - Cache backup history response for a device so it doesnt need to fetch again
 - Rename "Fiberstorm (fs.com)" to "Fiberstore (fs.com)"
   
@@ -743,7 +746,6 @@ The endpoint will return the following information about the device:
 - Put redaction boolean switch as group/node level override instead of per vendor to be able to easily turn on/off redaction for specific groups/nodes without having to modify the vendor YAML files?
 - Full-text config search ([#48](https://github.com/casudo/KiwiSSH/issues/48))
 - Config file browser on the frontend ([#47](https://github.com/casudo/KiwiSSH/issues/47))
-- Move `SSHService._apply_processing_rules()` into a more centralized file? It's used by all protocols, not explicitly by SSH.
 
 **Long Term:**
 

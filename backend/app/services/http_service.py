@@ -41,6 +41,17 @@ class HTTPService:
         return value
 
     @staticmethod
+    def _format_url_host(host: str) -> str:
+        """Return the host as it has to appear in a URL.
+
+        IPv6 addresses must be wrapped in brackets, otherwise their colons are read as the port separator
+        (e.g. https://[2001:db8::1]:443). A zone ID like 'fe80::1%eth0' needs its '%' percent-encoded.
+        """
+        if ":" in host and not host.startswith("["):
+            return f"[{host.replace('%', '%25')}]"
+        return host
+
+    @staticmethod
     def _build_request_kwargs(step: dict[str, Any], context: dict[str, str]) -> dict[str, Any]:
         """Build httpx request kwargs (method/url/body/headers/params) from a step."""
         method = str(step.get("method", "GET")).strip().upper() or "GET"
@@ -120,7 +131,7 @@ class HTTPService:
         ### HTTP backups store each request's full response; only vendor processing is applied
         processing_rules = vendor_service.get_processing_rules(vendor_id)
 
-        base_url = f"{scheme}://{context['host']}:{port}"
+        base_url = f"{scheme}://{self._format_url_host(context['host'])}:{port}"
         base_headers = {
             str(key): str(val)
             for key, val in dict(self._render_placeholders(http_config.get("headers", {}) or {}, context)).items()
