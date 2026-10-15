@@ -242,6 +242,8 @@ You can get notified if the backup of a device fails or succeeds.
 - `failure`: Notify on every failed backup attempt, regardless of previous history.
 - `failure_new`: Notify on a failed backup attempt **only** if the previous backup was "Successful", "No Changes", or if there is no previous history (first ever backup failure). This avoids notification fatigue by only alerting on new failures.
 
+**Recovery:** When a device whose last backup failed is backed up successfully again ("Success" or "No Changes"), a "Backup Recovered" notification is sent, regardless of the trigger. Disable it with `notifications.notify_on_recovery: false`.
+
 | Key | Description | Required | Default Value |
 | --- | ----------- | -------- | ------------- |
 | `notifications.enabled` | Whether notifications are enabled. | No | `False` |
@@ -249,6 +251,7 @@ You can get notified if the backup of a device fails or succeeds.
 | `notifications.type` | The type of notification. | **Yes** | - |
 | `notifications.smtp.host` | The SMTP server host. | **Yes** | - |
 | `notifications.large_diff_threshold` | The diff line count threshold for considering a backup change as "large". This can be used to trigger notifications only for significant changes. | No | `650` |
+| `notifications.notify_on_recovery` | Send a "Backup Recovered" notification when a device that failed its last backup is backed up successfully again. | No | `True` |
 | `notifications.smtp.port` | The SMTP server port. | No | `25` |
 | `notifications.smtp.sender` | The sender email address. | **Yes** | - |
 | `notifications.smtp.recipients` | The recipient email addresses (list). | **Yes** | - |

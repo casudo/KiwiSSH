@@ -734,6 +734,10 @@ class NotificationsConfig(BaseModel):
         ge=1,
         description="Send a major change notification when lines added or removed reaches this threshold. Set to a very high number to effectively disable.",
     )
+    notify_on_recovery: bool = Field(
+        default=True,
+        description="Notify when a device that failed its last backup is backed up successfully again (independent of trigger).",
+    )
 
     @model_validator(mode="after")
     def validate_type_config(self) -> "NotificationsConfig":

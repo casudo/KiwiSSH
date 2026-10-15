@@ -19,12 +19,23 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+DISCORD_EMBED_DESCRIPTION_LIMIT = 4096
+DISCORD_COLOR_RED = 16254727
+DISCORD_COLOR_GREEN = 1767431
+DISCORD_COLOR_YELLOW = 16311559
+
+
 class NotificationService:
     """Service for dispatching backup notifications to configured channels."""
 
     ### =============================================================================
     ### NotificationService Class Helper Functions
     ### =============================================================================
+
+    @staticmethod
+    def _is_recovery(new_status: BackupStatus, previous_status: str | None) -> bool:
+        """Return True when a device that failed its last backup is backed up successfully again."""
+        return previous_status == BackupStatus.FAILED and new_status in (BackupStatus.SUCCESS, BackupStatus.NO_CHANGES)
 
     def _should_notify(
         self,
@@ -64,8 +75,10 @@ class NotificationService:
     ### SMTP Helpers
     ### ==============================================
 
-    def _build_subject(self, device_name: str, group: str, status: BackupStatus) -> str:
+    def _build_subject(self, device_name: str, group: str, status: BackupStatus, event: str = "backup") -> str:
         """Build email subject line."""
+        if event == "recovery":
+            return f"[KiwiSSH] Backup Recovered: {device_name} ({group})"
         label = {
             BackupStatus.SUCCESS: "Success",
             BackupStatus.FAILED: "Failed",
@@ -148,9 +161,10 @@ class NotificationService:
         smtp_config: SmtpConfig,
         lines_added: int = 0,
         lines_removed: int = 0,
+        event: str = "backup",
     ) -> None:
         """Send an SMTP email notification for a backup result."""
-        subject = self._build_subject(device_name, group, result.status)
+        subject = self._build_subject(device_name, group, result.status, event)
         body = self._build_body(
             device_name=device_name,
             group=group,
@@ -273,8 +287,17 @@ class NotificationService:
         ### Header
         if event == "large_diff":
             header = f"**[KiwiSSH] Major Config Change: {device_name} ({group})**"
+        elif event == "recovery":
+            header = f"**[KiwiSSH] Backup RECOVERED: {device_name} ({group})**"
         else:
             header = f"**[KiwiSSH] Backup {status.value.upper()}: {device_name} ({group})**"
+
+        if status == BackupStatus.FAILED:
+            color = DISCORD_COLOR_RED
+        elif status == BackupStatus.SUCCESS or event == "recovery":
+            color = DISCORD_COLOR_GREEN
+        else:
+            color = DISCORD_COLOR_YELLOW
 
         ### Body
         lines: list[str] = []
@@ -293,12 +316,12 @@ class NotificationService:
             lines.append(f"Error: ```{error_message}```")
 
         return {
-            "content": "\n".join(lines),
+            # "content": "\n".join(lines),
             "embeds": [
                 {
                     "title": header,
                     "description": "\n".join(lines),
-                    "color": 16254727 if status == BackupStatus.FAILED else 1767431 if status == BackupStatus.SUCCESS else 16311559
+                    "color": color,
                 }
             ],
             "username": "KiwiSSH",
@@ -332,6 +355,7 @@ class NotificationService:
         webhook_config: WebhookConfig,
         lines_added: int = 0,
         lines_removed: int = 0,
+        event: str = "backup",
     ) -> None:
         """Send a webhook notification for a backup result."""
         payload = self._build_payload(
@@ -343,7 +367,7 @@ class NotificationService:
             error_message=result.error_message,
             duration_seconds=result.duration_seconds,
             timestamp=result.timestamp,
-            event="backup",
+            event=event,
             webhook_format=webhook_config.format,
             lines_added=lines_added,
             lines_removed=lines_removed,
@@ -411,7 +435,7 @@ class NotificationService:
         Args:
             device_name: Device name
             group: Device group
-            result: Completed backup result
+            result: Completed backup result (success, no_changes or failed)
             previous_status: Last completed backup status before this run (or None)
             notifications: Global NotificationsConfig from Settings
             lines_added: Lines added in this commit (from git diff)
@@ -420,14 +444,20 @@ class NotificationService:
         if not notifications.enabled:
             return
 
+        ### A device that failed last time and works again gets a recovery notification instead of the regular one
+        event_kind: str | None = None
+        if notifications.notify_on_recovery and self._is_recovery(result.status, previous_status):
+            event_kind = "recovery"
         ### Trigger-based notification (always / failure / failure_new)
-        if self._should_notify(notifications.trigger.value, result.status, previous_status):
+        elif self._should_notify(notifications.trigger.value, result.status, previous_status):
+            event_kind = "backup"
+
             ### SMTP (Mail)
             if notifications.type.smtp is not None:
                 try:
                     await self._notify_smtp(
                         device_name, group, previous_status, result, notifications.type.smtp,
-                        lines_added=lines_added, lines_removed=lines_removed,
+                        lines_added=lines_added, lines_removed=lines_removed, event=event_kind
                     )
                 except Exception as ex:
                     logger.warning("Failed to send smtp notification for %s: %s", device_name, ex)
@@ -436,7 +466,7 @@ class NotificationService:
                 try:
                     await self._notify_webhook(
                         device_name, group, previous_status, result, notifications.type.webhook,
-                        lines_added=lines_added, lines_removed=lines_removed,
+                        lines_added=lines_added, lines_removed=lines_removed, event=event_kind
                     )
                 except Exception as ex:
                     logger.warning("Failed to send webhook notification for %s: %s", device_name, ex)
