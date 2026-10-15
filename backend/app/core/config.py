@@ -324,6 +324,7 @@ class SmtpConfig(BaseModel):
     password: str | None = None
     use_tls: bool = False # STARTTLS (typically port 587)
     use_ssl: bool = False # Direct SSL/TLS (typically port 465)
+    timeout_seconds: float = Field(default=10.0, gt=0)
 
     @field_validator("host", "sender", mode="before")
     @classmethod

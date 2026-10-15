@@ -120,16 +120,18 @@ class NotificationService:
         msg["To"] = ", ".join(smtp_config.recipients)
         msg.set_content(body)
 
+        timeout = smtp_config.timeout_seconds
+
         ### SSL/TLS
         if smtp_config.use_ssl:
             context = ssl.create_default_context()
-            with smtplib.SMTP_SSL(smtp_config.host, smtp_config.port, context=context) as server:
+            with smtplib.SMTP_SSL(smtp_config.host, smtp_config.port, context=context, timeout=timeout) as server:
                 if smtp_config.username and smtp_config.password:
                     server.login(smtp_config.username, smtp_config.password)
                 server.send_message(msg)
         ### STARTTLS or plain
         else:
-            with smtplib.SMTP(smtp_config.host, smtp_config.port) as server:
+            with smtplib.SMTP(smtp_config.host, smtp_config.port, timeout=timeout) as server:
                 if smtp_config.use_tls:
                     context = ssl.create_default_context()
                     server.starttls(context=context)
