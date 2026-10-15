@@ -8,6 +8,7 @@ from app.models.device import DeviceBase, DeviceFull, DeviceStatus
 from app.services.source_service import source_service
 from app.services.git_service import git_service
 from app.services.backup_job_service import backup_job_service
+from app.services.scheduler_service import scheduler_service
 from app.core.config import get_settings
 from app.db.database import get_db
 
@@ -133,9 +134,18 @@ async def get_device(device_name: str, db: Session = Depends(get_db)) -> dict:
 
 @router.post("/reload")
 async def reload_devices() -> dict:
-    """Reload devices from source."""
-    source_service.invalidate_cache()
-    devices = await source_service.get_all_devices()
+    """Reload devices from source and update the backup schedule accordingly."""
+    try:
+        devices = await source_service.load_devices()
+    except Exception as e:
+        logger.error(f"Failed to reload devices: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to reload devices, the previous inventory is still in use: {e}",
+        )
+
+    ### New devices get scheduled, removed or disabled ones stop being backed up
+    scheduler_service.sync_devices(devices)
 
     return {
         "message": "Devices reloaded successfully",

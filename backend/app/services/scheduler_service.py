@@ -9,6 +9,7 @@ at any given time. Uses APScheduler to execute backups on configured cron schedu
 
 import hashlib
 import logging
+from apscheduler.jobstores.base import JobLookupError
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from zoneinfo import ZoneInfo
@@ -159,6 +160,30 @@ class SchedulerService:
         except Exception as ex:
             logger.error(f"Failed to schedule backup for {device.device_name}: {ex}")
         return False
+
+    def sync_devices(self, devices: list[DeviceBase]) -> None:
+        """Bring the scheduled backup jobs in line with a (re)loaded device list.
+
+        New devices are scheduled, changed devices get their job replaced, and jobs of devices that were removed,
+        disabled or can no longer be scheduled are dropped.
+        """
+        if self.scheduler is None:
+            logger.warning("Scheduler is not running; skipping schedule update")
+            return
+
+        scheduled_now = {device.device_name for device in devices if self._schedule_device(device)}
+
+        for device_name in list(self.scheduled_devices):
+            if device_name in scheduled_now:
+                continue
+            job_id = self.scheduled_devices.pop(device_name)
+            try:
+                self.scheduler.remove_job(job_id)
+            except JobLookupError:
+                pass
+            logger.debug("Removed scheduled backup for %s", device_name)
+
+        logger.info("Scheduler updated: %d device backup(s) scheduled", len(self.scheduled_devices))
 
     def start_scheduler(self, devices: list[DeviceBase]) -> None:
         """Start the scheduler and schedule all configured tasks.
