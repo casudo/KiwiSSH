@@ -617,6 +617,12 @@ class BackupService:
                     metadata_output=metadata_output,
                 )
                 await asyncio.to_thread(self._update_job_final_status, job_id, result)
+
+                ### No changes can still be a recovery after a failed backup, so let the notification service decide
+                self._send_notification_in_background(
+                    device.device_name, device.group, result, previous_status, settings.notifications,
+                )
+                
                 return result
 
             logger.info(
