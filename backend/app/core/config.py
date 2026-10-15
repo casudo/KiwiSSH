@@ -502,27 +502,6 @@ class HttpSourceConfig(BaseModel):
         return text or None
 
 
-### =====================================================================
-
-class JumphostBaseConfig(BaseModel):
-    """Shared reusable jumphost fields for group and node-level config."""
-    hostname: str | None = None
-    username: str | None = None
-    password: str | None = None
-    ssh_key_file: str | None = None
-    ssh_profile: str | None = None
-    port: int | None = Field(default=None, ge=1, le=65535)
-
-    @field_validator("hostname", "username", "password", "ssh_key_file", "ssh_profile", mode="before")
-    @classmethod
-    def normalize_optional_text(cls, value: str | None) -> str | None:
-        """Normalize optional text fields and convert blanks to None."""
-        if value is None:
-            return None
-        text = str(value).strip()
-        return text or None
-
-
 ### =========== GitConfig SUBCLASSES ===========
 ## NOTE: Classes which are only used in GitConfig
 
@@ -1154,13 +1133,24 @@ class Settings(BaseSettings):
         """Drop all device-source overrides."""
         self.source_node_overrides.clear()
 
-    def get_device_config(self, group: str, device_name: str) -> dict[str, Any]:
+    def replace_source_overrides(self, overrides: dict[str, "NodeConfig"]) -> None:
+        """Swap in a complete set of device-source overrides at once (used when the inventory is reloaded)."""
+        self.source_node_overrides = overrides
+
+    def get_device_config(
+        self,
+        group: str,
+        device_name: str,
+        source_overrides: dict[str, "NodeConfig"] | None = None,
+    ) -> dict[str, Any]:
         """
         Resolve device configuration with priority:
         Application defaults < Group defaults < Device-source overrides < kiwissh.yaml node overrides
 
         The group of a device cannot be overridden - it must be changed in the source.
         Returns a dict with resolved ssh_profile, vendor, and other settings.
+
+        source_overrides replaces the registered device-source overrides for this call.
         """
         ### Step 0: Start with application-level defaults
         device_config = {
@@ -1211,7 +1201,9 @@ class Settings(BaseSettings):
                 device_config["verify_ssl"] = group_config.verify_ssl
 
         ### Step 1.5: Apply device-source overrides (takes precedence over group defaults)
-        source_override = self.source_node_overrides.get(device_name)
+        if source_overrides is None:
+            source_overrides = self.source_node_overrides
+        source_override = source_overrides.get(device_name)
         if source_override is not None:
             self._apply_node_overrides(device_config, source_override)
 
