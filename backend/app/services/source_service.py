@@ -8,7 +8,7 @@ import yaml
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.exc import NoSuchTableError, OperationalError, ProgrammingError, SQLAlchemyError
 
-from app.core import get_settings
+from app.core import Settings, get_settings
 from app.models.device import DeviceBase
 from app.core.config import NodeConfig, SOURCE_OVERRIDE_FIELDS
 
@@ -17,9 +17,13 @@ class SourceService:
     """Service for loading devices from various sources."""
 
     def __init__(self) -> None:
-        self.settings = get_settings()
         self._devices_cache: dict[str, DeviceBase] = {}
         self._loaded = False
+
+    @property
+    def settings(self) -> Settings:
+        """Current settings, resolved on every access so a settings reload never leaves a stale copy behind."""
+        return get_settings()
 
     ### =============================================================================
     ### SourceService Class Helper Functions
@@ -447,7 +451,6 @@ class SourceService:
 
     def invalidate_cache(self) -> None:
         """Clear the device cache to force reload."""
-        self.settings = get_settings()
         self.settings.clear_source_overrides()
         self._devices_cache.clear()
         self._loaded = False

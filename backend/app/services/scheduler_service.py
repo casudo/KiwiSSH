@@ -13,7 +13,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from zoneinfo import ZoneInfo
 
-from app.core import get_settings
+from app.core import Settings, get_settings
 from app.core.config import ScheduleConfig
 from app.db import database
 from app.models.device import DeviceBase
@@ -27,9 +27,13 @@ class SchedulerService:
     """Service for managing backup scheduling based on device configurations."""
 
     def __init__(self) -> None:
-        self.settings = get_settings()
         self.scheduler: AsyncIOScheduler | None = None
         self.scheduled_devices: dict[str, str] = {}  # device_name -> job_id mapping
+
+    @property
+    def settings(self) -> Settings:
+        """Current settings, resolved on every access so a settings reload never leaves a stale copy behind."""
+        return get_settings()
 
     @staticmethod
     def _stable_second_offset(device_name: str) -> int:

@@ -5,7 +5,7 @@ import re
 from typing import Any
 
 
-from app.core import get_settings
+from app.core import Settings, get_settings
 from app.models.device import DeviceBase
 from app.services.vendor_service import vendor_service
 from app.services.local_ssh_simulator import local_ssh_simulator
@@ -16,8 +16,10 @@ logger = logging.getLogger(__name__)
 class HTTPService:
     """Service for fetching device configuration over HTTP(S)."""
 
-    def __init__(self) -> None:
-        self.settings = get_settings()
+    @property
+    def settings(self) -> Settings:
+        """Current settings, resolved on every access so a settings reload never leaves a stale copy behind."""
+        return get_settings()
 
     ### =============================================================================
     ### HTTPService Class Helper Functions

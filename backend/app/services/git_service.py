@@ -16,7 +16,7 @@ from git import Repo, Actor, InvalidGitRepositoryError
 from git.exc import GitCommandError
 from git.remote import PushInfo
 
-from app.core import get_settings
+from app.core import Settings, get_settings
 from app.models.backup import BackupDiff
 from app.utils.timezone import get_utc_now
 
@@ -31,11 +31,15 @@ class GitService:
     _HISTORY_COUNT_TTL_SECONDS: int = 300
 
     def __init__(self) -> None:
-        self.settings = get_settings()
         self._repos: dict[str, Any] = {}  # Cache repos by group
         self._repo_locks: dict[str, threading.RLock] = {}
         self._repo_locks_guard = threading.Lock()
         self._history_count_cache: dict[tuple[str, str], tuple[int, float]] = {}
+
+    @property
+    def settings(self) -> Settings:
+        """Current settings, resolved on every access so a settings reload never leaves a stale copy behind."""
+        return get_settings()
 
     def _get_repo_lock(self, group: str) -> threading.RLock:
         """Get per-group lock guarding GitPython repository access."""
