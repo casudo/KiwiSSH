@@ -520,6 +520,8 @@ class GitService:
         Raises:
             ValueError: If commit not found
         """
+    def _get_commit_info_sync(self, device_name: str, commit_hash: str, group: str) -> dict[str, Any]:
+        """Blocking lookup of a single commit's metadata and its version number for a device."""
         lock = self._get_repo_lock(group)
         with lock:
             ### Check that repo exists
@@ -528,17 +530,28 @@ class GitService:
             try:
                 commit = repo.commit(commit_hash)
             except Exception as e:
-                raise ValueError(f"Commit {commit_hash} not found") from e
+                raise GitObjectNotFoundError(f"Commit {commit_hash} not found") from e
 
-            ### Get all files in the commit
+            ### The version number is the count of commits touching the file up to and including this one..
+            ## ..which matches the numbering in get_config_history without loading the whole history
             config_file = f"{device_name}.conf"
-            for item in commit.tree.traverse():
-                if item.path == config_file:
-                    return item.data_stream.read().decode("utf-8")
+            try:
+                version_number = int(repo.git.rev_list("--count", commit.hexsha, "--", config_file).strip())
+            except (ValueError, GitCommandError):
+                version_number = None
 
-            raise ValueError(f"No config found for {device_name} at commit {commit_hash}")
+            committed_at = datetime.fromtimestamp(commit.committed_date, tz=timezone.utc)
+            return {
+                "hash": commit.hexsha,
+                "message": commit.message.strip(),
+                "timestamp": committed_at.isoformat(),
+                "version_number": version_number,
+            }
 
-    async def get_diff(
+    async def get_commit_info(self, device_name: str, commit_hash: str, group: str) -> dict[str, Any]:
+        """Get metadata (timestamp, message, version number) for a single commit."""
+        return await asyncio.to_thread(self._get_commit_info_sync, device_name, commit_hash, group)
+
         self,
         device_name: str,
         from_commit: str,
