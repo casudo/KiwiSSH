@@ -24,6 +24,10 @@ from app.utils.timezone import get_utc_now
 logger = logging.getLogger(__name__)
 
 
+class GitObjectNotFoundError(ValueError):
+    """Raised when a requested commit or config file does not exist in a group's repository."""
+
+
 class GitService:
     """Service for Git-based configuration storage."""
 

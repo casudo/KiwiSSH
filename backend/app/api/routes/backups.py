@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.models.backup import BackupTriggerRequest, BackupTriggerResponse
 from app.services.backup_service import backup_service
 from app.services.source_service import source_service
-from app.services.git_service import git_service
+from app.services.git_service import GitObjectNotFoundError, git_service
 from app.services.log_retention_service import log_retention_service
 from app.core import get_settings
 from app.db.database import get_db
@@ -273,6 +273,8 @@ async def get_config_diff(
             "lines_added": diff.lines_added,
             "lines_removed": diff.lines_removed,
         }
+    except GitObjectNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Error building diff for {device_name}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to build diff: {e}")
@@ -325,6 +327,8 @@ async def get_latest_config(device_name: str, commit: str | None = None) -> dict
                 "message": latest["message"],
                 "version_number": latest.get("version_number"),
             }
+    except GitObjectNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Error fetching config for {device_name}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch config: {e}")
