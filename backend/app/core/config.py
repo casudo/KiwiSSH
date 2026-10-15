@@ -1229,7 +1229,7 @@ class Settings(BaseSettings):
         if device_config.get("port") is None:
             if resolved_protocol == "telnet":
                 device_config["port"] = 23
-            if resolved_protocol == "http":
+            elif resolved_protocol == "http":
                 device_config["port"] = 80
             elif resolved_protocol == "https":
                 device_config["port"] = 443
