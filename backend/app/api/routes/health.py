@@ -51,7 +51,7 @@ def _database_reachable() -> bool:
 
 
 @router.get("/ready")
-async def readiness_check() -> dict:
+def readiness_check() -> dict:
     """Check if application is ready to serve requests."""
     settings = get_settings()
 

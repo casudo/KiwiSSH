@@ -18,6 +18,9 @@ from app.db.models import BackupJob
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+### NOTE: Routes that only touch the database are plain 'def' so FastAPI runs them in its threadpool..
+## ..instead of blocking the event loop with synchronous SQLAlchemy calls
+
 
 @router.post("/trigger", response_model=BackupTriggerResponse)
 async def trigger_backup(
@@ -101,7 +104,7 @@ async def trigger_device_backup(
 
 
 @router.get("/jobs")
-async def get_backup_jobs(
+def get_backup_jobs(
     device_name: str | None = Query(None, description="Filter by partial device name"),
     job_id: str | None = Query(None, description="Filter by partial job ID"),
     status: str | None = Query(None, description="Filter by status (success, failed, no_changes)"),
@@ -352,7 +355,7 @@ async def get_latest_config(device_name: str, commit: str | None = None) -> dict
 
 
 @router.delete("/flush")
-async def flush_database(db: Session = Depends(get_db)) -> dict:
+def flush_database(db: Session = Depends(get_db)) -> dict:
     """Delete all backup job records from the database.
 
     WARNING: This action cannot be undone. All job history will be permanently deleted.
@@ -378,7 +381,7 @@ async def flush_database(db: Session = Depends(get_db)) -> dict:
 
 
 @router.post("/retention/run")
-async def run_log_retention(db: Session = Depends(get_db)) -> dict:
+def run_log_retention(db: Session = Depends(get_db)) -> dict:
     """Manually trigger the log retention policy.
 
     Applies the configured age and row-count limits immediately and returns
