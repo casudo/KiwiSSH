@@ -141,7 +141,25 @@ async def reload_devices() -> dict:
     ### New devices get scheduled, removed or disabled ones stop being backed up
     scheduler_service.sync_devices(devices)
 
+    skipped = source_service.skipped_rows
     return {
-        "message": "Devices reloaded successfully",
+        "message": (
+            "Devices reloaded successfully"
+            if not skipped
+            else f"Devices reloaded, {len(skipped)} invalid source row(s) skipped"
+        ),
         "count": len(devices),
+        "skipped_count": len(skipped),
+        "skipped": skipped,
+    }
+
+
+@router.get("/source/skipped")
+async def get_skipped_source_rows() -> dict:
+    """List source rows that were skipped as invalid during the last device load."""
+    await source_service.get_all_devices()
+    skipped = source_service.skipped_rows
+    return {
+        "count": len(skipped),
+        "skipped": skipped,
     }
