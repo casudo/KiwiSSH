@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-from app.core import get_settings
 from app.models.device import DeviceBase
 
 
@@ -15,7 +14,6 @@ class LocalSSHSimulator:
     """
 
     def __init__(self):
-        self.settings = get_settings()
         self.test_devices_dir = Path(__file__).parent.parent.parent.parent / "tests" / "devices"
 
     def _get_device_config_path(self, device_name: str) -> Path:
