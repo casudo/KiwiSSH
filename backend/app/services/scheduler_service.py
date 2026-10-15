@@ -144,12 +144,13 @@ class SchedulerService:
                     )
                     continue
 
-                schedule = self._get_device_schedule(device)
-                if schedule and schedule.cron:
-                    try:
+                ### Resolve the schedule inside the try so a misconfigured device cant stop the whole scheduler
+                try:
+                    schedule = self._get_device_schedule(device)
+                    if schedule and schedule.cron:
                         ### Create timezone object
                         tz = ZoneInfo(schedule.timezone)
-                        
+
                         ### Schedule the backup job
                         trigger = self._build_device_trigger(schedule.cron, tz, device.device_name)
                         job = self.scheduler.add_job(
@@ -165,12 +166,12 @@ class SchedulerService:
                         )
                         self.scheduled_devices[device.device_name] = job.id
                         scheduled_count += 1
-                        
+
                         logger.debug(
                             f"Scheduled backup for {device.device_name}: {schedule.cron} ({schedule.timezone})"
                         )
-                    except Exception as ex:
-                        logger.error(f"Failed to schedule backup for {device.device_name}: {ex}")
+                except Exception as ex:
+                    logger.error(f"Failed to schedule backup for {device.device_name}: {ex}")
             
             ### Schedule daily log retention cleanup (runs at 03:00 UTC)
             if self.settings.app.retention.enabled:
