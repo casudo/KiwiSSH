@@ -701,34 +701,6 @@ The endpoint will return the following information about the device:
 
 # Future Goals
 
-
-Alvarion - BreezeACCESS (TFTP)
-APC - AOS (TFTP/FTP)
-Cisco - VPN3000 (FTP)
-
-
-Cambium - Cambium (HTTP)
-Cisco - CiscoCE (Cisco Catalyst Express) (HTTP)
-Grandstream Networks - GSX (HTTP)
-Ingate - SIParator/Firewalls (HTTP)
-Ivanti - Ivanti Connect Secure (ICS) (HTTP (in JSON))
-Mimosa - Mimosa (B11) (HTTP)
-Palo Alto - PanOS API (HTTP)
-VMWare - NSX Edge (configuration)
-VMWare - NSX Edge (firewall rules)
-VMWare - NSX Distributed Firewall
-Zyxel - 1308 (HTTP)
-
-
-Eaton - Gigabit Network Card (SSH, but JSON)
-Linkys - SRW (SSH, but weird GUI stuff too)
-Linuxgeneric - CentOS (SSH)
-Nokia (formerly TiMetra, Alcatel, Alcatel-Lucent) 	SR OS (TiMOS)
-Nokia (formerly TiMetra, Alcatel, Alcatel-Lucent) 	SR OS Model-Driven CLI (7705 SAR, 7210 SAS, 7450 ESS, 7750 SR, 7950 XRS, NSP)
-PLANET SG/SGS Switches (SSH)
-SonicWALL 	SonicOS
-
-
 **Short Term:**
 
 - Checks for device source: No duplicate hostnames, valid IPs, ... (What if multiple groups hold the same IP address range?)
