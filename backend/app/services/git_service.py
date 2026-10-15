@@ -160,6 +160,20 @@ class GitService:
             return True
         except Exception:
             return False
+
+    def _read_committed_config(self, repo: Repo, file_name: str) -> str | None:
+        """Return a config file's content at HEAD, or None if it has never been committed."""
+        if not self._has_commits(repo):
+            return None
+        try:
+            blob = repo.head.commit.tree / file_name
+        except KeyError:
+            return None
+
+        ### Normalize line endings the same way a text-mode file read does (blobs written on Windows contain CRLF)
+        content = blob.data_stream.read().decode("utf-8")
+        return content.replace("\r\n", "\n").replace("\r", "\n")
+
     def _ensure_origin_remote(self, repo: Repo, remote_url: str):
         """Ensure an origin remote exists and points to configured URL."""
         if any(existing_remote.name == "origin" for existing_remote in repo.remotes):
@@ -231,20 +245,27 @@ class GitService:
             ### Determine file path based on device info
             config_file = repo_path / f"{device_name}.conf"
 
-            ### Check if file exists and has identical content (no changes)
-            has_changes = True
+            ### Compare against the last committed version, not the working tree file
+            ## If an earlier commit failed after the file was written, the working tree is already ahead of HEAD..
+            ## ..and comparing against it would report "no changes" forever without ever committing that version
+            committed_content = self._read_committed_config(repo, config_file.name)
+            has_changes = committed_content != config_content
+
+            ### Write config to file if the working tree doesn't already hold it
+            working_tree_content = None
             if config_file.exists():
                 with open(config_file, "r", encoding="utf-8") as f:
-                    existing_content = f.read()
-                if existing_content == config_content:
-                    has_changes = False
-
-            ### Write config to file
-            with open(config_file, "w", encoding="utf-8") as f:
-                f.write(config_content)
+                    working_tree_content = f.read()
+            if working_tree_content != config_content:
+                with open(config_file, "w", encoding="utf-8") as f:
+                    f.write(config_content)
 
             ### Only commit if there are changes
             if not has_changes:
+                ### Working tree had drifted from HEAD (e.g. after a failed commit): re-stage the file so the..
+                ## ..stale version can't end up in the next commit of another device in this group
+                if working_tree_content != config_content:
+                    repo.index.add([config_file.name])
                 ### Return a dummy hash and False to indicate no changes
                 return ("", False, 0, 0) # TODO: Why do we need the hash here?
 
