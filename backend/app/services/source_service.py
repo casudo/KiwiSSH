@@ -2,10 +2,12 @@
 
 import asyncio
 import csv
+import logging
 from pathlib import Path
 import re
 import httpx
 import yaml
+from pydantic import ValidationError
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.exc import NoSuchTableError, OperationalError, ProgrammingError, SQLAlchemyError
 
@@ -13,8 +15,11 @@ from app.core import Settings, get_settings
 from app.models.device import DeviceBase
 from app.core.config import NodeConfig, SOURCE_OVERRIDE_FIELDS
 
+logger = logging.getLogger(__name__)
+
 ### A source row paired with a label used in error messages (e.g. CSV line number or "http#3")
-SourceRow = tuple[dict, int | str]
+## The row is normally a dict; anything else (e.g. a non-object item of an HTTP source) is reported as invalid
+SourceRow = tuple[object, int | str]
 
 
 class SourceService:
@@ -24,6 +29,8 @@ class SourceService:
         self._devices_cache: dict[str, DeviceBase] = {}
         self._loaded = False
         self._load_lock: asyncio.Lock | None = None
+        ### Rows of the last load that were skipped because they were invalid
+        self._skipped_rows: list[dict[str, str]] = []
 
     @property
     def settings(self) -> Settings:
@@ -41,7 +48,7 @@ class SourceService:
     ### =============================================================================
 
 
-    def _parse_source_overrides(self, row: dict, device_name: str, row_num: int | str) -> NodeConfig | None:
+    def _parse_source_overrides(self, row: dict) -> NodeConfig | None:
         """Validate per-device overrides parsed from a source row."""
         overrides: dict = {}
         for field in SOURCE_OVERRIDE_FIELDS:
@@ -60,36 +67,43 @@ class SourceService:
             return None
         try:
             return NodeConfig(**overrides)
-        except ValueError as exc:
-            raise ValueError(
-                f"Row {row_num} (device '{device_name}'): invalid override value(s): {exc}"
-            ) from exc
+        except ValidationError as exc:
+            raise ValueError(f"invalid override value(s): {self._format_validation_error(exc)}") from exc
 
-    def _build_device_from_row(
-        self,
-        row: dict,
-        row_num: int | str,
-        source_overrides: dict[str, NodeConfig],
-    ) -> DeviceBase:
-        """Build a device from a normalized source row and collect its overrides into source_overrides."""
+    @staticmethod
+    def _format_validation_error(exc: ValidationError) -> str:
+        """Turn a pydantic error into a short one-line message such as 'ip_address: Value error, ...'."""
+        return "; ".join(
+            f"{'.'.join(str(part) for part in error['loc'])}: {error['msg']}" if error["loc"] else error["msg"]
+            for error in exc.errors()
+        )
+
+    def _build_device_from_row(self, row: object) -> tuple[DeviceBase, NodeConfig | None]:
+        """Build a device and its optional source overrides from a normalized source row.
+
+        Raises ValueError (or another exception) when the row is invalid.
+        """
+        if not isinstance(row, dict):
+            raise ValueError("entry is not an object and cannot be mapped to a device")
 
         group = str(row.get("group", "")).strip()
         device_name = str(row.get("device_name", "")).strip()
 
         if not group:
-            raise ValueError(f"Row {row_num}: 'group' column is required")
+            raise ValueError("'group' column is required")
         if group not in self.settings.groups:
             raise ValueError(
-                f"Row {row_num} (device '{device_name}'): Group '{group}' not found in kiwissh.yaml. "
+                f"Group '{group}' not found in kiwissh.yaml. "
                 f"Available groups: {', '.join(self.settings.groups.keys())}"
             )
 
-        ### Collect any per-device overrides before resolving the config so they take effect
-        node_override = self._parse_source_overrides(row, device_name, row_num)
-        if node_override is not None:
-            source_overrides[device_name] = node_override
-
-        device_config = self.settings.get_device_config(group, device_name, source_overrides=source_overrides)
+        ### Resolve the config with this row's overrides so they take effect
+        node_override = self._parse_source_overrides(row)
+        device_config = self.settings.get_device_config(
+            group,
+            device_name,
+            source_overrides={device_name: node_override} if node_override is not None else {},
+        )
 
         resolved_protocol = str(device_config.get("protocol")).strip().lower()
         resolved_ssh_profile = str(device_config.get("ssh_profile") or "").strip()
@@ -104,16 +118,20 @@ class SourceService:
         else:
             enabled = str(enabled_raw).strip().lower() == "true"
 
-        return DeviceBase(
-            group=group,
-            device_name=device_name,
-            ip_address=str(row.get("ip_address", "")).strip(),
-            vendor=device_config["vendor"],
-            ssh_profile=resolved_ssh_profile,
-            protocol=resolved_protocol,
-            port=int(device_config.get("port") or 22),
-            enabled=enabled,
-        )
+        try:
+            device = DeviceBase(
+                group=group,
+                device_name=device_name,
+                ip_address=str(row.get("ip_address", "")).strip(),
+                vendor=device_config["vendor"],
+                ssh_profile=resolved_ssh_profile,
+                protocol=resolved_protocol,
+                port=int(device_config.get("port") or 22),
+                enabled=enabled,
+            )
+        except ValidationError as exc:
+            raise ValueError(self._format_validation_error(exc)) from exc
+        return device, node_override
 
     ### =============================================================================
     ### CSV Source Functions
@@ -398,11 +416,9 @@ class SourceService:
         ### Step 3: Map each item to a canonical source row
         rows: list[SourceRow] = []
         for index, item in enumerate(items, start=1):
-            if not isinstance(item, dict):
-                raise ValueError(
-                    f"sources.http item #{index} is not a JSON object and cannot be mapped."
-                )
-            rows.append((self._map_http_item(item, src.map, src.default_group), f"http#{index}"))
+            ### Non-object items are passed on as they are and reported as invalid rows when loading
+            row = self._map_http_item(item, src.map, src.default_group) if isinstance(item, dict) else item
+            rows.append((row, f"http#{index}"))
         return rows
 
     ### =============================================================================
@@ -434,13 +450,37 @@ class SourceService:
 
         devices: dict[str, DeviceBase] = {}
         source_overrides: dict[str, NodeConfig] = {}
+        device_rows: dict[str, int | str] = {}
+        skipped_rows: list[dict[str, str]] = []
         for row, row_num in rows:
-            device = self._build_device_from_row(row, row_num, source_overrides)
+            device_name = str(row.get("device_name", "")).strip() if isinstance(row, dict) else ""
+
+            ### One invalid row must not take down the whole inventory: skip and report it instead
+            try:
+                if device_name in device_rows:
+                    raise ValueError(f"duplicate device_name, already defined in row {device_rows[device_name]}")
+                device, node_override = self._build_device_from_row(row)
+            except Exception as ex:
+                logger.warning("Skipping invalid source row %s (device '%s'): %s", row_num, device_name, ex)
+                skipped_rows.append({"row": str(row_num), "device_name": device_name, "error": str(ex)})
+                continue
+
             devices[device.device_name] = device
+            device_rows[device.device_name] = row_num
+            if node_override is not None:
+                source_overrides[device.device_name] = node_override
+
+        if skipped_rows:
+            logger.warning(
+                "Loaded %d device(s) from source, skipped %d invalid row(s)",
+                len(devices),
+                len(skipped_rows),
+            )
 
         ### Swap devices and their source overrides together
         self.settings.replace_source_overrides(source_overrides)
         self._devices_cache = devices
+        self._skipped_rows = skipped_rows
         self._loaded = True
         return list(devices.values())
 
@@ -463,6 +503,11 @@ class SourceService:
         """
         async with self._get_load_lock():
             return await self._load_inventory_locked()
+
+    @property
+    def skipped_rows(self) -> list[dict[str, str]]:
+        """Rows of the last load that were skipped as invalid, each with 'row', 'device_name' and 'error'."""
+        return list(self._skipped_rows)
 
     async def get_device(self, device_name: str) -> DeviceBase | None:
         """Get a single device by name."""
