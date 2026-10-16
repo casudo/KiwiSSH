@@ -9,7 +9,14 @@ from typing import Any
 import asyncssh
 
 from app.models.device import DeviceBase
-from app.services.cli_service import ANSI_ESCAPE_RE, READ_CHUNK_SIZE, READ_POLL_INTERVAL_SECONDS, CLIService, CLISession
+from app.services.cli_service import (
+    ANSI_ESCAPE_RE,
+    READ_CHUNK_SIZE,
+    READ_POLL_INTERVAL_SECONDS,
+    CLIService,
+    CLISession,
+    PaginationRule,
+)
 from app.services.protocol_common import fetch_with_retries
 
 logger = logging.getLogger(__name__)
@@ -108,6 +115,7 @@ class SSHService(CLIService):
         username: str,
         password: str | None,
         timeout: int,
+        pagination_rules: list[PaginationRule] | None = None,
     ) -> None:
         """Run an optional vendor-defined interactive login inside the SSH shell.
 
@@ -116,6 +124,8 @@ class SSHService(CLIService):
 
         Each step waits for its `expect` regex to appear, then sends the configured `send` value.
         The placeholders '{{ username }}' and '{{ password }}' are replaced with the device credentials specified per group/node.
+
+        While waiting, prompts matching the vendor's pagination rules (e.g. "Press <Enter> to continue") are answered.
         """
         placeholders = {
             "{{ username }}": username,
@@ -147,7 +157,24 @@ class SSHService(CLIService):
             ### Read until the "expect" prompt appears or the timeout is reached
             deadline = loop.time() + timeout_seconds
             buffer = ""
-            while not expect_pattern.search(ANSI_ESCAPE_RE.sub("", buffer)):
+            while True:
+                visible = ANSI_ESCAPE_RE.sub("", buffer)
+                if expect_pattern.search(visible):
+                    break
+
+                ### Answer interim prompts like "Press <Enter> to continue" with the vendor's pagination response
+                lines = [line for line in visible.replace("\r", "").split("\n") if line.strip()]
+                pagination_response = (
+                    self._match_pagination_response(lines[-1], pagination_rules)
+                    if lines and pagination_rules
+                    else None
+                )
+                if pagination_response is not None:
+                    await session.write(pagination_response)
+                    buffer = ""
+                    deadline = loop.time() + timeout_seconds
+                    continue
+
                 remaining = deadline - loop.time()
                 if remaining <= 0:
                     raise asyncio.TimeoutError(
@@ -195,6 +222,7 @@ class SSHService(CLIService):
                 username=username,
                 password=password,
                 timeout=timeout,
+                pagination_rules=self._get_pagination_settings(vendor_id),
             )
 
     async def connect(
