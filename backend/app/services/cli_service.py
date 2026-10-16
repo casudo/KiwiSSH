@@ -787,15 +787,20 @@ class CLIService(ABC):
             await session.write("\n")
 
             ### Wait for the initial prompt to ensure the shell is ready before sending commands
+            ## Pagination rules also answer prompts shown right after login (e.g. a banner that has to be accepted)
             try:
-                await self._read_until_patterns(session, prompt_patterns, default_timeout)
+                await self._read_until_patterns(
+                    session, prompt_patterns, default_timeout, pagination_rules=pagination_rules
+                )
             except asyncio.TimeoutError:
                 logger.debug(
                     "Initial prompt wait timed out for vendor '%s'; retrying once after additional newline",
                     vendor_id,
                 )
                 await session.write("\n")
-                await self._read_until_patterns(session, prompt_patterns, default_timeout)
+                await self._read_until_patterns(
+                    session, prompt_patterns, default_timeout, pagination_rules=pagination_rules
+                )
 
             ### Run commands
             ## pre_backup
