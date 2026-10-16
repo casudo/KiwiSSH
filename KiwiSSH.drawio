@@ -556,13 +556,13 @@
           <mxGeometry x="80" y="-310" width="450" height="120" as="geometry" />
         </mxCell>
         <mxCell id="pugB3yEPtQCtRGRcdh6I-2" value="source_service.py" style="rounded=1;whiteSpace=wrap;html=1;labelPosition=left;verticalLabelPosition=top;align=right;verticalAlign=bottom;fontStyle=1;fontSize=30;movable=0;resizable=0;rotatable=0;deletable=0;editable=0;locked=1;connectable=0;strokeWidth=5;dashed=1;perimeterSpacing=0;arcSize=3;fillColor=#E6E6E6;fontColor=#333333;strokeColor=#666666;" parent="1" vertex="1">
-          <mxGeometry x="-480" y="320" width="1400" height="1460" as="geometry" />
+          <mxGeometry x="-480" y="320" width="1640" height="1960" as="geometry" />
         </mxCell>
         <mxCell id="pugB3yEPtQCtRGRcdh6I-3" value="PRIVATE FUNCTIONS" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;fillColor=none;strokeColor=#B5739D;fontSize=20;fontStyle=1;fontColor=#B5739D;labelPosition=center;verticalLabelPosition=top;align=left;verticalAlign=bottom;movable=0;resizable=0;rotatable=0;deletable=0;editable=0;locked=1;connectable=0;" parent="1" vertex="1">
-          <mxGeometry x="-440" y="640" width="1340" height="1120" as="geometry" />
+          <mxGeometry x="-440" y="640" width="1580" height="1620" as="geometry" />
         </mxCell>
         <mxCell id="pugB3yEPtQCtRGRcdh6I-4" value="PUBLIC FUNCTIONS" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;fillColor=none;strokeColor=#007FFF;fontSize=20;fontStyle=1;fontColor=#007FFF;labelPosition=center;verticalLabelPosition=top;align=left;verticalAlign=bottom;spacing=2;spacingLeft=0;" parent="1" vertex="1">
-          <mxGeometry x="-440" y="360" width="1350" height="150.5" as="geometry" />
+          <mxGeometry x="-440" y="360" width="1590" height="150.5" as="geometry" />
         </mxCell>
         <mxCell id="pugB3yEPtQCtRGRcdh6I-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.25;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="pugB3yEPtQCtRGRcdh6I-6" target="llWNyvt0ECNiWkSyfPHe-1" edge="1">
           <mxGeometry relative="1" as="geometry">
@@ -637,10 +637,10 @@
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="06If7Zpf2Fg8BZLnwSnM-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="pugB3yEPtQCtRGRcdh6I-40" target="06If7Zpf2Fg8BZLnwSnM-9" edge="1">
+        <mxCell id="06If7Zpf2Fg8BZLnwSnM-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="pugB3yEPtQCtRGRcdh6I-40" target="kiwi-src-5" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="gmF46MzrYaKSGgME5oie-4" value="Clear Cache" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="06If7Zpf2Fg8BZLnwSnM-10" connectable="0" vertex="1">
+        <mxCell id="gmF46MzrYaKSGgME5oie-4" value="Drop source overrides" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="06If7Zpf2Fg8BZLnwSnM-10" connectable="0" vertex="1">
           <mxGeometry x="-0.16" y="-3" relative="1" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
@@ -739,7 +739,7 @@
         <mxCell id="GahtqYC23cAFm_8-8Mo6-28" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="GahtqYC23cAFm_8-8Mo6-21" target="GahtqYC23cAFm_8-8Mo6-26" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="GahtqYC23cAFm_8-8Mo6-29" value="Retrieve whole&lt;br&gt;device config" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="GahtqYC23cAFm_8-8Mo6-28" connectable="0" vertex="1">
+        <mxCell id="GahtqYC23cAFm_8-8Mo6-29" value="Retrieve device config&lt;br&gt;(with the row&#39;s overrides)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="GahtqYC23cAFm_8-8Mo6-28" connectable="0" vertex="1">
           <mxGeometry x="0.0122" y="-3" relative="1" as="geometry">
             <mxPoint x="3" y="-2" as="offset" />
           </mxGeometry>
@@ -749,11 +749,6 @@
         </mxCell>
         <mxCell id="GahtqYC23cAFm_8-8Mo6-21" value="_build_device_from_row()&lt;div style=&quot;font-size: 15px;&quot;&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
           <mxGeometry x="-27.5" y="1542" width="335" height="70" as="geometry" />
-        </mxCell>
-        <mxCell id="GahtqYC23cAFm_8-8Mo6-32" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="GahtqYC23cAFm_8-8Mo6-26" target="gmF46MzrYaKSGgME5oie-15" edge="1">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="330" y="1712" as="targetPoint" />
-          </mxGeometry>
         </mxCell>
         <mxCell id="GahtqYC23cAFm_8-8Mo6-26" value="settings.get_device_config()&lt;div style=&quot;font-size: 15px;&quot;&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
           <mxGeometry x="-5" y="1677" width="280" height="70" as="geometry" />
@@ -814,7 +809,7 @@
           <mxGeometry x="164" y="1152" width="250" height="60" as="geometry" />
         </mxCell>
         <mxCell id="06If7Zpf2Fg8BZLnwSnM-9" value="_devices_cache.clear()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
-          <mxGeometry x="505" y="752" width="180" height="40" as="geometry" />
+          <mxGeometry x="505" y="832" width="180" height="40" as="geometry" />
         </mxCell>
         <mxCell id="06If7Zpf2Fg8BZLnwSnM-11" value="&lt;b&gt;SWITCH TO PAGE!&lt;/b&gt;&lt;div&gt;&lt;b&gt;config.py&lt;/b&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="375" y="690" width="130" height="40" as="geometry" />
@@ -868,8 +863,8 @@
         <mxCell id="gmF46MzrYaKSGgME5oie-14" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;HTTP Request to API&amp;nbsp;&lt;/span&gt;" style="ellipse;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="-135" y="1152" width="250" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="gmF46MzrYaKSGgME5oie-15" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;Put device in _devices_cache&lt;/span&gt;" style="ellipse;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-          <mxGeometry x="330" y="1682" width="310" height="60" as="geometry" />
+        <mxCell id="gmF46MzrYaKSGgME5oie-15" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;Collect device and its overrides&lt;/span&gt;" style="ellipse;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="-20" y="2070" width="310" height="60" as="geometry" />
         </mxCell>
         <mxCell id="gmF46MzrYaKSGgME5oie-19" value="Build device" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="1" connectable="0" vertex="1">
           <mxGeometry x="140.00142857142845" y="1492" as="geometry" />
@@ -1071,7 +1066,7 @@
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="WPUE70IPz3UcJZJSkPF4-16" value="_walk_inventory_group()" style="whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+        <mxCell id="WPUE70IPz3UcJZJSkPF4-16" value="_walk_inventory_group()&lt;div&gt;&lt;i&gt;ansible_host or host name&lt;/i&gt;&lt;/div&gt;" style="whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
           <mxGeometry x="445" y="1472" width="250" height="60" as="geometry" />
         </mxCell>
         <mxCell id="WPUE70IPz3UcJZJSkPF4-23" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;Connect to PostgreSQL&lt;/span&gt;" style="ellipse;whiteSpace=wrap;html=1;" parent="1" vertex="1">
@@ -1083,8 +1078,8 @@
         <mxCell id="QgAxim5EPIZv00dBg61a-1" value="_parse_source_overrides()" style="whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
           <mxGeometry x="-392.5" y="1582" width="205" height="50" as="geometry" />
         </mxCell>
-        <mxCell id="QgAxim5EPIZv00dBg61a-3" value="settings.register_source_overrides()" style="whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
-          <mxGeometry x="-415" y="1672" width="250" height="60" as="geometry" />
+        <mxCell id="QgAxim5EPIZv00dBg61a-3" value="config.NodeConfig(**overrides)" style="whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="-415" y="1700" width="250" height="60" as="geometry" />
         </mxCell>
         <mxCell id="rfyErZYJKVz1BENovUN8-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="rfyErZYJKVz1BENovUN8-1" target="GahtqYC23cAFm_8-8Mo6-8">
           <mxGeometry relative="1" as="geometry" />
@@ -1098,7 +1093,7 @@
         <mxCell id="llWNyvt0ECNiWkSyfPHe-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="rfyErZYJKVz1BENovUN8-1" target="WPUE70IPz3UcJZJSkPF4-1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="rfyErZYJKVz1BENovUN8-1" value="_read_source_rows()" style="whiteSpace=wrap;html=1;fontSize=15;" vertex="1" parent="1">
+        <mxCell id="rfyErZYJKVz1BENovUN8-1" value="_read_source_rows()&lt;div&gt;&lt;i&gt;rows + row number&lt;/i&gt;&lt;/div&gt;" style="whiteSpace=wrap;html=1;fontSize=15;" vertex="1" parent="1">
           <mxGeometry x="5" y="920" width="250" height="60" as="geometry" />
         </mxCell>
         <mxCell id="rfyErZYJKVz1BENovUN8-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="rfyErZYJKVz1BENovUN8-5" target="rfyErZYJKVz1BENovUN8-1">
@@ -1128,6 +1123,110 @@
         </mxCell>
         <mxCell id="llWNyvt0ECNiWkSyfPHe-1" value="_ensure_loaded()" style="whiteSpace=wrap;html=1;fontSize=15;" vertex="1" parent="1">
           <mxGeometry x="45" y="660" width="170" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-src-1" value="skipped_rows&lt;div&gt;&lt;i&gt;(property)&lt;/i&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="925" y="380" width="180" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-src-2" value="&lt;b&gt;SEE ON THIS PAGE!&lt;/b&gt;&lt;div&gt;&lt;b&gt;After the last row&lt;/b&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="930" y="545" width="170" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-src-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.357;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;jumpStyle=arc;jumpSize=10;" edge="1" parent="1" source="pugB3yEPtQCtRGRcdh6I-121" target="kiwi-src-1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="60" y="-350" />
+              <mxPoint x="1015" y="-350" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-src-4" value="GET /source/skipped&lt;br&gt;(also in the /reload response)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="kiwi-src-3">
+          <mxGeometry x="0.043" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-src-5" value="settings.clear_source_overrides()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="470" y="752" width="250" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-src-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="kiwi-src-5" target="06If7Zpf2Fg8BZLnwSnM-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-src-7" value="Clear Cache" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="kiwi-src-6">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-src-8" value="Validate overrides&lt;br&gt;(invalid → ValueError)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="QgAxim5EPIZv00dBg61a-4">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-src-9" value="DeviceBase(...)&lt;div&gt;&lt;i&gt;models/device.py&lt;/i&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="-5" y="1800" width="280" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-src-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="GahtqYC23cAFm_8-8Mo6-26" target="kiwi-src-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-src-11" value="Create device" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="kiwi-src-10">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-src-12" value="normalize_device_address()&lt;div&gt;&lt;i&gt;IPv4/IPv6 or hostname/FQDN&lt;/i&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="-415" y="1800" width="250" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-src-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="kiwi-src-9" target="kiwi-src-12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-src-14" value="Validate ip_address" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="kiwi-src-13">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-src-15" value="Row valid?" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="35" y="1900" width="200" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-src-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="kiwi-src-9" target="kiwi-src-15">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-src-17" value="Skip row: remember row, device_name and error in skipped_rows, log a warning" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="420" y="1910" width="360" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-src-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="kiwi-src-15" target="kiwi-src-17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-src-19" value="No&lt;br&gt;(ValueError or&lt;br&gt;duplicate device_name)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="kiwi-src-18">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-src-20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="kiwi-src-15" target="gmF46MzrYaKSGgME5oie-15">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-src-21" value="Yes" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="kiwi-src-20">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-src-22" value="After the last row: swap in _devices_cache and _skipped_rows" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="420" y="2150" width="360" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-src-23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="gmF46MzrYaKSGgME5oie-15" target="kiwi-src-22">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="135" y="2190" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-src-24" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="kiwi-src-17" target="kiwi-src-22">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-src-25" value="settings.replace_source_overrides()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="840" y="2160" width="270" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-src-26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="kiwi-src-22" target="kiwi-src-25">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-src-27" value="&lt;b&gt;SWITCH TO PAGE!&lt;/b&gt;&lt;div&gt;&lt;b&gt;config.py&lt;/b&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="910" y="2105" width="130" height="40" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
@@ -1808,7 +1907,7 @@
     </mxGraphModel>
   </diagram>
   <diagram id="kiwi-ssh-telnet-page" name="SSH/Telnet Service">
-    <mxGraphModel dx="1056" dy="623" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="2820" dy="1232" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -1872,14 +1971,14 @@
         <mxCell id="kiwi-st-20" value="&lt;b&gt;SWITCH TO PAGE!&lt;/b&gt;&lt;div&gt;&lt;b&gt;config.py&lt;/b&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="860" y="1545" width="120" height="40" as="geometry" />
         </mxCell>
+        <mxCell id="29OwMSwXvN-OVY3eJof0-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="kiwi-st-21" target="kiwi-st-24">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
         <mxCell id="kiwi-st-21" value="protocol_common.fetch_with_retries()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
-          <mxGeometry x="600" y="1680" width="280" height="60" as="geometry" />
+          <mxGeometry x="600" y="1735" width="280" height="60" as="geometry" />
         </mxCell>
         <mxCell id="kiwi-st-22" value="&lt;b&gt;SEE ON THIS PAGE!&lt;/b&gt;&lt;div&gt;&lt;b&gt;protocol_common.py&lt;/b&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="890" y="1690" width="120" height="40" as="geometry" />
-        </mxCell>
-        <mxCell id="kiwi-st-23" value="fetch_once()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
-          <mxGeometry x="640" y="1810" width="200" height="40" as="geometry" />
         </mxCell>
         <mxCell id="kiwi-st-24" value="Open shell&lt;br&gt;connection.create_process()" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
           <mxGeometry x="620" y="1890" width="240" height="80" as="geometry" />
@@ -1961,17 +2060,6 @@
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="kiwi-st-46" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-st-21" target="kiwi-st-23" edge="1">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="kiwi-st-47" value="per attempt&lt;br&gt;(max. retry + 1)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="kiwi-st-46" vertex="1" connectable="0">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint as="offset" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="kiwi-st-48" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-st-23" target="kiwi-st-24" edge="1">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
         <mxCell id="kiwi-st-49" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-st-24" target="kiwi-st-25" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
@@ -1989,19 +2077,6 @@
             <Array as="points">
               <mxPoint x="1030" y="2380" />
             </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="kiwi-st-54" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;jumpStyle=arc;jumpSize=10;" parent="1" source="kiwi-st-23" target="kiwi-st-18" edge="1">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="1190" y="1830" />
-              <mxPoint x="1190" y="1365" />
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="kiwi-st-55" value="jumphost (optional)&lt;br&gt;+ device" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="kiwi-st-54" vertex="1" connectable="0">
-          <mxGeometry x="0.634" relative="1" as="geometry">
-            <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
         <mxCell id="kiwi-st-56" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-st-18" target="kiwi-st-31" edge="1">
@@ -2158,7 +2233,22 @@
         <mxCell id="kiwi-st-99" value="apply_processing_rules()&lt;br&gt;&lt;br&gt;&lt;i&gt;used by SSH, Telnet and HTTP&lt;/i&gt;" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
           <mxGeometry x="4160" y="1310.25" width="280" height="110" as="geometry" />
         </mxCell>
-        <mxCell id="kiwi-st-100" value="Call fetch_once() from &lt;i&gt;protocol&lt;/i&gt;_service.py" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+        <mxCell id="29OwMSwXvN-OVY3eJof0-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="kiwi-st-100" target="kiwi-st-18">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="3030" y="1540" />
+              <mxPoint x="3030" y="1210" />
+              <mxPoint x="1690" y="1210" />
+              <mxPoint x="1690" y="1365" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="29OwMSwXvN-OVY3eJof0-2" value="jumphost (optional)&lt;br&gt;+ device" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="29OwMSwXvN-OVY3eJof0-1">
+          <mxGeometry x="-0.8141" y="2" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-st-100" value="Call fetch_once()" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
           <mxGeometry x="3460" y="1510" width="240" height="60" as="geometry" />
         </mxCell>
         <mxCell id="kiwi-st-101" value="Log error,&lt;br&gt;wait 0.25s" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
