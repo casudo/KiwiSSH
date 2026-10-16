@@ -1,0 +1,70 @@
+### Generic Linux Vendor Configuration
+## Instructions for backing up the persistent network/system configuration of generic Linux hosts (e.g. CentOS, Debian)
+
+vendor:
+  id: "linux_generic"
+  name: "Linux (generic)"
+  description: "Generic Linux hosts (e.g. CentOS, Debian): hostname, hosts, interfaces, routes, resolver, users and groups"
+
+### Session-level behavior
+session:
+  comment_prefix: "# "
+  prompt: '^\S.*[#$]\s?$'
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Pre-backup commands (prepare the session) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  # pre_backup:
+  #   - command: "su -"
+  #     then: ["{{ enable_password }}"]
+  #     description: "Become root"
+
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "cat /etc/hostname"
+      show_command_in_config: true
+    - command: "cat /etc/hosts"
+      show_command_in_config: true
+    - command: "ip link"
+      show_command_in_config: true
+    - command: "cat /etc/resolv.conf"
+      show_command_in_config: true
+    - command: "ip route"
+      show_command_in_config: true
+    - command: "ip -6 route"
+      show_command_in_config: true
+    - command: "cat /etc/motd"
+      show_command_in_config: true
+    - command: "cat /etc/passwd"
+      show_command_in_config: true
+    - command: "cat /etc/group"
+      show_command_in_config: true
+    - command: "cat /etc/nsswitch.conf"
+      show_command_in_config: true
+    - command: "cat /etc/issue"
+      show_command_in_config: true
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    # - command: "exit"  # leave the root shell when 'su -' is used above
+    - command: "exit"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  strip_patterns:
+    # - '^(default (\S+).* (expires) ).*'
+  # config_start: "^config "
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      - search: '\bexpires \d+sec\b'
+        replacement: 'expires <redacted>'

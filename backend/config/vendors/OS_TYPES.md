@@ -120,6 +120,7 @@
 | Juniper                  | ScreenOS (Netscreen)                                                                                                                        | [juniper_screenos.yaml](/backend/config/vendors/juniper_screenos.yaml)                     |                                                                          |
 | LANCOM Systems GmbH      | LCOS                                                                                                                                        | [lancom_lcos.yaml](/backend/config/vendors/lancom_lcos.yaml)                               |                                                                          |
 | Lenovo                   | Lenovo Network OS                                                                                                                           | [lenovo_lenovonos.yaml](/backend/config/vendors/lenovo_lenovonos.yaml)                     |                                                                          |
+| Linux                    | Generic (e.g. CentOS, Debian)                                                                                                               | [linux_generic.yaml](/backend/config/vendors/linux_generic.yaml)                           | [Linux](#linux-generic)                                                  |
 | Mellanox                 | MLNX-OS                                                                                                                                     | [mellanox_mlnxos.yaml](/backend/config/vendors/mellanox_mlnxos.yaml)                       |                                                                          |
 | Mellanox                 | Voltaire                                                                                                                                    | [mellanox_voltaire.yaml](/backend/config/vendors/mellanox_voltaire.yaml)                   |                                                                          |
 | Mikrotik                 | RouterOS                                                                                                                                    | [mikrotik_routeros.yaml](/backend/config/vendors/mikrotik_routeros.yaml)                   | [RouterOS](#mikrotik-routeros)                                           |
@@ -321,6 +322,11 @@ Create a user with `cfg-view` class set:
 set system login user kiwissh class cfg-view
 set system login user kiwissh authentication plain-text-password "yourpasswordhere"
 ```
+## Linux (generic)
+
+Backs up the persistent system configuration (hostname, hosts, interfaces, routes, resolver, users and groups) of a Linux host. Normal user rights are enough. To run the commands as root, uncomment the `su -` step in [linux_generic.yaml](/backend/config/vendors/linux_generic.yaml) and set the root password as the device's `enable_password`.
+
+To back up more files (e.g. a firewall configuration), add further `cat` commands to the vendor file.
 
 ## MikroTik RouterOS
 
