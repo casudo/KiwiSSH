@@ -52,7 +52,7 @@ class HTTPService:
         return host
 
     @staticmethod
-    def _build_request_kwargs(step: dict[str, Any], context: dict[str, str]) -> dict[str, Any]:
+    def _build_request_kwargs(step: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
         """Build httpx request kwargs (method/url/body/headers/params) from a step."""
         method = str(step.get("method", "GET")).strip().upper() or "GET"
         raw_path = str(step.get("path", "")).strip()
@@ -67,8 +67,11 @@ class HTTPService:
             "method": method,
             "url": path,
             "headers": {str(key): str(val) for key, val in dict(headers).items()},
-            "params": {str(key): str(val) for key, val in dict(params).items()},
         }
+
+        ### Only pass 'params' when set: httpx drops a query written in the path (e.g. a scraped link) whenever params are passed
+        if params:
+            kwargs["params"] = {str(key): str(val) for key, val in dict(params).items()}
 
         ### Request body: exactly one of json / form / body is expected
         if step.get("json") is not None:
