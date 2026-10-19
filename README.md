@@ -557,7 +557,7 @@ You can use the following keys for each command step:
 
 #### http
 
-The `http` section defines how KiwiSSH fetches configuration when a device or group uses `protocol: http` or `protocol: https`. Credentials are still resolved from [kiwissh.yaml](#kiwisshyaml). The following placeholders can be used in any string value: `{{ username }}`, `{{ password }}`.
+The `http` section defines how KiwiSSH fetches configuration when a device or group uses `protocol: http` or `protocol: https`. Credentials are still resolved from [kiwissh.yaml](#kiwisshyaml). The following placeholders can be used in any string value: `{{ username }}`, `{{ password }}` and every value extracted by an earlier request (`{{ <name> }}`).
 
 ```yaml
 http:
@@ -578,13 +578,37 @@ http:
       show_command_in_config: false
 ```
 
+Requests run in order and share their cookies, so a login request keeps its session for the next ones. Responses can also feed later requests, e.g. a login that returns an API key:
+
+```yaml
+http:
+  auth:
+    type: "basic"
+  requests:
+    - label: "login"                 # exchange the credentials for an API key
+      method: "POST"
+      path: "/api/login"
+      json: { user: "{{ username }}", password: "{{ password }}" }
+      store: false                   # not part of the stored config
+      extract:
+        api_key: { json: "token" }   # or { regex: '<key>([^<]+)</key>' }
+    - label: "configuration"
+      path: "/api/config"
+      headers: { X-API-Key: "{{ api_key }}" }
+      show_command_in_config: true
+```
+
 | Key | Description | Required | Default Value |
 | --- | ----------- | -------- | ------------- |
 | `http.headers` | Default headers sent on every request. | No | - |
 | `http.auth.type` | Authentication mode: `none`, `basic` (HTTP Basic auth) or `digest` (HTTP Digest auth) using the device `username`/`password`. | No | `none` |
+| `http.requests` | List of requests whose response bodies form the stored configuration. Each request supports `method`, `path`, `headers`, `params`, one of `form`/`json`/`body`, `label`, `expected_status`, `show_command_in_config` and the keys below. | **Yes** | - |
+| `http.requests[].store` | Set to `false` for requests whose response isn't part of the config (login, lookups). | No | `true` |
+| `http.requests[].extract` | Values to read from the response for later requests, as `<name>: { json: "<dot.path>" }` or `<name>: { regex: "<pattern>" }` (first capture group; `html_unescape: true` decodes entities like `&amp;`). The request fails if a value is missing. | No | - |
+| `http.requests[].format` | `xml`: pretty-print the stored response, so the diff of a single-line XML response shows the changed lines. The request fails if the response isn't valid XML. | No | - |
 
 > [!NOTE]
-> Every request stores its full response body as a normal config backup. `show_command_in_config` and the `processing` rules (e.g. `strip_patterns`, `redaction`) behave the same way as for SSH/Telnet backups, so HTTP-fetched configs are stored and processed consistently.
+> Every request (except `store: false`) stores its response body as a normal config backup. `show_command_in_config` and the `processing` rules (e.g. `strip_patterns`, `redaction`) behave the same way as for SSH/Telnet backups, so HTTP-fetched configs are stored and processed consistently.
 
 #### processing
 
