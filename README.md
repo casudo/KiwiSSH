@@ -564,7 +564,7 @@ http:
   headers:                       # OPTIONAL default headers for every request
     Accept: "text/plain"
   auth:                          # OPTIONAL authentication flow
-    type: "basic"                # none | basic
+    type: "basic"                # none | basic | digest
   requests:                      # REQUIRED, full response bodies form the stored config
     - method: "GET"
       path: "/api/v2/monitor/system/config/backup"
@@ -581,8 +581,7 @@ http:
 | Key | Description | Required | Default Value |
 | --- | ----------- | -------- | ------------- |
 | `http.headers` | Default headers sent on every request. | No | - |
-| `http.auth.type` | Authentication mode: `none`, `basic` (HTTP Basic auth using `username`/`password`). | No | `none` |
-| `http.requests` | List of requests whose full response bodies form the stored configuration. Each request supports `method`, `path`, `headers`, `params`, one of `form`/`json`/`body`, `label`, `expected_status` and `show_command_in_config`. | **Yes** | - |
+| `http.auth.type` | Authentication mode: `none`, `basic` (HTTP Basic auth) or `digest` (HTTP Digest auth) using the device `username`/`password`. | No | `none` |
 
 > [!NOTE]
 > Every request stores its full response body as a normal config backup. `show_command_in_config` and the `processing` rules (e.g. `strip_patterns`, `redaction`) behave the same way as for SSH/Telnet backups, so HTTP-fetched configs are stored and processed consistently.

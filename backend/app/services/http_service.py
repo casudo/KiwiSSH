@@ -26,12 +26,12 @@ class HTTPService:
     ### =============================================================================
 
     @staticmethod
-    def _render_placeholders(value: Any, context: dict[str, str]) -> Any:
+    def _render_placeholders(value: Any, context: dict[str, Any]) -> Any:
         """Recursively substitute '{{ key }}' placeholders using the given context."""
         if isinstance(value, str):
             ### Matches placeholder tokens like "{{ username }}" (whitespace insensitive)
             return re.compile(r"\{\{\s*([a-zA-Z0-9_]+)\s*\}\}").sub(
-                lambda match: context.get(match.group(1), match.group(0)),
+                lambda match: str(context.get(match.group(1), match.group(0))),
                 value,
             )
         if isinstance(value, dict):
@@ -39,6 +39,24 @@ class HTTPService:
         if isinstance(value, list):
             return [HTTPService._render_placeholders(item, context) for item in value]
         return value
+
+    @staticmethod
+    def _build_auth(auth_config: dict[str, Any] | None, context: dict[str, Any]) -> httpx.Auth | None:
+        """Build the httpx auth for an 'auth' mapping; username/password default to the device credentials."""
+        auth_config = auth_config or {}
+        auth_type = str(auth_config.get("type", "none")).strip().lower()
+        if auth_type == "none":
+            return None
+
+        ### username/password may use placeholders, e.g. an extracted API key
+        username = HTTPService._render_placeholders(str(auth_config.get("username", "{{ username }}")), context)
+        password = HTTPService._render_placeholders(str(auth_config.get("password", "{{ password }}")), context)
+        
+        if auth_type == "basic":
+            return httpx.BasicAuth(username, password)
+        if auth_type == "digest":
+            return httpx.DigestAuth(username, password)
+        raise ValueError(f"Unknown HTTP auth type '{auth_type}' (expected none, basic or digest)")
 
     @staticmethod
     def _format_url_host(host: str) -> str:
@@ -109,7 +127,7 @@ class HTTPService:
         port: int,
         default_timeout: int,
         verify_ssl: bool,
-        context: dict[str, str],
+        context: dict[str, Any],
     ) -> tuple[str, str | None]:
         """Fetch and assemble device configuration via vendor-defined HTTP requests."""
         ### Get configured 'http' section for the vendor
@@ -131,7 +149,7 @@ class HTTPService:
         if not request_steps:
             raise ValueError(f"Vendor '{vendor_id}' has no http.requests configured")
 
-        ### HTTP backups store each request's full response; only vendor processing is applied
+        ### Apply processing rules to the HTTP response
         processing_rules = vendor_service.get_processing_rules(vendor_id)
 
         base_url = f"{scheme}://{self._format_url_host(context['host'])}:{port}"
@@ -140,12 +158,8 @@ class HTTPService:
             for key, val in dict(self._render_placeholders(http_config.get("headers", {}) or {}, context)).items()
         }
 
-        ### Basic auth is applied at the client level
-        auth_config = http_config.get("auth") or {}
-        auth_type = str(auth_config.get("type", "none")).strip().lower()
-        client_auth: httpx.BasicAuth | None = None
-        if auth_type == "basic":
-            client_auth = httpx.BasicAuth(context.get("username", ""), context.get("password", ""))
+        ### Default auth is applied at the client level, a request can override it with its own 'auth'
+        client_auth = self._build_auth(http_config.get("auth"), context)
 
         captured_output: list[dict[str, Any]] = []
         async with httpx.AsyncClient(
