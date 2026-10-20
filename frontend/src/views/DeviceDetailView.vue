@@ -261,6 +261,8 @@ async function toggleFavorite() {
 }
 
 async function triggerBackup() {
+  if (!devicesStore.selectedDevice?.enabled) return
+
   try {
     // Update device status to in_progress
     if (devicesStore.selectedDevice) {
@@ -521,7 +523,12 @@ function formatFileSize(bytes: number): string {
               </svg>
               {{ downloadingLatest ? "Downloading..." : "Download Latest" }}
             </button>
-            <button @click="triggerBackup" class="btn btn-primary">
+            <button
+              @click="triggerBackup"
+              :disabled="!devicesStore.selectedDevice.enabled"
+              :title="devicesStore.selectedDevice.enabled ? 'Trigger backup' : 'Device is disabled'"
+              class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               Trigger Backup
             </button>
           </div>
@@ -637,7 +644,9 @@ function formatFileSize(bytes: number): string {
             </svg>
             <p>No backup history available</p>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              <span v-if="hasActiveFilters">No backups match your filters. </span>Click "Trigger Backup" to create the first backup
+              <span v-if="hasActiveFilters">No backups match your filters. </span>
+              <template v-if="devicesStore.selectedDevice?.enabled">Click "Trigger Backup" to create the first backup</template>
+              <template v-else>Backups are disabled for this device</template>
             </p>
           </div>
 

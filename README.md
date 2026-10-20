@@ -766,7 +766,6 @@ None
 - Put redaction boolean switch as group/node level override instead of per vendor to be able to easily turn on/off redaction for specific groups/nodes without having to modify the vendor YAML files?
 - Full-text config search ([#48](https://github.com/casudo/KiwiSSH/issues/48))
 - Config file browser on the frontend ([#47](https://github.com/casudo/KiwiSSH/issues/47))
-- If a device is marked as `enabled=false` update the frontend so the trigger backup buttons are disabled too
 
 **Long Term:**
 

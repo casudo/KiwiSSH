@@ -17,6 +17,7 @@ const triggerFeedbackMessage = ref<string>("")
 let triggerFeedbackTimer: number | undefined
 let triggerFeedbackMessageTimer: number | undefined
 const isFavorite = computed(() => favoritesStore.isFavorite(props.device.device_name))
+const backupDisabled = computed(() => !props.device.enabled)
 
 function setTriggerFeedback(state: TriggerFeedbackState, resetAfterMs: number = 0) {
   triggerFeedback.value = state
@@ -71,7 +72,7 @@ async function handleToggleFavorite(e: Event) {
 async function handleTriggerBackup(e: Event) {
   e.stopPropagation()
 
-  if (triggerFeedback.value === "loading") return
+  if (triggerFeedback.value === "loading" || backupDisabled.value) return
 
   setTriggerFeedback("loading")
 
@@ -108,21 +109,25 @@ async function handleTriggerBackup(e: Event) {
         <StatusBadge :status="device.status" />
         <button
           @click="handleTriggerBackup"
-          :disabled="triggerFeedback === 'loading'"
+          :disabled="triggerFeedback === 'loading' || backupDisabled"
           class="px-1.5 py-0.5 text-xs rounded transition"
           :class="
-            triggerFeedback === 'success'
-              ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:hover:bg-emerald-900/60'
-              : triggerFeedback === 'error'
-                ? 'bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-900/40 dark:text-rose-300 dark:hover:bg-rose-900/60'
-                : 'bg-kiwissh-100 text-kiwissh-700 hover:bg-kiwissh-200 dark:bg-kiwissh-900/40 dark:text-kiwissh-300 dark:hover:bg-kiwissh-900/60'
+            backupDisabled
+              ? 'bg-gray-100 text-gray-400 opacity-50 grayscale cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
+              : triggerFeedback === 'success'
+                ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:hover:bg-emerald-900/60'
+                : triggerFeedback === 'error'
+                  ? 'bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-900/40 dark:text-rose-300 dark:hover:bg-rose-900/60'
+                  : 'bg-kiwissh-100 text-kiwissh-700 hover:bg-kiwissh-200 dark:bg-kiwissh-900/40 dark:text-kiwissh-300 dark:hover:bg-kiwissh-900/60'
           "
           :title="
-            triggerFeedback === 'success'
-              ? 'Backup queued'
-              : triggerFeedback === 'error'
-                ? 'Failed to queue backup'
-                : 'Trigger backup'
+            backupDisabled
+              ? 'Device is disabled'
+              : triggerFeedback === 'success'
+                ? 'Backup queued'
+                : triggerFeedback === 'error'
+                  ? 'Failed to queue backup'
+                  : 'Trigger backup'
           "
         >
           {{
