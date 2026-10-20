@@ -148,6 +148,7 @@
 | OpenWRT                  |                                                                                                                                             | [openwrt.yaml](/backend/config/vendors/openwrt.yaml)                                       |                                                                          |
 | OPNsense                 |                                                                                                                                             | [opnsense.yaml](/backend/config/vendors/opnsense.yaml)                                     |                                                                          |
 | Palo Alto                | PanOS                                                                                                                                       | [paloalto_panos.yaml](/backend/config/vendors/paloalto_panos.yaml)                         |                                                                          |
+| Palo Alto                | PanOS (API)                                                                                                                                 | [paloalto_panosapi.yaml](/backend/config/vendors/paloalto_panosapi.yaml)                   | [PanOS API](#palo-alto-panos-api) |
 | Perle                    | IOLAN Console Servers                                                                                                                       | [perle_iolan.yaml](/backend/config/vendors/perle_iolan.yaml)                               |                                                                          |
 | pfSense                  |                                                                                                                                             | [pfsense.yaml](/backend/config/vendors/pfsense.yaml)                                       |                                                                          |
 | PLANET                   | SG/SGS switches                                                                                                                             | [planet_sgs.yaml](/backend/config/vendors/planet_sgs.yaml)                                 |                                                                          |
@@ -352,6 +353,12 @@ Create a key pair, save the public key (id_ed25519.pub) and save it on flash. Cr
 ```
 
 KiwiSSH can now retrieve your configuration!
+
+## Palo Alto PanOS API
+
+Backs up the XML configuration via the XML API. The backup can be imported again as configuration. KiwiSSH generates an API key with the device credentials and exports the configuration with it. Works for PanOS and Panorama.
+
+Create a user with the `Superuser (read-only)` admin role for KiwiSSH and use `protocol: https`.
 
 ## TrueNAS
 
