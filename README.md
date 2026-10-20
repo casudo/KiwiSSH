@@ -753,8 +753,8 @@ The endpoint will return the following information about the device:
 
 **Short Term:**
 
-- Rename "Fiberstorm (fs.com)" to "Fiberstore (fs.com)"
-  
+None
+
 **Mid-term:**
 
 - Add visual popup when opening JobView.vue if the page load takes longer than 2 seconds to inform the user that the page is still loading and to prevent them from thinking the UI is frozen (Branch [job-log-loading-spinner](https://github.com/casudo/KiwiSSH/tree/job-log-loading-spinner))
