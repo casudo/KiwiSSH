@@ -601,7 +601,11 @@ class BackupService:
 
             ### If no changes detected, return NO_CHANGES status
             if not has_changes:
-                logger.info(f"No configuration changes detected for {device.device_name}")
+                logger.info(
+                    "No configuration changes detected for %s (%.2fs)",
+                    device.device_name,
+                    duration_seconds,
+                )
                 result = BackupRecord(
                     id=str(uuid.uuid4()),
                     device_name=device.device_name,
