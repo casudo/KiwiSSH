@@ -21,7 +21,7 @@ It was created as better alternative to RANCID and Oxidized, with a focus on sim
 The frontend offers:
 
 - Dashboard (statistics, favorite devices, overview of KiwiSSH)
-- Information-rich device list with filtering, search and favorite option, backup contribution calender, group and vendor belonging, status badge, config diff view and more
+- Information-rich device list with filtering, search and favorite option, backup contribution calender, group and vendor belonging, status badge, config diff view, in-browser config file browser and more
 - Overview of configured SSH profiles, vendors and groups for easy management and device tracking
 - Detailed backup job logs with timestamps, status and error messages for each backup attempt
 - Swagger API documentation
@@ -768,7 +768,6 @@ The endpoint will return the following information about the device:
 - Show "backup time" when NO_CHANGES" in log line "No configuration changes detected for {device_name}"?
 - Put redaction boolean switch as group/node level override instead of per vendor to be able to easily turn on/off redaction for specific groups/nodes without having to modify the vendor YAML files?
 - Full-text config search ([#48](https://github.com/casudo/KiwiSSH/issues/48))
-- Config file browser on the frontend ([#47](https://github.com/casudo/KiwiSSH/issues/47))
 - If a device is marked as `enabled=false` update the frontend so the trigger backup buttons are disabled too
 
 **Long Term:**
