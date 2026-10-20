@@ -8,6 +8,7 @@ import asyncio
 import logging
 import threading
 import time
+from collections import OrderedDict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -31,14 +32,19 @@ class GitObjectNotFoundError(ValueError):
 class GitService:
     """Service for Git-based configuration storage."""
 
-    ### Backup count is cached per device to avoid spawning a git subprocess on every API request
-    _HISTORY_COUNT_TTL_SECONDS: int = 300
+    ### Backup count and history pages are cached per device: a path-filtered git log has to walk the..
+    ## ..group's whole history for rarely changed devices, which gets slow once a group has many commits
+    _HISTORY_CACHE_TTL_SECONDS: int = 300
+    _HISTORY_PAGE_CACHE_MAX_ENTRIES: int = 512
 
     def __init__(self) -> None:
         self._repos: dict[str, Any] = {}  # Cache repos by group
         self._repo_locks: dict[str, threading.RLock] = {}
         self._repo_locks_guard = threading.Lock()
         self._history_count_cache: dict[tuple[str, str], tuple[int, float]] = {}
+        ### Keyed by (device_name, group, limit, offset), least recently used first
+        self._history_page_cache: OrderedDict[tuple[str, str, int, int], tuple[list[dict[str, Any]], float]] = OrderedDict()
+        self._history_page_cache_guard = threading.Lock()
         ### Groups with local commits that still need to be pushed (see push_pending)
         self._pending_push_groups: set[str] = set()
         self._pending_push_guard = threading.Lock()
@@ -297,6 +303,9 @@ class GitService:
             actor = Actor("KiwiSSH Backup System", "backup@kiwissh.local")
             commit = repo.index.commit(message, author=actor, committer=actor)
 
+            ### Evict the device's cached history while still holding the lock, so no request can cache the pre-commit state
+            self.invalidate_history_cache(device_name, group)
+
             ### Don't push here: pushing per commit holds the repo lock during network I/O and..
             ## ..pushes N times for N changed devices. The group is pushed once later instead (see push_pending)
             if self._has_remote_target(group):
@@ -331,7 +340,18 @@ class GitService:
         limit: int | None = None,
         offset: int = 0,
     ) -> list[dict[str, Any]]:
-        """Blocking git history lookup for a device config file."""
+        """Blocking git history lookup for a device config file.
+
+        Pages are cached for _HISTORY_CACHE_TTL_SECONDS and evicted as soon as a new commit
+        is made for the device (see invalidate_history_cache).
+        """
+        ### Full-history requests (limit=None) aren't cached to keep the cache small
+        cache_key = (device_name, group, limit, offset) if limit is not None else None
+        if cache_key is not None:
+            cached = self._get_cached_history_page(cache_key)
+            if cached is not None:
+                return cached
+
         lock = self._get_repo_lock(group)
         with lock:
             ### Check if repo exists and has commits
@@ -369,18 +389,39 @@ class GitService:
             except Exception:
                 return []
 
-            total_count = len(commits)
-            try:
-                total_count = int(repo.git.rev_list("--count", "HEAD", "--", config_file).strip())
-            except (ValueError, GitCommandError):
-                total_count = len(commits)
+            ### Reuse the cached count instead of walking the whole history a second time
+            total_count = self._get_config_history_count_sync(device_name, group) or len(commits)
 
             ### Assign version numbers globally - oldest commit = 1, newest = N
             ### Commits are newest first, so reverse the numbering
             for idx, commit in enumerate(commits):
                 commit["version_number"] = max(0, total_count - (offset + idx))
 
+            ### Store while holding the repo lock so a concurrent commit can't be overwritten by this older result
+            if cache_key is not None:
+                self._store_history_page(cache_key, commits)
+
             return commits
+
+    def _get_cached_history_page(self, cache_key: tuple[str, str, int, int]) -> list[dict[str, Any]] | None:
+        """Return a cached history page if it's still within the TTL."""
+        with self._history_page_cache_guard:
+            cached = self._history_page_cache.get(cache_key)
+            if cached is None:
+                return None
+            if time.monotonic() >= cached[1]:
+                del self._history_page_cache[cache_key]
+                return None
+            self._history_page_cache.move_to_end(cache_key)
+            return cached[0]
+
+    def _store_history_page(self, cache_key: tuple[str, str, int, int], commits: list[dict[str, Any]]) -> None:
+        """Cache a history page and evict the least recently used pages beyond the size limit."""
+        with self._history_page_cache_guard:
+            self._history_page_cache[cache_key] = (commits, time.monotonic() + self._HISTORY_CACHE_TTL_SECONDS)
+            self._history_page_cache.move_to_end(cache_key)
+            while len(self._history_page_cache) > self._HISTORY_PAGE_CACHE_MAX_ENTRIES:
+                self._history_page_cache.popitem(last=False)
 
     async def get_config_history(
         self,
@@ -406,9 +447,9 @@ class GitService:
     def _get_config_history_count_sync(self, device_name: str, group: str) -> int:
         """Return commit count for a device config file using git rev-list.
 
-        Results are cached for _HISTORY_COUNT_TTL_SECONDS to avoid a git subprocess
+        Results are cached for _HISTORY_CACHE_TTL_SECONDS to avoid a git subprocess
         on every request.  The cache entry is evicted immediately when a new commit
-        is made for the device (see invalidate_history_count).
+        is made for the device (see invalidate_history_cache).
         """
         cache_key = (device_name, group)
 
@@ -434,16 +475,19 @@ class GitService:
                 except (ValueError, GitCommandError):
                     count = 0
 
-            self._history_count_cache[cache_key] = (count, time.monotonic() + self._HISTORY_COUNT_TTL_SECONDS)
+            self._history_count_cache[cache_key] = (count, time.monotonic() + self._HISTORY_CACHE_TTL_SECONDS)
             return count
 
-    def invalidate_history_count(self, device_name: str, group: str) -> None:
-        """Evict the cached history count for a device so the next request re-queries git.
+    def invalidate_history_cache(self, device_name: str, group: str) -> None:
+        """Evict the cached history count and pages for a device so the next request re-queries git.
 
-        Call this immediately after a new commit is created for the device so the
-        count stays accurate without waiting for the TTL to expire.
+        Called right after a new commit is created for the device so the history
+        stays accurate without waiting for the TTL to expire.
         """
         self._history_count_cache.pop((device_name, group), None)
+        with self._history_page_cache_guard:
+            for cache_key in [key for key in self._history_page_cache if key[:2] == (device_name, group)]:
+                del self._history_page_cache[cache_key]
 
     async def get_config_history_count(self, device_name: str, group: str) -> int:
         """Get configuration history count without loading full history."""
@@ -565,10 +609,13 @@ class GitService:
                 raise GitObjectNotFoundError(f"Commit {commit_hash} not found") from e
 
             ### The version number is the count of commits touching the file up to and including this one..
-            ## ..which matches the numbering in get_config_history without loading the whole history
+            ## ..which matches the numbering in get_config_history without loading the whole history.
+            ## Counting only the newer commits and subtracting them from the cached total keeps recent versions..
+            ## ..cheap, instead of walking everything below this commit on every lookup
             config_file = f"{device_name}.conf"
             try:
-                version_number = int(repo.git.rev_list("--count", commit.hexsha, "--", config_file).strip())
+                newer_count = int(repo.git.rev_list("--count", f"{commit.hexsha}..HEAD", "--", config_file).strip())
+                version_number = self._get_config_history_count_sync(device_name, group) - newer_count
             except (ValueError, GitCommandError):
                 version_number = None
 

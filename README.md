@@ -753,7 +753,6 @@ The endpoint will return the following information about the device:
 
 **Short Term:**
 
-- Cache backup history response for a device so it doesnt need to fetch again
 - Rename "Fiberstorm (fs.com)" to "Fiberstore (fs.com)"
   
 **Mid-term:**
