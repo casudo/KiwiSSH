@@ -1,6 +1,7 @@
 """Device source parsing service."""
 
 import csv
+import logging
 from pathlib import Path
 import re
 import httpx
@@ -11,6 +12,8 @@ from sqlalchemy.exc import NoSuchTableError, OperationalError, ProgrammingError,
 from app.core import get_settings
 from app.models.device import DeviceBase
 from app.core.config import NodeConfig, SOURCE_OVERRIDE_FIELDS
+
+logger = logging.getLogger(__name__)
 
 
 class SourceService:
@@ -60,10 +63,19 @@ class SourceService:
         if not group:
             raise ValueError(f"Row {row_num}: 'group' column is required")
         if group not in self.settings.groups:
-            raise ValueError(
-                f"Row {row_num} (device '{device_name}'): Group '{group}' not found in kiwissh.yaml. "
-                f"Available groups: {', '.join(self.settings.groups.keys())}"
+            # A source row naming a group kiwissh.yaml does not define must not
+            # crash the whole load (it reaches startup and every devices API
+            # route): skip the device and say why, so the operator can add the
+            # group or fix the source row.
+            logger.error(
+                "Row %s (device '%s'): group '%s' not found in kiwissh.yaml — device skipped. "
+                "Available groups: %s",
+                row_num,
+                device_name,
+                group,
+                ", ".join(self.settings.groups.keys()),
             )
+            return
 
         ### Register any per-device overrides before resolving the config so they take effect
         self._register_source_overrides(row, device_name, row_num)
