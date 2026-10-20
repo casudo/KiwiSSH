@@ -200,6 +200,7 @@
 | Zyxel                    | ZyNOS ADSL                                                                                                                                  | [zyxel_zynosadsl.yaml](/backend/config/vendors/zyxel_zynosadsl.yaml)                       |                                                                          |
 | Zyxel                    | ZyNOS CLI                                                                                                                                   | [zyxel_zynoscli.yaml](/backend/config/vendors/zyxel_zynoscli.yaml)                         | DSLAMs, e.g. SAM1316                                                     |
 | Zyxel                    | ZyNOS MGS series                                                                                                                            | [zyxel_zynosmgs.yaml](/backend/config/vendors/zyxel_zynosmgs.yaml)                         |                                                                          |
+| Zyxel                    | OLT 1308                                                                                                                                    | [zyxel_1308.yaml](/backend/config/vendors/zyxel_1308.yaml)                                 | |
 
 ---
 
@@ -335,6 +336,7 @@ Create a user with `cfg-view` class set:
 set system login user kiwissh class cfg-view
 set system login user kiwissh authentication plain-text-password "yourpasswordhere"
 ```
+
 ## Linux (generic)
 
 Backs up the persistent system configuration (hostname, hosts, interfaces, routes, resolver, users and groups) of a Linux host. Normal user rights are enough. To run the commands as root, uncomment the `su -` step in [linux_generic.yaml](/backend/config/vendors/linux_generic.yaml) and set the root password as the device's `enable_password`.
