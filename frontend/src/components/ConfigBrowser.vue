@@ -364,7 +364,7 @@ function formatFileSize(bytes: number): string {
       <div
         v-else
         ref="scrollContainer"
-        class="relative max-h-[36rem] overflow-auto font-mono text-sm leading-6 bg-slate-50/50 dark:bg-slate-900 transition-opacity"
+        class="relative max-h-144 overflow-auto font-mono text-sm leading-6 bg-slate-50/50 dark:bg-slate-900 transition-opacity"
         :class="{ 'opacity-50': loading }"
       >
         <div class="flex min-w-max">
