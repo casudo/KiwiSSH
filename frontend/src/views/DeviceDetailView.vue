@@ -212,22 +212,15 @@ function handlePageSizeChange() {
   void loadBackupHistory()
 }
 
-function scrollToTop() {
-  if (typeof window === "undefined") return
-  window.scrollTo({ top: 0, behavior: "smooth" })
-}
-
 function goToPreviousHistoryPage() {
   if (currentPage.value <= 1) return
   currentPage.value -= 1
-  scrollToTop()
   void loadBackupHistory()
 }
 
 function goToNextHistoryPage() {
   if (currentPage.value >= totalPages.value) return
   currentPage.value += 1
-  scrollToTop()
   void loadBackupHistory()
 }
 
@@ -575,7 +568,8 @@ function formatFileSize(bytes: number): string {
       <div class="card mb-6">
         <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Backup History</h2>
 
-        <LoadingSpinner v-if="historyLoading" size="md" />
+        <!-- Only replace the list on the first load, page changes keep it in place so the page doesn't jump -->
+        <LoadingSpinner v-if="historyLoading && backupHistory.length === 0" size="md" />
 
         <div v-else-if="historyError" class="text-red-600 text-sm mb-4">
           {{ historyError }}
@@ -647,7 +641,11 @@ function formatFileSize(bytes: number): string {
             </p>
           </div>
 
-          <div v-else class="space-y-2 border border-gray-200 dark:border-gray-700 rounded-lg divide-y dark:divide-gray-700">
+          <div
+            v-else
+            class="space-y-2 border border-gray-200 dark:border-gray-700 rounded-lg divide-y dark:divide-gray-700 transition-opacity"
+            :class="{ 'opacity-50': historyLoading }"
+          >
             <div
               v-for="backup in paginatedBackupHistory"
               :key="backup.hash"
@@ -726,14 +724,14 @@ function formatFileSize(bytes: number): string {
             <div class="flex gap-2">
               <button
                 @click="goToPreviousHistoryPage"
-                :disabled="currentPage === 1"
+                :disabled="currentPage === 1 || historyLoading"
                 class="btn btn-secondary py-1 px-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 ← Previous
               </button>
               <button
                 @click="goToNextHistoryPage"
-                :disabled="currentPage === totalPages"
+                :disabled="currentPage === totalPages || historyLoading"
                 class="btn btn-secondary py-1 px-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next →
