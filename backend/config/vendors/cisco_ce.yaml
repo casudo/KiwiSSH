@@ -1,0 +1,44 @@
+### Cisco Catalyst Express Vendor Configuration
+## Instructions for backing up Cisco Catalyst Express switches (and IOS devices) via the basic web interface
+
+### Runs 'show startup-config' through the IOS web exec interface and stores the returned HTML page.
+
+vendor:
+  id: "cisco_ce"
+  name: "Cisco Catalyst Express"
+  description: "Cisco Catalyst Express switches and IOS devices, startup-config via the basic web interface"
+
+### HTTP(S) backup definition
+http:
+  auth:
+    type: "basic"
+  requests:
+    - label: "show startup-config"
+      method: "GET"
+      path: "/level/15/exec/-/show/startup-config"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  ### Lines to strip from captured config (regex patterns)
+  strip_patterns:
+    - '^Building configuration\.\.\.'
+    - '^Current configuration\s*:\s*\d+\s*bytes'
+    - '^!\s*Last configuration change'
+    - '^!\s*NVRAM config last updated'
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      - search: '^(snmp-server community).*'
+        replacement: '\1 <configuration removed>'
+      - search: '^(username .+ (password|secret) \d) .+'
+        replacement: '\1 <secret hidden>'
+      - search: '^(enable (password|secret)( level \d+)? \d) .+'
+        replacement: '\1 <secret hidden>'
+      - search: '^( +(?:password|secret)) (?:\d )?\S+'
+        replacement: '\1 <secret hidden>'
+      - search: '^(tacacs-server (.+ )?key) .+'
+        replacement: '\1 <secret hidden>'
+      - search: '^( +key-string) .+'
+        replacement: '\1 <secret hidden>'
