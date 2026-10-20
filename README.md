@@ -759,12 +759,10 @@ None
 
 - Add visual popup when opening JobView.vue if the page load takes longer than 2 seconds to inform the user that the page is still loading and to prevent them from thinking the UI is frozen (Branch [job-log-loading-spinner](https://github.com/casudo/KiwiSSH/tree/job-log-loading-spinner))
 - Pentests
-- Rework Pydantic models (required vs optional fields, default values, validators, etc.)
 - Update Ruff linter and formatter
 - Add Vue linter/formatter?
 - SCP support?
 - Update ssh_profile legacy with Synology NAS ssh settings "Low"
-- Show "backup time" when NO_CHANGES" in log line "No configuration changes detected for {device_name}"?
 - Put redaction boolean switch as group/node level override instead of per vendor to be able to easily turn on/off redaction for specific groups/nodes without having to modify the vendor YAML files?
 - Full-text config search ([#48](https://github.com/casudo/KiwiSSH/issues/48))
 - Config file browser on the frontend ([#47](https://github.com/casudo/KiwiSSH/issues/47))
