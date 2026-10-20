@@ -44,6 +44,12 @@ def configure_logging(debug: bool = False) -> None:
             "git": {
                 "level": "INFO",  # Suppress noisy GitPython DEBUG logs
             },
+            "httpx": {
+                "level": "WARNING",  # Suppress per-request INFO logs, their URLs can carry credentials or tokens
+            },
+            "httpcore": {
+                "level": "WARNING",  # Suppress low-level HTTP connection DEBUG logs
+            },
             "git.cmd": {
                 "level": "INFO",  # Suppress noisy GitPython command DEBUG logs
             },
