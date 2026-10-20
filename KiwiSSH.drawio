@@ -1728,10 +1728,10 @@
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         <mxCell id="KBo9prZu-WNPTwZqW2C_-4" value="http_service.py" style="rounded=1;whiteSpace=wrap;html=1;labelPosition=left;verticalLabelPosition=top;align=right;verticalAlign=bottom;fontStyle=1;fontSize=30;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;strokeWidth=5;dashed=1;perimeterSpacing=0;arcSize=3;fillColor=#E6E6E6;fontColor=#333333;strokeColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="540" y="1250" width="860" height="1700" as="geometry" />
+          <mxGeometry x="540" y="1250" width="860" height="1950" as="geometry" />
         </mxCell>
         <mxCell id="KBo9prZu-WNPTwZqW2C_-5" value="PRIVATE HTTPService Class() FUNCTIONS" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;fillColor=none;strokeColor=#B5739D;fontSize=20;fontStyle=1;fontColor=#B5739D;labelPosition=center;verticalLabelPosition=top;align=left;verticalAlign=bottom;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" vertex="1" parent="1">
-          <mxGeometry x="580" y="1490" width="790" height="1440" as="geometry" />
+          <mxGeometry x="580" y="1490" width="790" height="1690" as="geometry" />
         </mxCell>
         <mxCell id="KBo9prZu-WNPTwZqW2C_-6" value="PUBLIC HTTPService Class() FUNCTIONS" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;fillColor=none;strokeColor=#007FFF;fontSize=20;fontStyle=1;fontColor=#007FFF;labelPosition=center;verticalLabelPosition=top;align=left;verticalAlign=bottom;spacing=2;spacingLeft=0;" vertex="1" parent="1">
           <mxGeometry x="580" y="1290" width="790" height="150.5" as="geometry" />
@@ -1763,10 +1763,10 @@
         <mxCell id="KA3987In3EKkyXAxe5Wi-1" value="_build_request_kwargs()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" vertex="1" parent="1">
           <mxGeometry x="605" y="2520" width="200" height="50" as="geometry" />
         </mxCell>
-        <mxCell id="tBWHpq-4haofu8fuHFET-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="KA3987In3EKkyXAxe5Wi-2" target="tBWHpq-4haofu8fuHFET-10">
+        <mxCell id="tBWHpq-4haofu8fuHFET-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="kiwi-http-15" target="tBWHpq-4haofu8fuHFET-10">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="705" y="2785" />
+              <mxPoint x="705" y="3025" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -1846,7 +1846,7 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="tBWHpq-4haofu8fuHFET-10" value="protocol_common&lt;br&gt;.apply_processing_rules()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" vertex="1" parent="1">
-          <mxGeometry x="820" y="2760" width="280" height="50" as="geometry" />
+          <mxGeometry x="820" y="3000" width="280" height="50" as="geometry" />
         </mxCell>
         <mxCell id="XuWxbm_Y6-7FTSmBOKUk-1" value="&lt;b&gt;SWITCH TO PAGE!&lt;/b&gt;&lt;div&gt;&lt;b&gt;config.py&lt;/b&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
           <mxGeometry x="970" y="1550" width="130" height="40" as="geometry" />
@@ -1861,10 +1861,10 @@
           <mxGeometry x="1000" y="2165" width="130" height="40" as="geometry" />
         </mxCell>
         <mxCell id="XuWxbm_Y6-7FTSmBOKUk-5" value="&lt;b&gt;SWITCH TO PAGE!&lt;/b&gt;&lt;div&gt;&lt;b&gt;SSH/Telnet Service&lt;/b&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
-          <mxGeometry x="1120" y="2760" width="130" height="40" as="geometry" />
+          <mxGeometry x="1120" y="3005" width="130" height="40" as="geometry" />
         </mxCell>
         <mxCell id="XuWxbm_Y6-7FTSmBOKUk-6" value="&lt;b&gt;return &lt;/b&gt;processed device config" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-          <mxGeometry x="825" y="2840" width="270" height="80" as="geometry" />
+          <mxGeometry x="825" y="3080" width="270" height="80" as="geometry" />
         </mxCell>
         <mxCell id="kiwi-http-1" value="protocol_common&lt;br&gt;.fetch_with_retries()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" vertex="1" parent="1">
           <mxGeometry x="605" y="1680" width="200" height="60" as="geometry" />
@@ -1886,8 +1886,8 @@
         <mxCell id="kiwi-http-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="kiwi-http-5" target="KBo9prZu-WNPTwZqW2C_-118">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="kiwi-http-7" value="Create httpx.AsyncClient&lt;br&gt;(base URL, headers, auth)" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" vertex="1" parent="1">
-          <mxGeometry x="590" y="2410" width="230" height="70" as="geometry" />
+        <mxCell id="kiwi-http-7" value="Create httpx.AsyncClient&lt;br&gt;(base URL, headers, basic/digest auth)" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="590" y="2405" width="230" height="80" as="geometry" />
         </mxCell>
         <mxCell id="kiwi-http-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="KBo9prZu-WNPTwZqW2C_-118" target="kiwi-http-7">
           <mxGeometry relative="1" as="geometry" />
@@ -1902,6 +1902,44 @@
         </mxCell>
         <mxCell id="kiwi-http-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="kiwi-http-10" target="KA3987In3EKkyXAxe5Wi-2">
           <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-http-12" value="_read_response_value()&lt;br&gt;&lt;i&gt;JSON path or regex&lt;/i&gt;" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="605" y="2770" width="200" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-http-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="KA3987In3EKkyXAxe5Wi-2" target="kiwi-http-12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-http-14" value="for each 'extract' value" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="kiwi-http-13">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-http-15" value="_pretty_print_xml()&lt;br&gt;&lt;i&gt;indented for line based diffs&lt;/i&gt;" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="605" y="2910" width="200" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-http-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="kiwi-http-12" target="kiwi-http-15">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-http-17" value="if 'format: xml'&lt;br&gt;&lt;i&gt;('store: false' requests stop before this)&lt;/i&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="kiwi-http-16">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-http-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="kiwi-http-12" target="KA3987In3EKkyXAxe5Wi-1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="845" y="2797.5" />
+              <mxPoint x="845" y="2545" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-http-19" value="&lt;b&gt;'extract' values become placeholders for the next requests&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="852" y="2620" width="100" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-http-20" value="after all request steps" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="tBWHpq-4haofu8fuHFET-18">
+          <mxGeometry x="-0.5" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
         </mxCell>
       </root>
     </mxGraphModel>
