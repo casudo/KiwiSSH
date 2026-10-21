@@ -1,5 +1,4 @@
 import httpx
-import asyncio
 import html
 import json
 import logging
@@ -11,7 +10,6 @@ from typing import Any
 from app.core import Settings, get_settings
 from app.models.device import DeviceBase
 from app.services.vendor_service import vendor_service
-from app.services.local_ssh_simulator import local_ssh_simulator
 from app.services.protocol_common import apply_processing_rules, fetch_with_retries
 
 logger = logging.getLogger(__name__)
@@ -268,29 +266,6 @@ class HTTPService:
         ### HTTP backups have no separate metadata section
         return processed_config, None
 
-    async def _collect_local_vendor_config(
-        self,
-        device: DeviceBase,
-        vendor_id: str,
-        timeout_seconds: int,
-        redaction: bool | None = None,
-    ) -> tuple[str, str | None]:
-        """Collect config in local test mode while reusing vendor processing rules."""
-        ### Keep vendor validation parity with the real HTTP path
-        http_config = vendor_service.get_http_config(vendor_id)
-        if not http_config or not http_config.get("requests"):
-            raise ValueError(f"Vendor '{vendor_id}' has no http.requests configured")
-
-        raw_config = await asyncio.wait_for(
-            local_ssh_simulator.get_config(device),
-            timeout=timeout_seconds,
-        )
-        if not raw_config.strip():
-            raise RuntimeError("Local simulator returned empty config output")
-
-        processing_rules = vendor_service.get_processing_rules(vendor_id)
-        return apply_processing_rules(raw_config, processing_rules, redaction=redaction), None
-
     ### =============================================================================
     ### HTTPService Class PUBLIC Functions
     ### =============================================================================
@@ -301,7 +276,7 @@ class HTTPService:
         *,
         device_config: dict[str, Any] | None = None,
     ) -> tuple[str, str | None]:
-        """Get device configuration plus optional metadata via HTTP(S) or local simulator."""
+        """Get device configuration plus optional metadata via HTTP(S)."""
         device_config = device_config or self.settings.get_device_config(device.group, device.device_name)
 
         protocol = str(device_config.get("protocol") or "").strip().lower()
@@ -320,15 +295,6 @@ class HTTPService:
         redaction = device_config.get("redaction") # group/node override, None keeps the vendor setting
         device_username = str(device_config.get("username") or "").strip()
         device_password = str(device_config.get("password") or "").strip()
-
-        ### Use the local simulator if test mode is enabled
-        if self.settings.local_test_mode:
-            return await self._collect_local_vendor_config(
-                device=device,
-                vendor_id=vendor_id,
-                timeout_seconds=timeout_seconds,
-                redaction=redaction,
-            )
 
         async def fetch_once() -> tuple[str, str | None]:
             context: dict[str, str] = {

@@ -13,7 +13,6 @@ from typing import Any
 
 from app.core import Settings, get_settings
 from app.models.device import DeviceBase
-from app.services.local_ssh_simulator import local_ssh_simulator
 from app.services.protocol_common import apply_processing_rules
 from app.services.vendor_service import vendor_service
 
@@ -873,30 +872,6 @@ class CLIService(ABC):
         if include_metadata_in_config and metadata_section and processed_config:
             return f"{metadata_section}\n\n{processed_config}", metadata_output
         return processed_config, metadata_output
-
-    async def _collect_local_vendor_config(
-        self,
-        device: DeviceBase,
-        vendor_id: str,
-        timeout_seconds: int,
-        redaction: bool | None = None,
-    ) -> tuple[str, str | None]:
-        """Collect config in local test mode while reusing vendor processing rules."""
-        ### Keep vendor command validation parity with the real protocol path
-        command_sets = vendor_service.get_backup_commands(vendor_id, protocol=self.PROTOCOL)
-        backup_commands = command_sets.get("backup")
-        if not backup_commands:
-            raise ValueError(f"Vendor '{vendor_id}' has no backup commands configured")
-
-        raw_config = await asyncio.wait_for(
-            local_ssh_simulator.get_config(device),
-            timeout=timeout_seconds,
-        )
-        if not raw_config.strip():
-            raise RuntimeError("Local simulator returned empty config output")
-
-        processing_rules = vendor_service.get_processing_rules(vendor_id)
-        return apply_processing_rules(raw_config, processing_rules, redaction=redaction), None
 
     @abstractmethod
     async def get_config(

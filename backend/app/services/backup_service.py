@@ -572,7 +572,7 @@ class BackupService:
                     )
                 raise RuntimeError(f"Unsupported protocol: {protocol}")
 
-            ### Get config from device via SSH, Telnet or HTTP(S) (or simulator)
+            ### Get config from device via SSH, Telnet or HTTP(S)
             for attempt in range(2):
                 config, metadata_output = await _fetch_config()
                 logger.debug(f"Got config for {device.device_name} ({len(config)} bytes)")

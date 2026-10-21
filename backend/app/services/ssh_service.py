@@ -306,7 +306,7 @@ class SSHService(CLIService):
         *,
         device_config: dict[str, Any] | None = None,
     ) -> tuple[str, str | None]:
-        """Get device configuration plus optional metadata via SSH or local simulator."""
+        """Get device configuration plus optional metadata via SSH."""
         ### Get device config
         device_config = device_config or self.settings.get_device_config(device.group, device.device_name)
         enable_password_raw = str(device_config.get("enable_password") or "").strip()
@@ -335,15 +335,6 @@ class SSHService(CLIService):
 
         ### Jumphost settings are optional and already validated in get_device_config
         jumphost_cfg = device_config.get("jumphost")
-
-        ### Use the local simulator if test mode is enabled
-        if self.settings.local_test_mode:
-            return await self._collect_local_vendor_config(
-                device=device,
-                vendor_id=vendor_id,
-                timeout_seconds=timeout_seconds,
-                redaction=redaction,
-            )
 
         async def fetch_once() -> tuple[str, str | None]:
             """One connection attempt running the commands defined in vendor YAML."""

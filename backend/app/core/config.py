@@ -877,9 +877,6 @@ class Settings(BaseSettings):
     ### Paths
     config_dir: Path = Field(default_factory=_resolve_config_dir)
 
-    ### Testing
-    local_test_mode: bool = Field(default=False, description="Enforce config values for easier local testing")
-
     ### Configuration sections (loaded from YAML)
     app: AppConfig = Field(default_factory=AppConfig)
     groups: dict[str, GroupConfig] = Field(default_factory=dict)
@@ -899,14 +896,6 @@ class Settings(BaseSettings):
 
     ### Database URL (computed from application_database config)
     database_url: str = ""
-
-    @model_validator(mode="after")
-    def use_test_config_if_enabled(self) -> "Settings":
-        """If LOCAL_TEST_MODE=true, use the default config location for local testing."""
-        if self.local_test_mode:
-            self.config_dir = _resolve_config_dir()
-
-        return self
 
     ### =============================================================
     ### Private Settings Class Helper Functions
