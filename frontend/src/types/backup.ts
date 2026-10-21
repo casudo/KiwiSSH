@@ -79,6 +79,8 @@ export interface BackupHistoryResponse {
   total_count: number
   limit: number | null
   offset: number
+  since?: string | null
+  until?: string | null
   error?: string
 }
 

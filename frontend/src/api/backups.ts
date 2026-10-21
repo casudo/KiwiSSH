@@ -40,10 +40,17 @@ export const backupApi = {
     return response.data
   },
 
-  async getHistory(deviceName: string, limit?: number, offset?: number): Promise<BackupHistoryResponse> {
-    const params: Record<string, number> = {}
+  async getHistory(
+    deviceName: string,
+    limit?: number,
+    offset?: number,
+    range?: { since?: string; until?: string },
+  ): Promise<BackupHistoryResponse> {
+    const params: Record<string, string | number> = {}
     if (limit !== undefined) params.limit = limit
     if (offset !== undefined) params.offset = offset
+    if (range?.since) params.since = range.since
+    if (range?.until) params.until = range.until
     const response = await api.get<BackupHistoryResponse>(`/backups/history/${deviceName}`, { params })
     return response.data
   },

@@ -22,6 +22,7 @@ interface BackupEntry {
 
 const graphHistoryCache = new Map<string, Array<{ date: string; count: number }>>()
 const graphDays = 365
+let historyRequestId = 0
 
 const route = useRoute()
 const router = useRouter()
@@ -117,14 +118,29 @@ async function loadGraphHistory() {
   }
 }
 
+// Start and end of a graph day, using the same fixed timezone offset the graph uses to group backups into days
+function getGraphDayRange(date: string): { since: string; until: string } {
+  const [year, month, day] = date.split("-").map(Number)
+  const dayStart = Date.UTC(year, month - 1, day) + new Date().getTimezoneOffset() * 60 * 1000
+  return {
+    since: new Date(dayStart).toISOString(),
+    until: new Date(dayStart + 24 * 60 * 60 * 1000).toISOString(),
+  }
+}
+
 async function loadBackupHistory() {
+  const requestId = ++historyRequestId
   historyLoading.value = true
   historyError.value = null
 
   try {
     const limit = pageSize.value
     const offset = (currentPage.value - 1) * pageSize.value
-    const response = await backupApi.getHistory(deviceName.value, limit, offset)
+    // A day selected in the graph is loaded from the backend, it is usually not on the current page
+    const range = selectedDateInGraph.value ? getGraphDayRange(selectedDateInGraph.value) : undefined
+    const response = await backupApi.getHistory(deviceName.value, limit, offset, range)
+    // Drop the response if a newer request (e.g. another graph day click) was started meanwhile
+    if (requestId !== historyRequestId) return
     backupHistory.value = response.history || []
     totalHistoryCount.value = response.total_count ?? response.count ?? backupHistory.value.length
 
@@ -140,10 +156,13 @@ async function loadBackupHistory() {
       diffStats.value = { added: 0, removed: 0 }
     }
   } catch (e) {
+    if (requestId !== historyRequestId) return
     historyError.value = e instanceof Error ? e.message : "Failed to load backup history"
     totalHistoryCount.value = 0
   } finally {
-    historyLoading.value = false
+    if (requestId === historyRequestId) {
+      historyLoading.value = false
+    }
   }
 }
 
@@ -161,12 +180,6 @@ const filteredBackupHistory = computed((): BackupEntry[] => {
     const toDate = new Date(filterDateTo.value)
     toDate.setHours(23, 59, 59, 999) // Include entire day
     filtered = filtered.filter(b => new Date(b.timestamp) <= toDate)
-  }
-
-  // Apply date filter from graph selection
-  if (selectedDateInGraph.value) {
-    const selectedDay = new Date(selectedDateInGraph.value).toDateString()
-    filtered = filtered.filter(b => new Date(b.timestamp).toDateString() === selectedDay)
   }
 
   // Apply search filter
@@ -192,19 +205,25 @@ const totalPages = computed(() => Math.max(1, Math.ceil(totalHistoryCount.value 
 const paginatedBackupHistory = computed(() => filteredBackupHistory.value)
 
 function clearFilters() {
+  const needsReload = currentPage.value !== 1 || selectedDateInGraph.value !== null
   filterDateFrom.value = ""
   filterDateTo.value = ""
   filterSearch.value = ""
   selectedDateInGraph.value = null
   currentPage.value = 1 // Reset to first page when filters change
+  if (needsReload) void loadBackupHistory()
 }
 
 function setSelectedGraphDate(date: string) {
   selectedDateInGraph.value = date
+  currentPage.value = 1
+  void loadBackupHistory()
 }
 
 function clearSelectedGraphDate() {
   selectedDateInGraph.value = null
+  currentPage.value = 1
+  void loadBackupHistory()
 }
 
 function handlePageSizeChange() {
@@ -584,7 +603,7 @@ function formatFileSize(bytes: number): string {
 
         <div v-else>
           <!-- Filter controls -->
-          <div v-if="backupHistory.length > 0" class="p-4 mb-4 rounded-lg border border-gray-200/80 dark:border-slate-700/80 bg-white/70 dark:bg-slate-900/55 backdrop-blur-sm">
+          <div v-if="backupHistory.length > 0 || hasActiveFilters" class="p-4 mb-4 rounded-lg border border-gray-200/80 dark:border-slate-700/80 bg-white/70 dark:bg-slate-900/55 backdrop-blur-sm">
             <div class="space-y-3">
               <div class="flex flex-col md:flex-row gap-4">
                 <div class="flex-1">
@@ -642,10 +661,10 @@ function formatFileSize(bytes: number): string {
                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <p>No backup history available</p>
+            <p>{{ hasActiveFilters ? "No backups found" : "No backup history available" }}</p>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              <span v-if="hasActiveFilters">No backups match your filters. </span>
-              <template v-if="devicesStore.selectedDevice?.enabled">Click "Trigger Backup" to create the first backup</template>
+              <template v-if="hasActiveFilters">No backups match your filters.</template>
+              <template v-else-if="devicesStore.selectedDevice?.enabled">Click "Trigger Backup" to create the first backup</template>
               <template v-else>Backups are disabled for this device</template>
             </p>
           </div>
