@@ -775,7 +775,8 @@ function formatFileSize(bytes: number): string {
           </div>
         </div>
 
-        <LoadingSpinner v-if="diffLoading" size="md" />
+        <!-- Only replace the diff on the first load, spawning the spinner on page changes collapses the page height -->
+        <LoadingSpinner v-if="diffLoading && !diffContent" size="md" />
 
         <div v-else-if="diffError" class="text-red-600 text-sm">
           {{ diffError }}
@@ -783,6 +784,8 @@ function formatFileSize(bytes: number): string {
 
         <DiffViewer
           v-else
+          class="transition-opacity"
+          :class="{ 'opacity-50': diffLoading }"
           :diff-content="diffContent"
           :lines-added="diffStats.added"
           :lines-removed="diffStats.removed"
