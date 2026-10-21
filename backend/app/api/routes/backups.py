@@ -182,21 +182,42 @@ async def get_device_backup_history(
     device_name: str,
     limit: int | None = Query(None, ge=1, description="Maximum number of history entries to return. Omit for all."),
     offset: int = Query(0, ge=0, description="Number of history entries to skip."),
+    since: datetime | None = Query(None, description="Only return backups made at or after this time (ISO 8601, UTC if no offset is given)."),
+    until: datetime | None = Query(None, description="Only return backups made before this time (ISO 8601, UTC if no offset is given)."),
 ) -> dict:
-    """Get backup history for a device."""
+    """Get backup history for a device.
+
+    With since/until, total_count, limit and offset refer to the backups within that time range.
+    """
     device = await source_service.get_device(device_name)
 
     if device is None:
         raise HTTPException(status_code=404, detail=f"Device '{device_name}' not found")
 
+    ### Timestamps without an offset are treated as UTC, so they can be compared with the commit times
+    if since is not None and since.tzinfo is None:
+        since = since.replace(tzinfo=timezone.utc)
+    if until is not None and until.tzinfo is None:
+        until = until.replace(tzinfo=timezone.utc)
+
     try:
-        total_count = await git_service.get_config_history_count(device_name, group=device.group)
-        history = await git_service.get_config_history(
-            device_name,
-            group=device.group,
-            limit=limit,
-            offset=offset,
-        )
+        if since is not None or until is not None:
+            history, total_count = await git_service.get_config_history_range(
+                device_name,
+                group=device.group,
+                since=since,
+                until=until,
+                limit=limit,
+                offset=offset,
+            )
+        else:
+            total_count = await git_service.get_config_history_count(device_name, group=device.group)
+            history = await git_service.get_config_history(
+                device_name,
+                group=device.group,
+                limit=limit,
+                offset=offset,
+            )
         return {
             "device_name": device_name,
             "history": history,
@@ -204,6 +225,8 @@ async def get_device_backup_history(
             "total_count": total_count,
             "limit": limit,
             "offset": offset,
+            "since": since.isoformat() if since is not None else None,
+            "until": until.isoformat() if until is not None else None,
         }
     except Exception as e:
         logger.error(f"Error fetching backup history for {device_name}: {e}")
