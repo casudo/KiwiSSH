@@ -1,0 +1,24 @@
+### MikroTik SwOS Vendor Configuration
+
+### Downloads the backup file (backup.swb) that can be restored on the "Upgrade" page.
+
+vendor:
+  id: "mikrotik_swos"
+  name: "MikroTik SwOS"
+  description: "MikroTik switches running SwOS / SwOS Lite, backup file via HTTP"
+
+### HTTP(S) backup definition
+http:
+  auth:
+    type: "digest"
+  requests:
+    - label: "backup.swb"
+      method: "GET"
+      path: "/backup.swb"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false

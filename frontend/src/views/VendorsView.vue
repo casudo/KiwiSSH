@@ -42,6 +42,7 @@ const allVendors = computed((): VendorInfo[] => {
         count: (devicesStore.devicesByVendor[vendor.id] || []).length,
         devices: (devicesStore.devicesByVendor[vendor.id] || []).map(d => d.device_name),
       }))
+      .filter(vendor => vendor.count > 0) // Hide unused vendors
       .sort((a, b) => b.count - a.count)
   }
   
@@ -194,7 +195,7 @@ onMounted(async () => {
         <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.452a6 6 0 00-3.86.3l-2.387.452a2 2 0 00-1.021.547m19.428-3.068a6 6 0 00-.3-2.6m0 0a6 6 0 00-1.371-3.561m0 0a6 6 0 00-5.571-2.585m0 0a6 6 0 00-5.571 2.585m0 0a6 6 0 00-1.371 3.561m0 0a6 6 0 00-.3 2.6" />
         </svg>
-        <p class="text-gray-500 dark:text-gray-400 text-lg">No vendors configured</p>
+        <p class="text-gray-500 dark:text-gray-400 text-lg">No vendors in use</p>
         <p class="text-gray-400 dark:text-gray-500 text-sm mt-2">Add devices to see vendors</p>
       </div>
     </div>

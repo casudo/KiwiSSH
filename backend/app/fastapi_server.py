@@ -1,7 +1,9 @@
 """FastAPI Server"""
 
+import asyncio
 import logging
 from collections.abc import AsyncGenerator
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
@@ -40,6 +42,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     
     settings = get_settings()
     configure_logging(debug=settings.app.debug)
+
+    ### Size the default thread pool (used by asyncio.to_thread)
+    asyncio.get_running_loop().set_default_executor(
+        ThreadPoolExecutor(max_workers=settings.app.threads + 16, thread_name_prefix="kiwissh")
+    )
 
     logger.info(f"Starting KiwiSSH v{__version__}")
     logger.info(f"Debug mode: {settings.app.debug}")

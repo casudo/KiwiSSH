@@ -1,0 +1,23 @@
+### Zyxel OLT 1308 Vendor Configuration
+
+vendor:
+  id: "zyxel_1308"
+  name: "Zyxel OLT 1308"
+  description: "Zyxel OLT-1308S series, configuration file download via HTTP"
+
+### HTTP(S) backup definition
+http:
+  auth:
+    ### Switch to "digest" if the OLT asks for HTTP Digest authentication
+    type: "basic"
+  requests:
+    - label: "configuration"
+      method: "GET"
+      path: "/config_OLT-1308S-22.log"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false

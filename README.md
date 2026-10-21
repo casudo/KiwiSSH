@@ -12,7 +12,7 @@
 
 # About KiwiSSH <!-- omit from toc -->
 
-KiwiSSH is a network device configuration backup tool that connects to your devices via SSH, Telnet or HTTP/HTTPS, fetches their configurations, and stores them in git repositories for easy version control and change tracking. It also provides a user-friendly web interface to manage your devices, view backup logs, and see configuration changes over time.
+KiwiSSH is a network device configuration backup tool that connects to your devices via SSH, Telnet or HTTP/HTTPS, fetches their configurations, and stores them in git repositories for easy version control and change tracking. It also provides a user-friendly web interface to manage your devices, view backup logs, and see configuration changes over time. It supports over 180+ device types with templates for any edge device.
 
 It was created as better alternative to RANCID and Oxidized, with a focus on simplicity, ease of use, and modern technologies.
 
@@ -21,7 +21,7 @@ It was created as better alternative to RANCID and Oxidized, with a focus on sim
 The frontend offers:
 
 - Dashboard (statistics, favorite devices, overview of KiwiSSH)
-- Information-rich device list with filtering, search and favorite option, backup contribution calender, group and vendor belonging, status badge, config diff view and more
+- Information-rich device list with filtering, search and favorite option, backup contribution calender, group and vendor belonging, status badge, config diff view, in-browser config file browser and more
 - Overview of configured SSH profiles, vendors and groups for easy management and device tracking
 - Detailed backup job logs with timestamps, status and error messages for each backup attempt
 - Swagger API documentation
@@ -58,6 +58,7 @@ The backend provides:
       - [PostgreSQL](#postgresql-1)
       - [HTTP](#http)
       - [Ansible Inventory](#ansible-inventory)
+      - [Per-device overrides](#per-device-overrides)
     - [git](#git)
     - [groups](#groups)
     - [nodes](#nodes)
@@ -161,7 +162,6 @@ See the example [`backend/.env.example`](backend/.env.example) file. Either rena
 | Variable Name | Description | Required | Default Value |
 | ------------- | ----------- | -------- | ------------- |
 | `KIWISSH_CONFIG_DIR` | Directory KiwiSSH reads its configuration from (`kiwissh.yaml`, `ssh_profiles.yaml`, `vendors/`). Defaults to `/config` in Docker, or the backend's bundled `config/` directory on bare-metal installs. | No | `/config` (Docker) / `../backend/config` (bare-metal) |
-| `KIWISSH_LOCAL_TEST_MODE` | If set to true, the application will run in local test mode, which enforces certain config values for easier local testing and development. | No | `false` |
 | `TZ` | Timezone for the application. This is used for timestamps in backup job logs and Git commit messages. | **No** | `UTC` |
 
 ## kiwissh.yaml
@@ -241,6 +241,8 @@ You can get notified if the backup of a device fails or succeeds.
 - `failure`: Notify on every failed backup attempt, regardless of previous history.
 - `failure_new`: Notify on a failed backup attempt **only** if the previous backup was "Successful", "No Changes", or if there is no previous history (first ever backup failure). This avoids notification fatigue by only alerting on new failures.
 
+**Recovery:** When a device whose last backup failed is backed up successfully again ("Success" or "No Changes"), a "Backup Recovered" notification is sent, regardless of the trigger. Disable it with `notifications.notify_on_recovery: false`.
+
 | Key | Description | Required | Default Value |
 | --- | ----------- | -------- | ------------- |
 | `notifications.enabled` | Whether notifications are enabled. | No | `False` |
@@ -248,6 +250,7 @@ You can get notified if the backup of a device fails or succeeds.
 | `notifications.type` | The type of notification. | **Yes** | - |
 | `notifications.smtp.host` | The SMTP server host. | **Yes** | - |
 | `notifications.large_diff_threshold` | The diff line count threshold for considering a backup change as "large". This can be used to trigger notifications only for significant changes. | No | `650` |
+| `notifications.notify_on_recovery` | Send a "Backup Recovered" notification when a device that failed its last backup is backed up successfully again. | No | `True` |
 | `notifications.smtp.port` | The SMTP server port. | No | `25` |
 | `notifications.smtp.sender` | The sender email address. | **Yes** | - |
 | `notifications.smtp.recipients` | The recipient email addresses (list). | **Yes** | - |
@@ -255,6 +258,7 @@ You can get notified if the backup of a device fails or succeeds.
 | `notifications.smtp.password` | The password for the SMTP server. | No | - |
 | `notifications.smtp.use_tls` | Whether to use STARTTLS. Change the port accordingly. | No | `False` |
 | `notifications.smtp.use_ssl` | Whether to use SSL/TLS. Change the port accordingly. | No | `False` |
+| `notifications.smtp.timeout_seconds` | Timeout in seconds for connecting to and talking with the SMTP server. | No | `10` |
 | `notifications.webhook.url` | The webhook endpoint URL (must start with `http://` or `https://`). | **Yes** | - |
 | `notifications.webhook.method` | The HTTP method used for the request. One of `POST`, `PUT`, `PATCH`. | No | `POST` |
 | `notifications.webhook.format` | The payload shape the endpoint expects. `generic` sends a flat JSON body with all backup fields; `discord` sends a Discord-compatible `{"content": ...}` body. | No | `generic` |
@@ -267,7 +271,12 @@ You can get notified if the backup of a device fails or succeeds.
 Configure where KiwiSSH load the devices to backup from. You can choose between loading the devices from a CSV file, an Ansible inventory file, a PostgreSQL database, or a generic HTTP endpoint.
 
 > [!IMPORTANT]
-> At least one source must be configured (and only one). The following fields are required for every device in the source: `group`, `device_name`, `ip_address`, `enabled`.
+> At least one source must be configured (and only one). The following fields are required for every device in the source: `group`, `device_name`, `ip_address`, `enabled`. A source can optionally carry [per-device overrides](#per-device-overrides) such as credentials or a port as well.
+
+> [!NOTE]
+> `ip_address` can be an IPv4 or IPv6 address or a hostname/FQDN.
+>
+> Invalid rows (e.g. unknown group, invalid address, invalid override value, a `device_name` that already appeared in an earlier row) are skipped, all other devices still load. Skipped rows are logged, returned by `POST /api/v1/devices/reload` and listed at `GET /api/v1/devices/source/skipped`, each with its row and the reason.
 
 #### CSV File
 
@@ -306,13 +315,13 @@ Loads devices from an HTTP(S) endpoint that returns a JSON array of device objec
 | --- | ----------- | -------- | ------------- |
 | `sources.http.url` | The HTTP(S) URL to fetch the device list from. Must start with `http://` or `https://`. | **Yes** | - |
 | `sources.http.headers` | Map of HTTP request headers, e.g. an authentication token. | No | `{}` |
-| `sources.http.map` | Maps KiwiSSH's canonical fields (`device_name`, `ip_address`, `group`, `enabled`) to the field names in the JSON response. | **Yes** | - |
+| `sources.http.map` | Maps KiwiSSH's canonical fields (`device_name`, `ip_address`, `group`, `enabled`) and optionally any [per-device override](#per-device-overrides) field to the field names in the JSON response. | **Yes** | - |
 | `sources.http.default_group` | Fallback group used when a response item has no (mapped) group value. | No | - |
 | `sources.http.items_key` | Key to locate the device list when the response is an object instead of a top-level array. | No | - |
 | `sources.http.verify_tls` | Whether to verify the server's TLS certificate. | No | `true` |
 | `sources.http.timeout` | Request timeout in seconds. | No | `10` |
 
-As with the file and PostgreSQL sources, Vendors, credentials and SSH profile are **not** taken from the HTTP response — they are resolved from the matching `group` (and optional per-device `node`) configuration in `kiwissh.yaml`. The HTTP source only provides `group`, `device_name`, `ip_address` and `enabled`.
+By default, vendor, credentials and SSH profile are resolved from the matching `group` (and optional per-device `node`) configuration in `kiwissh.yaml`. Like every other source, the HTTP source can override them per device: add the fields to `sources.http.map` (see [Per-device overrides](#per-device-overrides)).
 
 Whatever the outer shape, the device list must ultimately be a **JSON array of flat objects**, where each object holds the fields referenced by `sources.http.map`. KiwiSSH reads the mapped field names as **direct keys** on each item — it does not descend into nested objects or use object keys as device names.
 
@@ -373,13 +382,30 @@ sources:
 | --- | ----------- | -------- | ------------- |
 | `sources.ansible` | Path to the Ansible inventory YAML file containing the device entries. Absolute, or relative to the config directory. | **Yes** | - |
 
-The devices will be loaded from the specified Ansible inventory YAML file. The hosts must be defined under the appropriate groups, and the `ansible_host` variable must be present (will be used as the IP address).
+The devices will be loaded from the specified Ansible inventory YAML file. The hosts must be defined under the appropriate groups. The `ansible_host` variable is used as the device address; falls back to the inventory host name if not set.
 
 [See an example Ansible inventory YAML file here](backend/config/sources/inventory.yaml.example).
+
+#### Per-device overrides
+
+Every source can optionally carry per-device overrides next to the required fields. This is useful when credentials, ports or vendors differ per device and you don't want to maintain a `nodes.<device_name>` entry in `kiwissh.yaml` for each of them.
+
+Supported fields: `username`, `password`, `enable_password`, `ssh_key_file`, `ssh_profile`, `vendor`, `protocol`, `port`, `timeout`, `retry`.
+
+| Source | How to provide an override |
+| ------ | -------------------------- |
+| CSV File | Add a column named after the field, e.g. `password`. |
+| PostgreSQL | Add a column named after the field to the source table. Override columns are only queried if they exist. |
+| HTTP | Add the field to `sources.http.map`, e.g. `password: device_password`. |
+| Ansible Inventory | Set a host variable named after the field, e.g. `password: ...`. |
+
+Empty values are ignored, so the device falls back to the value of its group. Settings are resolved in this order, where later entries win: `app` defaults < `groups.<group>` < source overrides < `nodes.<device_name>`.
 
 ### git
 
 KiwiSSH will always store the device configurations in local git repositories to provide diff view, history and download options. You can optionally set a remote git location to push the commits (the device config) to.
+
+Commits are not pushed one by one: each group is pushed once the backup queue is empty, and at most every 60 seconds while backups are still running. If a push fails, the commits stay local and are pushed together with the next commit of that group.
 
 > [!CAUTION]
 > DO NOT delete the "backups" folder ever unless you want to lose all your local git repositories and their history.
@@ -403,6 +429,7 @@ KiwiSSH will always store the device configurations in local git repositories to
 | `groups.<group>.protocol` | Protocol to use for devices in this group (`ssh`, `telnet`, `http` or `https`). | No | Global `app.protocol` |
 | `groups.<group>.port` | Protocol port for devices in this group. | No | `22` for `ssh`, `23` for `telnet`, `80` for `http`, `443` for `https` |
 | `groups.<group>.verify_ssl` | Whether to verify the device TLS certificate for `https` backups. Set to `false` for self-signed certificates. | No | `true` |
+| `groups.<group>.redaction` | Turns the vendor's [redaction rules](#processing) on (`true`) or off (`false`) for devices in this group. This overrides `processing.redaction.enabled` of the vendor YAML file. | No | Vendor `processing.redaction.enabled` |
 | `groups.<group>.vendor` | The vendor of the devices in this group. This is used to determine the CLI commands (or HTTP requests) to run for fetching the configuration. | **Yes** | - |
 | `groups.<group>.jumphost.hostname` | Jumphost hostname or IP for this group. If set, devices in this group are reached through this jumphost. | **Yes**, if `jumphost` | - |
 | `groups.<group>.jumphost.port` | Jumphost SSH port. | No | `22` |
@@ -432,6 +459,7 @@ KiwiSSH will always store the device configurations in local git repositories to
 | `nodes.<device_name>.protocol` | Protocol override for this device (`ssh`, `telnet`, `http` or `https`). | No | `groups.<group>.protocol` or Global `app.protocol` |
 | `nodes.<device_name>.port` | Port override for this device. | No | `groups.<group>.port` or `22` for `ssh`, `23` for `telnet`, `80` for `http`, `443` for `https` |
 | `nodes.<device_name>.verify_ssl` | Node-level TLS verification override for `https` backups. | No | `groups.<group>.verify_ssl` |
+| `nodes.<device_name>.redaction` | Turns the vendor's [redaction rules](#processing) on (`true`) or off (`false`) for this device. This overrides `groups.<group>.redaction` and `processing.redaction.enabled` of the vendor YAML file. | No | `groups.<group>.redaction` or vendor `processing.redaction.enabled` |
 | `nodes.<device_name>.vendor` | The vendor of this device. This is used to determine the CLI commands (or HTTP requests) to run for fetching the configuration. | No | `groups.<group>.vendor` |
 | `nodes.<device_name>.jumphost.hostname` | Node-level jumphost hostname/IP override. | **Yes**, if `jumphost` | `groups.<group>.jumphost.hostname` |
 | `nodes.<device_name>.jumphost.port` | Node-level jumphost SSH port override. | No | `groups.<group>.jumphost.port` or `22` |
@@ -488,9 +516,9 @@ Each segment is explained in detail below.
 | --- | ----------- | -------- | ------------- |
 | `session.comment_prefix` | If set, command outputs will be prefixed with this string and rendered as comments in the saved config file. This is useful for adding metadata like command descriptions or timestamps directly in the config file. | No | `! ` |
 | `session.prompt` | Optional prompt regex (or list of regexes) used to detect command completion in interactive shells. Match should cover the full prompt line. If omitted or invalid, KiwiSSH falls back to the built-in generic prompt pattern. | No | `[^\r\n=]*[A-Za-z0-9][^\r\n=]*[>#]\s*$` |
-| `session.login` | Optional list of interactive login steps executed **inside** the SSH shell before backup commands run. Used for devices that require a second CLI login (e.g. a `User Name:` / `Password:` prompt) after the SSH connection is established. Each step is `{ expect: "<regex>", send: "<value>" }`; steps run in order. The placeholders `{{ username }}` and `{{ password }}` are replaced with the device's credentials configured on the group/node level. Omit entirely for devices that present a prompt immediately. | No | - |
+| `session.login` | Optional list of interactive login steps executed **inside** the SSH shell before backup commands run. Used for devices that require a second CLI login (e.g. a `User Name:` / `Password:` prompt) after the SSH connection is established. Each step is `{ expect: "<regex>", send: "<value>" }`; steps run in order. The placeholders `{{ username }}` and `{{ password }}` are replaced with the device's credentials configured on the group/node level. While waiting, prompts matching `session.pagination` are answered. Omit entirely for devices that present a prompt immediately. | No | - |
 | `session.pagination.enabled` | Enables pagination prompt handling for this vendor. | No | `false` |
-| `session.pagination.patterns` | Pagination pattern config. Supports a string, a list of regex strings, or a list of objects like `{ pattern: "...", response: "..." }`. Matching uses contains-style regex search against the normalized output line. When using object entries, `response` is configured per pattern and should be preferred. If `session.pagination` is omitted entirely, KiwiSSH falls back to built-in standard pagination detection patterns. | No | Built-in standard pagination pattern list |
+| `session.pagination.patterns` | Pagination pattern config. Supports a string, a list of regex strings, or a list of objects like `{ pattern: "...", response: "..." }`. Matching uses contains-style regex search against the normalized output line. When using object entries, `response` is configured per pattern and should be preferred. If `session.pagination` is omitted entirely, KiwiSSH falls back to built-in standard pagination detection patterns. The patterns are also answered during the `session.login` steps and while waiting for the first prompt, so they can answer login questions as well (e.g. a banner that has to be accepted with `yes`). | No | Built-in standard pagination pattern list |
 | `session.include_metadata_in_config` | Controls whether outputs from `metadata: true` commands are prepended as a block in the saved config. Metadata is always present in the backup job log. | No | `false` |
 
 #### commands
@@ -530,14 +558,14 @@ You can use the following keys for each command step:
 
 #### http
 
-The `http` section defines how KiwiSSH fetches configuration when a device or group uses `protocol: http` or `protocol: https`. Credentials are still resolved from [kiwissh.yaml](#kiwisshyaml). The following placeholders can be used in any string value: `{{ username }}`, `{{ password }}`.
+The `http` section defines how KiwiSSH fetches configuration when a device or group uses `protocol: http` or `protocol: https`. Credentials are still resolved from [kiwissh.yaml](#kiwisshyaml). The following placeholders can be used in any string value: `{{ username }}`, `{{ password }}` and every value extracted by an earlier request (`{{ <name> }}`).
 
 ```yaml
 http:
   headers:                       # OPTIONAL default headers for every request
     Accept: "text/plain"
   auth:                          # OPTIONAL authentication flow
-    type: "basic"                # none | basic
+    type: "basic"                # none | basic | digest
   requests:                      # REQUIRED, full response bodies form the stored config
     - method: "GET"
       path: "/api/v2/monitor/system/config/backup"
@@ -551,14 +579,37 @@ http:
       show_command_in_config: false
 ```
 
+Requests run in order and share their cookies, so a login request keeps its session for the next ones. Responses can also feed later requests, e.g. a login that returns an API key:
+
+```yaml
+http:
+  auth:
+    type: "basic"
+  requests:
+    - label: "login"                 # exchange the credentials for an API key
+      method: "POST"
+      path: "/api/login"
+      json: { user: "{{ username }}", password: "{{ password }}" }
+      store: false                   # not part of the stored config
+      extract:
+        api_key: { json: "token" }   # or { regex: '<key>([^<]+)</key>' }
+    - label: "configuration"
+      path: "/api/config"
+      headers: { X-API-Key: "{{ api_key }}" }
+      show_command_in_config: true
+```
+
 | Key | Description | Required | Default Value |
 | --- | ----------- | -------- | ------------- |
 | `http.headers` | Default headers sent on every request. | No | - |
-| `http.auth.type` | Authentication mode: `none`, `basic` (HTTP Basic auth using `username`/`password`). | No | `none` |
-| `http.requests` | List of requests whose full response bodies form the stored configuration. Each request supports `method`, `path`, `headers`, `params`, one of `form`/`json`/`body`, `label`, `expected_status` and `show_command_in_config`. | **Yes** | - |
+| `http.auth.type` | Authentication mode: `none`, `basic` (HTTP Basic auth) or `digest` (HTTP Digest auth) using the device `username`/`password`. | No | `none` |
+| `http.requests` | List of requests whose response bodies form the stored configuration. Each request supports `method`, `path`, `headers`, `params`, one of `form`/`json`/`body`, `label`, `expected_status`, `show_command_in_config` and the keys below. | **Yes** | - |
+| `http.requests[].store` | Set to `false` for requests whose response isn't part of the config (login, lookups). | No | `true` |
+| `http.requests[].extract` | Values to read from the response for later requests, as `<name>: { json: "<dot.path>" }` or `<name>: { regex: "<pattern>" }` (first capture group; `html_unescape: true` decodes entities like `&amp;`). The request fails if a value is missing. | No | - |
+| `http.requests[].format` | `xml`: pretty-print the stored response, so the diff of a single-line XML response shows the changed lines. The request fails if the response isn't valid XML. | No | - |
 
 > [!NOTE]
-> Every request stores its full response body as a normal config backup. `show_command_in_config` and the `processing` rules (e.g. `strip_patterns`, `redaction`) behave the same way as for SSH/Telnet backups, so HTTP-fetched configs are stored and processed consistently.
+> Every request (except `store: false`) stores its response body as a normal config backup. `show_command_in_config` and the `processing` rules (e.g. `strip_patterns`, `redaction`) behave the same way as for SSH/Telnet backups, so HTTP-fetched configs are stored and processed consistently.
 
 #### processing
 
@@ -567,7 +618,7 @@ http:
 | `processing.strip_patterns` | A list of regex patterns. Lines matching any of these patterns will be removed from the captured config before saving. | No | - |
 | `processing.config_start` | A regex pattern that marks the start of the actual configuration in the CLI output. Lines before the matched line will be removed. | No | - |
 | `processing.config_end` | A regex pattern that marks the end of the actual configuration in the CLI output. Lines after the matched line will be removed. | No | - |
-| `processing.redaction.enabled` | If set to true, the patterns defined in `processing.redaction.patterns` will be applied to the captured config to redact sensitive information. | No | `false` |
+| `processing.redaction.enabled` | If set to true, the patterns defined in `processing.redaction.patterns` will be applied to the captured config to redact sensitive information. Can be overridden per group/node with `groups.<group>.redaction` / `nodes.<device_name>.redaction`. | No | `false` |
 | `processing.redaction.patterns` | A list of redaction rules. Each rule should contain a `search` regex pattern, a `replacement` string, and an optional `ignore_case` boolean. | No | - |
 
 > [!IMPORTANT]
@@ -578,7 +629,7 @@ http:
 - `processing` is optional; if no processing options are configured, config output is left unchanged
 - `strip_patterns`: remove matching lines
 - `config_start` / `config_end`: crop output to boundaries; if one side is missing, file edge is used
-- `redaction.enabled` + `redaction.patterns`: apply replacements
+- `redaction.enabled` + `redaction.patterns`: apply replacements; `groups.<group>.redaction` / `nodes.<device_name>.redaction` override `redaction.enabled` without editing the vendor YAML file
 - Each redaction rule uses `search`, `replacement`, and optional `ignore_case`
 
 ## SSH Profiles YAML file
@@ -703,25 +754,13 @@ The endpoint will return the following information about the device:
 
 **Short Term:**
 
-- Checks for device source: No duplicate hostnames, valid IPs, ... (What if multiple groups hold the same IP address range?)
-- Update ssh_service to use FQDN instead of IP to avoid?
-- Cache backup history response for a device so it doesnt need to fetch again
-- Rename "Fiberstorm (fs.com)" to "Fiberstore (fs.com)"
-  
+None
+
 **Mid-term:**
 
-- Add visual popup when opening JobView.vue if the page load takes longer than 2 seconds to inform the user that the page is still loading and to prevent them from thinking the UI is frozen (Branch [job-log-loading-spinner](https://github.com/casudo/KiwiSSH/tree/job-log-loading-spinner))
-- Pentests
-- Rework Pydantic models (required vs optional fields, default values, validators, etc.)
 - Update Ruff linter and formatter
 - Add Vue linter/formatter?
 - SCP support?
-- Update ssh_profile legacy with Synology NAS ssh settings "Low"
-- Show "backup time" when NO_CHANGES" in log line "No configuration changes detected for {device_name}"?
-- Put redaction boolean switch as group/node level override instead of per vendor to be able to easily turn on/off redaction for specific groups/nodes without having to modify the vendor YAML files?
-- Full-text config search ([#48](https://github.com/casudo/KiwiSSH/issues/48))
-- Config file browser on the frontend ([#47](https://github.com/casudo/KiwiSSH/issues/47))
-- Move `SSHService._apply_processing_rules()` into a more centralized file? It's used by all protocols, not explicitly by SSH.
 
 **Long Term:**
 

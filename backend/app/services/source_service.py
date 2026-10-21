@@ -1,33 +1,55 @@
 """Device source parsing service."""
 
+import asyncio
 import csv
+import logging
 from pathlib import Path
 import re
 import httpx
 import yaml
+from pydantic import ValidationError
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.exc import NoSuchTableError, OperationalError, ProgrammingError, SQLAlchemyError
 
-from app.core import get_settings
+from app.core import Settings, get_settings
 from app.models.device import DeviceBase
 from app.core.config import NodeConfig, SOURCE_OVERRIDE_FIELDS
+
+logger = logging.getLogger(__name__)
+
+### A source row paired with a label used in error messages (e.g. CSV line number or "http#3")
+## The row is normally a dict; anything else (e.g. a non-object item of an HTTP source) is reported as invalid
+SourceRow = tuple[object, int | str]
 
 
 class SourceService:
     """Service for loading devices from various sources."""
 
     def __init__(self) -> None:
-        self.settings = get_settings()
         self._devices_cache: dict[str, DeviceBase] = {}
         self._loaded = False
+        self._load_lock: asyncio.Lock | None = None
+        ### Rows of the last load that were skipped because they were invalid
+        self._skipped_rows: list[dict[str, str]] = []
+
+    @property
+    def settings(self) -> Settings:
+        """Current settings, resolved on every access so a settings reload never leaves a stale copy behind."""
+        return get_settings()
+
+    def _get_load_lock(self) -> asyncio.Lock:
+        """Get lock that serializes inventory loads and reloads."""
+        if self._load_lock is None:
+            self._load_lock = asyncio.Lock()
+        return self._load_lock
 
     ### =============================================================================
     ### SourceService Class Helper Functions
     ### =============================================================================
 
 
-    def _register_source_overrides(self, row: dict, device_name: str, row_num: int | str) -> None:
-        """Validate and register per-device overrides parsed from a source row."""
+    def _parse_source_overrides(self, row: dict) -> NodeConfig | None:
+        """Validate per-device overrides parsed from a source row."""
         overrides: dict = {}
         for field in SOURCE_OVERRIDE_FIELDS:
             if field not in row:
@@ -42,33 +64,46 @@ class SourceService:
             overrides[field] = value
         
         if not overrides:
-            return
+            return None
         try:
-            node_override = NodeConfig(**overrides)
-        except ValueError as exc:
-            raise ValueError(
-                f"Row {row_num} (device '{device_name}'): invalid override value(s): {exc}"
-            ) from exc
-        self.settings.register_source_overrides(device_name, node_override)
+            return NodeConfig(**overrides)
+        except ValidationError as exc:
+            raise ValueError(f"invalid override value(s): {self._format_validation_error(exc)}") from exc
 
-    def _cache_device_from_row(self, row: dict, row_num: int | str) -> None:
-        """Build and cache a device from a normalized source row."""
+    @staticmethod
+    def _format_validation_error(exc: ValidationError) -> str:
+        """Turn a pydantic error into a short one-line message such as 'ip_address: Value error, ...'."""
+        return "; ".join(
+            f"{'.'.join(str(part) for part in error['loc'])}: {error['msg']}" if error["loc"] else error["msg"]
+            for error in exc.errors()
+        )
+
+    def _build_device_from_row(self, row: object) -> tuple[DeviceBase, NodeConfig | None]:
+        """Build a device and its optional source overrides from a normalized source row.
+
+        Raises ValueError (or another exception) when the row is invalid.
+        """
+        if not isinstance(row, dict):
+            raise ValueError("entry is not an object and cannot be mapped to a device")
 
         group = str(row.get("group", "")).strip()
         device_name = str(row.get("device_name", "")).strip()
 
         if not group:
-            raise ValueError(f"Row {row_num}: 'group' column is required")
+            raise ValueError("'group' column is required")
         if group not in self.settings.groups:
             raise ValueError(
-                f"Row {row_num} (device '{device_name}'): Group '{group}' not found in kiwissh.yaml. "
+                f"Group '{group}' not found in kiwissh.yaml. "
                 f"Available groups: {', '.join(self.settings.groups.keys())}"
             )
 
-        ### Register any per-device overrides before resolving the config so they take effect
-        self._register_source_overrides(row, device_name, row_num)
-
-        device_config = self.settings.get_device_config(group, device_name)
+        ### Resolve the config with this row's overrides so they take effect
+        node_override = self._parse_source_overrides(row)
+        device_config = self.settings.get_device_config(
+            group,
+            device_name,
+            source_overrides={device_name: node_override} if node_override is not None else {},
+        )
 
         resolved_protocol = str(device_config.get("protocol")).strip().lower()
         resolved_ssh_profile = str(device_config.get("ssh_profile") or "").strip()
@@ -83,17 +118,20 @@ class SourceService:
         else:
             enabled = str(enabled_raw).strip().lower() == "true"
 
-        device = DeviceBase(
-            group=group,
-            device_name=device_name,
-            ip_address=str(row.get("ip_address", "")).strip(),
-            vendor=device_config["vendor"],
-            ssh_profile=resolved_ssh_profile,
-            protocol=resolved_protocol,
-            port=int(device_config.get("port") or 22),
-            enabled=enabled,
-        )
-        self._devices_cache[device.device_name] = device
+        try:
+            device = DeviceBase(
+                group=group,
+                device_name=device_name,
+                ip_address=str(row.get("ip_address", "")).strip(),
+                vendor=device_config["vendor"],
+                ssh_profile=resolved_ssh_profile,
+                protocol=resolved_protocol,
+                port=int(device_config.get("port") or 22),
+                enabled=enabled,
+            )
+        except ValidationError as exc:
+            raise ValueError(self._format_validation_error(exc)) from exc
+        return device, node_override
 
     ### =============================================================================
     ### CSV Source Functions
@@ -111,8 +149,8 @@ class SourceService:
         candidate = Path(configured_path)
         return candidate.resolve()
     
-    async def load_devices_from_csv(self) -> list[DeviceBase]:
-        """Load devices from CSV file.
+    def _read_csv_rows(self) -> list[SourceRow]:
+        """Read device rows from CSV file (blocking - intended to run via asyncio.to_thread).
 
         CSV columns required: group, device_name, ip_address, enabled
         Vendor and ssh_profile are resolved from kiwissh.yaml configuration.
@@ -125,11 +163,7 @@ class SourceService:
 
         with open(csv_path, newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
-            for row_num, row in enumerate(reader, start=2):  # Start at 2 to account for header
-                self._cache_device_from_row(row, row_num)
-
-        self._loaded = True
-        return list(self._devices_cache.values())
+            return [(row, row_num) for row_num, row in enumerate(reader, start=2)]  # Start at 2 to account for header
     
     ### =============================================================================
     ### Ansible Source Functions
@@ -152,7 +186,7 @@ class SourceService:
         """Recursively collect device rows from an Ansible inventory group node.
 
         A device's group is the immediate Ansible group under which it is listed in 'hosts'.
-        The connection IP is taken from 'ansible_host'.
+        The connection address is taken from 'ansible_host'; falls back to the inventory host name if not set.
         """
         if not isinstance(group_data, dict):
             return
@@ -162,7 +196,8 @@ class SourceService:
             ### Scan through all hosts in the group
             for host_name, host_vars in hosts.items():
                 host_vars = host_vars if isinstance(host_vars, dict) else {}
-                ip_address = str(host_vars.get("ansible_host")).strip()
+                ansible_host = host_vars.get("ansible_host")
+                ip_address = str(ansible_host if ansible_host is not None else host_name).strip()
                 ### Map Ansible inventory hosts to canonical KiwiSSH device rows
                 device_row = {
                     "group": group_name,
@@ -189,8 +224,8 @@ class SourceService:
             self._walk_inventory_group(str(group_name), group_data, rows)
         return rows
 
-    async def load_devices_from_ansible(self) -> list[DeviceBase]:
-        """Load devices from an Ansible inventory YAML file.
+    def _read_ansible_rows(self) -> list[SourceRow]:
+        """Read device rows from an Ansible inventory YAML file (blocking - intended to run via asyncio.to_thread).
 
         Ansible groups (under 'all.children') map to KiwiSSH groups and must exist in kiwissh.yaml.
         Each host under a groups 'hosts' becomes a device, using 'ansible_host' as the IP.
@@ -208,13 +243,9 @@ class SourceService:
                 f"Invalid Ansible inventory at '{inventory_path}': expected a YAML mapping at the top level"
             )
 
-        ### Parse Ansible inventory and cache devices
+        ### Parse Ansible inventory into device rows
         rows = self._parse_ansible_inventory(data)
-        for index, row in enumerate(rows, start=1):
-            self._cache_device_from_row(row, f"ansible#{index}")
-
-        self._loaded = True
-        return list(self._devices_cache.values())
+        return [(row, f"ansible#{index}") for index, row in enumerate(rows, start=1)]
     
     ### =============================================================================
     ### PostgreSQL Source Functions
@@ -231,8 +262,8 @@ class SourceService:
             )
         return normalized
 
-    async def load_devices_from_postgres(self) -> list[DeviceBase]:
-        """Load devices from a PostgreSQL source table."""
+    def _read_postgres_rows(self) -> list[SourceRow]:
+        """Read device rows from a PostgreSQL source table (blocking - intended to run via asyncio.to_thread)."""
         src = self.settings.sources.postgres
         source_url = self.settings.get_source_postgres_url()
 
@@ -300,11 +331,7 @@ class SourceService:
         finally:
             engine.dispose()
 
-        for index, row in enumerate(rows, start=1):
-            self._cache_device_from_row(dict(row), f"db#{index}")
-
-        self._loaded = True
-        return list(self._devices_cache.values())
+        return [(dict(row), f"db#{index}") for index, row in enumerate(rows, start=1)]
 
     ### =============================================================================
     ### HTTP Source Functions
@@ -353,8 +380,8 @@ class SourceService:
             "Set sources.http.items_key if the list is nested under a specific key."
         )
 
-    async def load_devices_from_http(self) -> list[DeviceBase]:
-        """Load devices from a generic HTTP source."""
+    async def _read_http_rows(self) -> list[SourceRow]:
+        """Read device rows from a generic HTTP source."""
         src = self.settings.sources.http
 
         ### Step 1: Fetch API endpoint and parse JSON response
@@ -387,67 +414,129 @@ class SourceService:
         ### Step 2: Extract device list from JSON payload
         items = self._extract_http_items(payload, src.items_key)
 
-        ### Step 3: Map each item to a canonical source row and cache devices
+        ### Step 3: Map each item to a canonical source row
+        rows: list[SourceRow] = []
         for index, item in enumerate(items, start=1):
-            if not isinstance(item, dict):
-                raise ValueError(
-                    f"sources.http item #{index} is not a JSON object and cannot be mapped."
-                )
-            row = self._map_http_item(item, src.map, src.default_group)
-            self._cache_device_from_row(row, f"http#{index}")
+            ### Non-object items are passed on as they are and reported as invalid rows when loading
+            row = self._map_http_item(item, src.map, src.default_group) if isinstance(item, dict) else item
+            rows.append((row, f"http#{index}"))
+        return rows
 
+    ### =============================================================================
+    ### Inventory Loading
+    ### =============================================================================
+
+    async def _read_source_rows(self) -> list[SourceRow]:
+        """Read raw device rows from the configured source without blocking the event loop."""
+        sources = self.settings.sources
+        if sources is None:
+            return []
+
+        if sources.postgres:
+            return await asyncio.to_thread(self._read_postgres_rows)
+        elif sources.http:
+            return await self._read_http_rows()
+        elif sources.ansible:
+            return await asyncio.to_thread(self._read_ansible_rows)
+        elif sources.file:
+            return await asyncio.to_thread(self._read_csv_rows)
+        return []
+
+    async def _load_inventory_locked(self) -> list[DeviceBase]:
+        """Load the inventory into new containers and swap them in only once everything is valid.
+
+        Caller must hold the load lock.
+        """
+        rows = await self._read_source_rows()
+
+        devices: dict[str, DeviceBase] = {}
+        source_overrides: dict[str, NodeConfig] = {}
+        device_rows: dict[str, int | str] = {}
+        skipped_rows: list[dict[str, str]] = []
+        for row, row_num in rows:
+            device_name = str(row.get("device_name", "")).strip() if isinstance(row, dict) else ""
+
+            ### One invalid row must not take down the whole inventory: skip and report it instead
+            try:
+                if device_name in device_rows:
+                    raise ValueError(f"duplicate device_name, already defined in row {device_rows[device_name]}")
+                device, node_override = self._build_device_from_row(row)
+            except Exception as ex:
+                logger.warning("Skipping invalid source row %s (device '%s'): %s", row_num, device_name, ex)
+                skipped_rows.append({"row": str(row_num), "device_name": device_name, "error": str(ex)})
+                continue
+
+            devices[device.device_name] = device
+            device_rows[device.device_name] = row_num
+            if node_override is not None:
+                source_overrides[device.device_name] = node_override
+
+        if skipped_rows:
+            logger.warning(
+                "Loaded %d device(s) from source, skipped %d invalid row(s)",
+                len(devices),
+                len(skipped_rows),
+            )
+
+        ### Swap devices and their source overrides together
+        self.settings.replace_source_overrides(source_overrides)
+        self._devices_cache = devices
+        self._skipped_rows = skipped_rows
         self._loaded = True
-        return list(self._devices_cache.values())
+        return list(devices.values())
+
+    async def _ensure_loaded(self) -> None:
+        """Load the inventory on first use; concurrent callers wait for the same load."""
+        if self._loaded:
+            return
+        async with self._get_load_lock():
+            if not self._loaded:
+                await self._load_inventory_locked()
 
     ### =============================================================================
     ### SourceService Class PUBLIC Functions
     ### =============================================================================
 
     async def load_devices(self) -> list[DeviceBase]:
-        """Load devices from configured source."""
+        """(Re)load devices from configured source.
 
-        if self.settings.sources.postgres:
-            return await self.load_devices_from_postgres()
-        elif self.settings.sources.http:
-            return await self.load_devices_from_http()
-        elif self.settings.sources.ansible:
-            return await self.load_devices_from_ansible()
-        elif self.settings.sources.file:
-            return await self.load_devices_from_csv()
+        If loading fails, the previous inventory stays in place and the error is raised.
+        """
+        async with self._get_load_lock():
+            return await self._load_inventory_locked()
+
+    @property
+    def skipped_rows(self) -> list[dict[str, str]]:
+        """Rows of the last load that were skipped as invalid, each with 'row', 'device_name' and 'error'."""
+        return list(self._skipped_rows)
 
     async def get_device(self, device_name: str) -> DeviceBase | None:
         """Get a single device by name."""
-        if not self._loaded:
-            await self.load_devices()
+        await self._ensure_loaded()
         return self._devices_cache.get(device_name)
 
     async def get_devices_by_group(self, group: str) -> list[DeviceBase]:
         """Get all devices in a group."""
-        if not self._loaded:
-            await self.load_devices()
+        await self._ensure_loaded()
         return [d for d in self._devices_cache.values() if d.group == group]
 
     async def get_all_devices(self) -> list[DeviceBase]:
         """Get all devices."""
-        if not self._loaded:
-            await self.load_devices()
+        await self._ensure_loaded()
         return list(self._devices_cache.values())
 
     async def get_enabled_devices(self) -> list[DeviceBase]:
         """Get all enabled devices."""
-        if not self._loaded:
-            await self.load_devices()
+        await self._ensure_loaded()
         return [d for d in self._devices_cache.values() if d.enabled]
 
     async def get_groups(self) -> list[str]:
         """Get list of all groups."""
-        if not self._loaded:
-            await self.load_devices()
+        await self._ensure_loaded()
         return list(set(d.group for d in self._devices_cache.values()))
 
     def invalidate_cache(self) -> None:
         """Clear the device cache to force reload."""
-        self.settings = get_settings()
         self.settings.clear_source_overrides()
         self._devices_cache.clear()
         self._loaded = False

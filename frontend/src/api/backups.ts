@@ -5,6 +5,7 @@ import type {
   BackupJobsResponse,
   BackupHistoryResponse,
   BackupGraphResponse,
+  BackupConfigResponse,
 } from "../types/backup"
 
 export const backupApi = {
@@ -40,10 +41,17 @@ export const backupApi = {
     return response.data
   },
 
-  async getHistory(deviceName: string, limit?: number, offset?: number): Promise<BackupHistoryResponse> {
-    const params: Record<string, number> = {}
+  async getHistory(
+    deviceName: string,
+    limit?: number,
+    offset?: number,
+    range?: { since?: string; until?: string },
+  ): Promise<BackupHistoryResponse> {
+    const params: Record<string, string | number> = {}
     if (limit !== undefined) params.limit = limit
     if (offset !== undefined) params.offset = offset
+    if (range?.since) params.since = range.since
+    if (range?.until) params.until = range.until
     const response = await api.get<BackupHistoryResponse>(`/backups/history/${deviceName}`, { params })
     return response.data
   },
@@ -76,9 +84,9 @@ export const backupApi = {
     return response.data
   },
 
-  async latestConfig(deviceName: string, commitHash?: string): Promise<Record<string, unknown>> {
+  async latestConfig(deviceName: string, commitHash?: string): Promise<BackupConfigResponse> {
     const params = commitHash ? { commit: commitHash } : undefined
-    const response = await api.get(`/backups/latest/${deviceName}`, { params })
+    const response = await api.get<BackupConfigResponse>(`/backups/latest/${deviceName}`, { params })
     return response.data
   },
 
