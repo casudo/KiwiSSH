@@ -5,6 +5,7 @@ import type {
   BackupJobsResponse,
   BackupHistoryResponse,
   BackupGraphResponse,
+  BackupConfigResponse,
 } from "../types/backup"
 
 export const backupApi = {
@@ -83,9 +84,9 @@ export const backupApi = {
     return response.data
   },
 
-  async latestConfig(deviceName: string, commitHash?: string): Promise<Record<string, unknown>> {
+  async latestConfig(deviceName: string, commitHash?: string): Promise<BackupConfigResponse> {
     const params = commitHash ? { commit: commitHash } : undefined
-    const response = await api.get(`/backups/latest/${deviceName}`, { params })
+    const response = await api.get<BackupConfigResponse>(`/backups/latest/${deviceName}`, { params })
     return response.data
   },
 

@@ -6,6 +6,7 @@ import { useFavoritesStore } from "@/stores/favorites"
 import { backupApi } from "@/api/backups"
 import StatusBadge from "@/components/StatusBadge.vue"
 import DiffViewer from "@/components/DiffViewer.vue"
+import ConfigBrowser from "@/components/ConfigBrowser.vue"
 import BackupContributionGraph from "@/components/BackupContributionGraph.vue"
 import LoadingSpinner from "@/components/LoadingSpinner.vue"
 
@@ -70,6 +71,8 @@ const diffError = ref<string | null>(null)
 const downloadingBackups = ref<Record<string, boolean>>({})
 const downloadingLatest = ref(false)
 const jobLookupLoading = ref<Record<string, boolean>>({})
+const browseCommit = ref<string>("")
+const configBrowserSection = ref<HTMLElement | null>(null)
 
 const latestBackup = computed<BackupEntry | null>(() => {
   let latest: BackupEntry | null = null
@@ -143,6 +146,11 @@ async function loadBackupHistory() {
     if (requestId !== historyRequestId) return
     backupHistory.value = response.history || []
     totalHistoryCount.value = response.total_count ?? response.count ?? backupHistory.value.length
+
+    // Open the config browser on the latest version, but keep whatever the user picked afterwards
+    if (!browseCommit.value && commitOptions.value.length > 0) {
+      browseCommit.value = commitOptions.value[0].hash
+    }
 
     // Auto-select the two most recent valid commits for diff
     if (commitOptions.value.length >= 2) {
@@ -377,6 +385,11 @@ async function openJobLog(backup: BackupEntry) {
   } finally {
     delete jobLookupLoading.value[backup.hash]
   }
+}
+
+function browseConfig(backup: BackupEntry) {
+  browseCommit.value = backup.hash
+  configBrowserSection.value?.scrollIntoView({ behavior: "smooth", block: "start" })
 }
 
 // Download config file
@@ -697,49 +710,79 @@ function formatFileSize(bytes: number): string {
                     {{ backup.author }} on {{ new Date(backup.timestamp).toLocaleString() }}
                   </p>
                 </div>
-                <button
-                  @click.stop="downloadConfig(backup)"
-                  :disabled="isDownloading(backup.hash)"
-                  class="shrink-0 btn btn-secondary py-1 px-3 text-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <svg
-                    v-if="isDownloading(backup.hash)"
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-4 w-4 inline mr-1 animate-spin"
-                    fill="none"
-                    viewBox="0 0 24 24"
+                <div class="shrink-0 flex items-center gap-2">
+                  <button
+                    @click.stop="browseConfig(backup)"
+                    class="btn btn-secondary py-1 px-3 text-sm whitespace-nowrap"
+                    :class="{ 'ring-2 ring-kiwissh-500': backup.hash === browseCommit }"
+                    title="View this config in the browser"
                   >
-                    <circle
-                      class="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4 inline mr-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
                       stroke="currentColor"
-                      stroke-width="4"
-                    />
-                    <path
-                      class="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                    />
-                  </svg>
-                  <svg
-                    v-else
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-4 w-4 inline mr-1"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                      />
+                    </svg>
+                    View
+                  </button>
+                  <button
+                    @click.stop="downloadConfig(backup)"
+                    :disabled="isDownloading(backup.hash)"
+                    class="btn btn-secondary py-1 px-3 text-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                    />
-                  </svg>
-                  {{ isDownloading(backup.hash) ? "Downloading..." : "Download" }}
-                </button>
+                    <svg
+                      v-if="isDownloading(backup.hash)"
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4 inline mr-1 animate-spin"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        class="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        stroke-width="4"
+                      />
+                      <path
+                        class="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
+                    </svg>
+                    <svg
+                      v-else
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4 inline mr-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                      />
+                    </svg>
+                    {{ isDownloading(backup.hash) ? "Downloading..." : "Download" }}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -767,6 +810,17 @@ function formatFileSize(bytes: number): string {
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Config browser -->
+      <div ref="configBrowserSection" class="card mb-6 scroll-mt-20">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Configuration Browser</h2>
+
+        <ConfigBrowser
+          v-model:commit="browseCommit"
+          :device-name="deviceName"
+          :versions="commitOptions"
+        />
       </div>
 
       <!-- Config diff selector and viewer -->

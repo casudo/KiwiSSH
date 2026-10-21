@@ -21,7 +21,7 @@ It was created as better alternative to RANCID and Oxidized, with a focus on sim
 The frontend offers:
 
 - Dashboard (statistics, favorite devices, overview of KiwiSSH)
-- Information-rich device list with filtering, search and favorite option, backup contribution calender, group and vendor belonging, status badge, config diff view and more
+- Information-rich device list with filtering, search and favorite option, backup contribution calender, group and vendor belonging, status badge, config diff view, in-browser config file browser and more
 - Overview of configured SSH profiles, vendors and groups for easy management and device tracking
 - Detailed backup job logs with timestamps, status and error messages for each backup attempt
 - Swagger API documentation
