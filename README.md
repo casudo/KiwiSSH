@@ -759,12 +759,9 @@ None
 
 **Mid-term:**
 
-- Add visual popup when opening JobView.vue if the page load takes longer than 2 seconds to inform the user that the page is still loading and to prevent them from thinking the UI is frozen (Branch [job-log-loading-spinner](https://github.com/casudo/KiwiSSH/tree/job-log-loading-spinner))
-- Pentests
 - Update Ruff linter and formatter
 - Add Vue linter/formatter?
 - SCP support?
-- Update ssh_profile legacy with Synology NAS ssh settings "Low"
 - Full-text config search ([#48](https://github.com/casudo/KiwiSSH/issues/48))
 - Config file browser on the frontend ([#47](https://github.com/casudo/KiwiSSH/issues/47))
 
