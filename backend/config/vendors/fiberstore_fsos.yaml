@@ -1,10 +1,10 @@
-### Fiberstorm FSOS Vendor Configuration
-## Instructions for backing up Fiberstorm FSOS devices
+### Fiberstore FSOS Vendor Configuration
+## Instructions for backing up Fiberstore FSOS devices
 
 vendor:
-  id: "fiberstorm_fsos"
-  name: "Fiberstorm FSOS"
-  description: "Fiberstorm FSOS"
+  id: "fiberstore_fsos"
+  name: "Fiberstore FSOS"
+  description: "Fiberstore FSOS"
 
 ### Session-level behavior
 session:

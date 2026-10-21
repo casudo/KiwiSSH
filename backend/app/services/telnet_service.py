@@ -229,11 +229,12 @@ class TelnetService(CLIService):
         *,
         device_config: dict[str, Any] | None = None,
     ) -> tuple[str, str | None]:
-        """Get device configuration plus optional metadata via Telnet or local simulator."""
+        """Get device configuration plus optional metadata via Telnet."""
         ### Get device config
         device_config = device_config or self.settings.get_device_config(device.group, device.device_name)
         enable_password_raw = str(device_config.get("enable_password") or "").strip()
         enable_password = enable_password_raw if enable_password_raw else None
+        redaction = device_config.get("redaction") # group/node override (none keeps the vendors default)
 
         protocol = str(device_config.get("protocol") or "ssh").strip().lower()
         if protocol != "telnet":
@@ -254,14 +255,6 @@ class TelnetService(CLIService):
         if not device_password:
             raise ValueError(
                 f"Device '{device.device_name}' in group '{device.group}' requires password for telnet protocol"
-            )
-
-        ### Use the local simulator if test mode is enabled
-        if self.settings.local_test_mode:
-            return await self._collect_local_vendor_config(
-                device=device,
-                vendor_id=vendor_id,
-                timeout_seconds=timeout_seconds,
             )
 
         async def fetch_once() -> tuple[str, str | None]:
@@ -299,6 +292,7 @@ class TelnetService(CLIService):
                     enable_password=enable_password,
                     username=device_username,
                     password=device_password,
+                    redaction=redaction,
                 )
             finally:
                 ### Ensure connection is properly closed to avoid resource leaks, even on failure

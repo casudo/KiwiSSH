@@ -4,7 +4,7 @@ import ipaddress
 import re
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -51,6 +51,8 @@ class DeviceStatus(str, Enum):
 class DeviceBase(BaseModel):
     """Device configuration (static fields from source)."""
 
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     device_name: str = Field(..., min_length=1, max_length=255)
     ### TODO: Might change 'ip_address' to a more generic 'address' field in the future
     ## NOTE: This will be a BREAKING CHANGE if implemented
@@ -58,9 +60,17 @@ class DeviceBase(BaseModel):
     vendor: str = Field(..., min_length=1, max_length=255)
     group: str = Field(..., min_length=1, max_length=255)
     ssh_profile: str = Field(..., min_length=1, max_length=255)
-    protocol: str = Field(..., min_length=1, max_length=16)
+    protocol: Literal["ssh", "telnet", "http", "https"]
     port: int = Field(..., ge=1, le=65535)
     enabled: bool = True
+
+    @field_validator("device_name")
+    @classmethod
+    def validate_device_name(cls, device_name: str) -> str:
+        """Reject names that can't be used as a file name, the config is stored as '<device_name>.conf'."""
+        if "/" in device_name or "\\" in device_name or not device_name.isprintable():
+            raise ValueError("device_name must not contain slashes or control characters")
+        return device_name
 
     @field_validator("ip_address", mode="before")
     @classmethod
@@ -73,8 +83,8 @@ class DeviceFull(DeviceBase):
     """Device config + backup/status information."""
 
     status: DeviceStatus = DeviceStatus.UNKNOWN
-    last_backup: Optional[datetime] = None
-    last_backup_success: Optional[datetime] = None
-    last_error: Optional[str] = None
+    last_backup: datetime | None = None
+    last_backup_success: datetime | None = None
+    last_error: str | None = None
 
     model_config = ConfigDict(from_attributes=True)

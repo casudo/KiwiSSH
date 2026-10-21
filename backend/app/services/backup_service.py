@@ -572,7 +572,7 @@ class BackupService:
                     )
                 raise RuntimeError(f"Unsupported protocol: {protocol}")
 
-            ### Get config from device via SSH, Telnet or HTTP(S) (or simulator)
+            ### Get config from device via SSH, Telnet or HTTP(S)
             for attempt in range(2):
                 config, metadata_output = await _fetch_config()
                 logger.debug(f"Got config for {device.device_name} ({len(config)} bytes)")
@@ -597,15 +597,15 @@ class BackupService:
                 group=device.group,
             )
 
-            ### A new commit was created: Erase the cached history count
-            if has_changes:
-                git_service.invalidate_history_count(device.device_name, device.group)
-
             duration_seconds = max(0.0, time.perf_counter() - started_at)
 
             ### If no changes detected, return NO_CHANGES status
             if not has_changes:
-                logger.info(f"No configuration changes detected for {device.device_name}")
+                logger.info(
+                    "No configuration changes detected for %s (%.2fs)",
+                    device.device_name,
+                    duration_seconds,
+                )
                 result = BackupRecord(
                     id=str(uuid.uuid4()),
                     device_name=device.device_name,

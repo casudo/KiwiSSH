@@ -12,7 +12,7 @@
 
 # About KiwiSSH <!-- omit from toc -->
 
-KiwiSSH is a network device configuration backup tool that connects to your devices via SSH, Telnet or HTTP/HTTPS, fetches their configurations, and stores them in git repositories for easy version control and change tracking. It also provides a user-friendly web interface to manage your devices, view backup logs, and see configuration changes over time.
+KiwiSSH is a network device configuration backup tool that connects to your devices via SSH, Telnet or HTTP/HTTPS, fetches their configurations, and stores them in git repositories for easy version control and change tracking. It also provides a user-friendly web interface to manage your devices, view backup logs, and see configuration changes over time. It supports over 180+ device types with templates for any edge device.
 
 It was created as better alternative to RANCID and Oxidized, with a focus on simplicity, ease of use, and modern technologies.
 
@@ -162,7 +162,6 @@ See the example [`backend/.env.example`](backend/.env.example) file. Either rena
 | Variable Name | Description | Required | Default Value |
 | ------------- | ----------- | -------- | ------------- |
 | `KIWISSH_CONFIG_DIR` | Directory KiwiSSH reads its configuration from (`kiwissh.yaml`, `ssh_profiles.yaml`, `vendors/`). Defaults to `/config` in Docker, or the backend's bundled `config/` directory on bare-metal installs. | No | `/config` (Docker) / `../backend/config` (bare-metal) |
-| `KIWISSH_LOCAL_TEST_MODE` | If set to true, the application will run in local test mode, which enforces certain config values for easier local testing and development. | No | `false` |
 | `TZ` | Timezone for the application. This is used for timestamps in backup job logs and Git commit messages. | **No** | `UTC` |
 
 ## kiwissh.yaml
@@ -430,6 +429,7 @@ Commits are not pushed one by one: each group is pushed once the backup queue is
 | `groups.<group>.protocol` | Protocol to use for devices in this group (`ssh`, `telnet`, `http` or `https`). | No | Global `app.protocol` |
 | `groups.<group>.port` | Protocol port for devices in this group. | No | `22` for `ssh`, `23` for `telnet`, `80` for `http`, `443` for `https` |
 | `groups.<group>.verify_ssl` | Whether to verify the device TLS certificate for `https` backups. Set to `false` for self-signed certificates. | No | `true` |
+| `groups.<group>.redaction` | Turns the vendor's [redaction rules](#processing) on (`true`) or off (`false`) for devices in this group. This overrides `processing.redaction.enabled` of the vendor YAML file. | No | Vendor `processing.redaction.enabled` |
 | `groups.<group>.vendor` | The vendor of the devices in this group. This is used to determine the CLI commands (or HTTP requests) to run for fetching the configuration. | **Yes** | - |
 | `groups.<group>.jumphost.hostname` | Jumphost hostname or IP for this group. If set, devices in this group are reached through this jumphost. | **Yes**, if `jumphost` | - |
 | `groups.<group>.jumphost.port` | Jumphost SSH port. | No | `22` |
@@ -459,6 +459,7 @@ Commits are not pushed one by one: each group is pushed once the backup queue is
 | `nodes.<device_name>.protocol` | Protocol override for this device (`ssh`, `telnet`, `http` or `https`). | No | `groups.<group>.protocol` or Global `app.protocol` |
 | `nodes.<device_name>.port` | Port override for this device. | No | `groups.<group>.port` or `22` for `ssh`, `23` for `telnet`, `80` for `http`, `443` for `https` |
 | `nodes.<device_name>.verify_ssl` | Node-level TLS verification override for `https` backups. | No | `groups.<group>.verify_ssl` |
+| `nodes.<device_name>.redaction` | Turns the vendor's [redaction rules](#processing) on (`true`) or off (`false`) for this device. This overrides `groups.<group>.redaction` and `processing.redaction.enabled` of the vendor YAML file. | No | `groups.<group>.redaction` or vendor `processing.redaction.enabled` |
 | `nodes.<device_name>.vendor` | The vendor of this device. This is used to determine the CLI commands (or HTTP requests) to run for fetching the configuration. | No | `groups.<group>.vendor` |
 | `nodes.<device_name>.jumphost.hostname` | Node-level jumphost hostname/IP override. | **Yes**, if `jumphost` | `groups.<group>.jumphost.hostname` |
 | `nodes.<device_name>.jumphost.port` | Node-level jumphost SSH port override. | No | `groups.<group>.jumphost.port` or `22` |
@@ -617,7 +618,7 @@ http:
 | `processing.strip_patterns` | A list of regex patterns. Lines matching any of these patterns will be removed from the captured config before saving. | No | - |
 | `processing.config_start` | A regex pattern that marks the start of the actual configuration in the CLI output. Lines before the matched line will be removed. | No | - |
 | `processing.config_end` | A regex pattern that marks the end of the actual configuration in the CLI output. Lines after the matched line will be removed. | No | - |
-| `processing.redaction.enabled` | If set to true, the patterns defined in `processing.redaction.patterns` will be applied to the captured config to redact sensitive information. | No | `false` |
+| `processing.redaction.enabled` | If set to true, the patterns defined in `processing.redaction.patterns` will be applied to the captured config to redact sensitive information. Can be overridden per group/node with `groups.<group>.redaction` / `nodes.<device_name>.redaction`. | No | `false` |
 | `processing.redaction.patterns` | A list of redaction rules. Each rule should contain a `search` regex pattern, a `replacement` string, and an optional `ignore_case` boolean. | No | - |
 
 > [!IMPORTANT]
@@ -628,7 +629,7 @@ http:
 - `processing` is optional; if no processing options are configured, config output is left unchanged
 - `strip_patterns`: remove matching lines
 - `config_start` / `config_end`: crop output to boundaries; if one side is missing, file edge is used
-- `redaction.enabled` + `redaction.patterns`: apply replacements
+- `redaction.enabled` + `redaction.patterns`: apply replacements; `groups.<group>.redaction` / `nodes.<device_name>.redaction` override `redaction.enabled` without editing the vendor YAML file
 - Each redaction rule uses `search`, `replacement`, and optional `ignore_case`
 
 ## SSH Profiles YAML file
@@ -753,21 +754,13 @@ The endpoint will return the following information about the device:
 
 **Short Term:**
 
-- Cache backup history response for a device so it doesnt need to fetch again
-- Rename "Fiberstorm (fs.com)" to "Fiberstore (fs.com)"
-  
+None
+
 **Mid-term:**
 
-- Add visual popup when opening JobView.vue if the page load takes longer than 2 seconds to inform the user that the page is still loading and to prevent them from thinking the UI is frozen (Branch [job-log-loading-spinner](https://github.com/casudo/KiwiSSH/tree/job-log-loading-spinner))
-- Pentests
-- Rework Pydantic models (required vs optional fields, default values, validators, etc.)
 - Update Ruff linter and formatter
 - Add Vue linter/formatter?
 - SCP support?
-- Update ssh_profile legacy with Synology NAS ssh settings "Low"
-- Show "backup time" when NO_CHANGES" in log line "No configuration changes detected for {device_name}"?
-- Put redaction boolean switch as group/node level override instead of per vendor to be able to easily turn on/off redaction for specific groups/nodes without having to modify the vendor YAML files?
-- Full-text config search ([#48](https://github.com/casudo/KiwiSSH/issues/48))
 
 **Long Term:**
 
