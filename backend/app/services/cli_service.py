@@ -745,6 +745,7 @@ class CLIService(ABC):
         *,
         username: str,
         password: str | None,
+        redaction: bool | None = None,
     ) -> tuple[str, str | None]:
         """Collect configuration and metadata from device via vendor-defined command phases.
 
@@ -862,7 +863,7 @@ class CLIService(ABC):
             raise RuntimeError("Backup commands completed but returned empty non-metadata config output")
 
         ### Apply vendor-defined processing rules
-        processed_config = apply_processing_rules(raw_config, processing_rules)
+        processed_config = apply_processing_rules(raw_config, processing_rules, redaction=redaction)
 
         ### Build metadata section from captured output marked as metadata=true
         metadata_section = self._build_metadata_section(captured_output, comment_prefix)
@@ -878,6 +879,7 @@ class CLIService(ABC):
         device: DeviceBase,
         vendor_id: str,
         timeout_seconds: int,
+        redaction: bool | None = None,
     ) -> tuple[str, str | None]:
         """Collect config in local test mode while reusing vendor processing rules."""
         ### Keep vendor command validation parity with the real protocol path
@@ -894,7 +896,7 @@ class CLIService(ABC):
             raise RuntimeError("Local simulator returned empty config output")
 
         processing_rules = vendor_service.get_processing_rules(vendor_id)
-        return apply_processing_rules(raw_config, processing_rules), None
+        return apply_processing_rules(raw_config, processing_rules, redaction=redaction), None
 
     @abstractmethod
     async def get_config(

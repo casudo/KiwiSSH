@@ -234,6 +234,7 @@ class TelnetService(CLIService):
         device_config = device_config or self.settings.get_device_config(device.group, device.device_name)
         enable_password_raw = str(device_config.get("enable_password") or "").strip()
         enable_password = enable_password_raw if enable_password_raw else None
+        redaction = device_config.get("redaction") # group/node override (none keeps the vendors default)
 
         protocol = str(device_config.get("protocol") or "ssh").strip().lower()
         if protocol != "telnet":
@@ -262,6 +263,7 @@ class TelnetService(CLIService):
                 device=device,
                 vendor_id=vendor_id,
                 timeout_seconds=timeout_seconds,
+                redaction=redaction,
             )
 
         async def fetch_once() -> tuple[str, str | None]:
@@ -299,6 +301,7 @@ class TelnetService(CLIService):
                     enable_password=enable_password,
                     username=device_username,
                     password=device_password,
+                    redaction=redaction,
                 )
             finally:
                 ### Ensure connection is properly closed to avoid resource leaks, even on failure

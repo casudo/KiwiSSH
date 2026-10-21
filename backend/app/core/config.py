@@ -606,6 +606,7 @@ class GroupConfig(ConfigModel):
     port: int | None = Field(default=None, ge=1, le=65535)
     protocol: str | None = None
     verify_ssl: bool | None = None
+    redaction: bool | None = None
     vendor: str
     jumphost: GroupJumphostConfig | None = None
     timeout: int | None = Field(default=None, ge=1)
@@ -666,6 +667,7 @@ class NodeConfig(ConfigModel):
     port: int | None = Field(default=None, ge=1, le=65535)
     protocol: str | None = None
     verify_ssl: bool | None = None
+    redaction: bool | None = None
     vendor: str | None = None
     jumphost: NodeJumphostConfig | None = None
     timeout: int | None = Field(default=None, ge=1)
@@ -1001,6 +1003,8 @@ class Settings(BaseSettings):
             device_config["ssh_key_file"] = override.ssh_key_file
         if override.verify_ssl is not None:
             device_config["verify_ssl"] = override.verify_ssl
+        if override.redaction is not None:
+            device_config["redaction"] = override.redaction
 
         ### Merge jumphost overrides into group defaults key-by-key
         ## This allows partial overrides without duplicating the full block
@@ -1148,6 +1152,7 @@ class Settings(BaseSettings):
             "jumphost": None,
             "protocol": self.app.protocol,
             "verify_ssl": True,
+            "redaction": None, # keeps the vendor YAML 'processing.redaction.enabled' setting
         }
 
         ### Step 1: Apply group-level defaults / overrides
@@ -1186,6 +1191,8 @@ class Settings(BaseSettings):
                 device_config["protocol"] = group_config.protocol
             if group_config.verify_ssl is not None:
                 device_config["verify_ssl"] = group_config.verify_ssl
+            if group_config.redaction is not None:
+                device_config["redaction"] = group_config.redaction
 
         ### Step 1.5: Apply device-source overrides (takes precedence over group defaults)
         if source_overrides is None:

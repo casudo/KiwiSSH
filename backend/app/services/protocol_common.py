@@ -11,13 +11,15 @@ from app.models.device import DeviceBase
 logger = logging.getLogger(__name__)
 
 
-def apply_processing_rules(config: str, rules: dict[str, Any]) -> str:
+def apply_processing_rules(config: str, rules: dict[str, Any], *, redaction: bool | None = None) -> str:
     """Apply vendor-defined processing pipeline to captured config output.
 
     Supported processing keys in vendor YAML:
     - strip_patterns: remove matching lines entirely
     - config_start/config_end: crop output to config boundaries
     - redaction.enabled + redaction.patterns: optional secret masking
+
+    redaction is the group/node level override for redaction.enabled, None keeps the vendor setting.
     """
     ### Get all processing rules for the vendor
     strip_patterns_raw = rules.get("strip_patterns", [])
@@ -25,7 +27,11 @@ def apply_processing_rules(config: str, rules: dict[str, Any]) -> str:
     end_pattern = rules.get("config_end")
     redaction_cfg_raw = rules.get("redaction", {})
 
-    redaction_enabled = isinstance(redaction_cfg_raw, dict) and bool(redaction_cfg_raw.get("enabled", False))
+    ### Group/node level override wins over the vendor's redaction.enabled
+    if redaction is not None:
+        redaction_enabled = isinstance(redaction_cfg_raw, dict) and redaction
+    else:
+        redaction_enabled = isinstance(redaction_cfg_raw, dict) and bool(redaction_cfg_raw.get("enabled", False))
     has_strip_patterns = isinstance(strip_patterns_raw, list) and bool(strip_patterns_raw)
     has_boundaries = bool(start_pattern) or bool(end_pattern)
 
@@ -98,7 +104,7 @@ def apply_processing_rules(config: str, rules: dict[str, Any]) -> str:
     processed = "\n".join(lines)
 
     ### Step 3: Secret redaction; disabled means leave config untouched.
-    if isinstance(redaction_cfg_raw, dict) and bool(redaction_cfg_raw.get("enabled", False)):
+    if redaction_enabled:
         redaction_patterns = redaction_cfg_raw.get("patterns", [])
         if isinstance(redaction_patterns, list):
             ### Apply each redaction pattern sequentially to the whole config text

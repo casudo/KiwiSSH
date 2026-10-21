@@ -160,6 +160,7 @@ class HTTPService:
         default_timeout: int,
         verify_ssl: bool,
         context: dict[str, Any],
+        redaction: bool | None = None,
     ) -> tuple[str, str | None]:
         """Fetch and assemble device configuration via vendor-defined HTTP requests."""
         ### Get configured 'http' section for the vendor
@@ -262,7 +263,7 @@ class HTTPService:
             raise RuntimeError("HTTP backup requests completed but returned empty config output")
 
         ### Reuse the shared vendor processing pipeline (strip_patterns, redaction, etc.)
-        processed_config = apply_processing_rules(raw_config, processing_rules)
+        processed_config = apply_processing_rules(raw_config, processing_rules, redaction=redaction)
 
         ### HTTP backups have no separate metadata section
         return processed_config, None
@@ -272,6 +273,7 @@ class HTTPService:
         device: DeviceBase,
         vendor_id: str,
         timeout_seconds: int,
+        redaction: bool | None = None,
     ) -> tuple[str, str | None]:
         """Collect config in local test mode while reusing vendor processing rules."""
         ### Keep vendor validation parity with the real HTTP path
@@ -287,7 +289,7 @@ class HTTPService:
             raise RuntimeError("Local simulator returned empty config output")
 
         processing_rules = vendor_service.get_processing_rules(vendor_id)
-        return apply_processing_rules(raw_config, processing_rules), None
+        return apply_processing_rules(raw_config, processing_rules, redaction=redaction), None
 
     ### =============================================================================
     ### HTTPService Class PUBLIC Functions
@@ -315,6 +317,7 @@ class HTTPService:
         default_port = 443 if protocol == "https" else 80
         device_port = int(device_config.get("port") or default_port)
         verify_ssl = bool(device_config.get("verify_ssl", True))
+        redaction = device_config.get("redaction") # group/node override, None keeps the vendor setting
         device_username = str(device_config.get("username") or "").strip()
         device_password = str(device_config.get("password") or "").strip()
 
@@ -324,6 +327,7 @@ class HTTPService:
                 device=device,
                 vendor_id=vendor_id,
                 timeout_seconds=timeout_seconds,
+                redaction=redaction,
             )
 
         async def fetch_once() -> tuple[str, str | None]:
@@ -340,6 +344,7 @@ class HTTPService:
                 default_timeout=timeout_seconds,
                 verify_ssl=verify_ssl,
                 context=context,
+                redaction=redaction,
             )
 
         ### Try to fetch config from device, applying retries on failure

@@ -285,7 +285,7 @@ There are two models for Fortinet devices:
 
 FortiGate and FortiOS re-encrypt their passwords every time the configuration is shown. This results in a lot of apparent configuration changes on every pull.
 
-To avoid this, enable the redaction feature inside the vendor YAML file (`redaction.enabled: true`). This will replace all passwords with a fixed string, so the configuration will only change when there are actual changes to the configuration.
+To avoid this, enable the redaction feature inside the vendor YAML file (`redaction.enabled: true`) or per group/node in `kiwissh.yaml` (`redaction: true`). This will replace all passwords with a fixed string, so the configuration will only change when there are actual changes to the configuration.
 
 ## Grandstream HT8xx
 
