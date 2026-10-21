@@ -761,8 +761,6 @@ None
 - Update Ruff linter and formatter
 - Add Vue linter/formatter?
 - SCP support?
-- Full-text config search ([#48](https://github.com/casudo/KiwiSSH/issues/48))
-- Config file browser on the frontend ([#47](https://github.com/casudo/KiwiSSH/issues/47))
 
 **Long Term:**
 
