@@ -15,7 +15,6 @@ const devicesStore = useDevicesStore()
 const jobsStore = useJobsStore()
 const appStore = useAppStore()
 const favoritesStore = useFavoritesStore()
-const configuredVendorCount = ref(0)
 const configuredProfileCount = ref(0)
 
 interface Stats {
@@ -32,7 +31,7 @@ const stats = computed((): Stats => ({
   total: devicesStore.deviceCount,
   enabled: devicesStore.enabledDevices.length,
   groups: Object.keys(devicesStore.devicesByGroup).length,
-  vendors: configuredVendorCount.value || devicesStore.uniqueVendors.length,
+  vendors: devicesStore.uniqueVendors.length, // only vendors used by at least one device
   sshProfiles: configuredProfileCount.value || devicesStore.uniqueSshProfiles.length,
   backupJobs: jobsStore.totalJobs,
   queueDepth: jobsStore.queueDepth ?? 0,
@@ -62,18 +61,10 @@ onMounted(async () => {
     console.warn("Failed to load favorites from backend", e)
   }
   
-  // Fetch configured vendor and SSH profile counts from API
+  // Fetch configured SSH profile count from API
   try {
-    const [vendorsRes, profilesRes] = await Promise.all([
-      fetch("/api/v1/vendors"),
-      fetch("/api/v1/ssh-profiles"),
-    ])
-    
-    if (vendorsRes.ok) {
-      const vendorsData = await vendorsRes.json()
-      configuredVendorCount.value = vendorsData.count || 0
-    }
-    
+    const profilesRes = await fetch("/api/v1/ssh-profiles")
+
     if (profilesRes.ok) {
       const profilesData = await profilesRes.json()
       configuredProfileCount.value = profilesData.count || 0
