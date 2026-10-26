@@ -1,0 +1,50 @@
+### Palo Alto PanOS API Vendor Configuration
+## Instructions for backing up Palo Alto PanOS firewalls and Panorama via the XML API
+
+### Produces the XML configuration that can be imported again as a configuration backup.
+### Use 'protocol: https'. Create a user with the 'Superuser (read-only)' admin role for KiwiSSH.
+### For a backup via the CLI (SSH), use paloalto_panos.yaml instead.
+
+vendor:
+  id: "paloalto_panosapi"
+  name: "Palo Alto PanOS (API)"
+  description: "Palo Alto PanOS firewalls and Panorama, XML configuration export via the HTTPS XML API"
+
+### HTTP(S) backup definition
+http:
+  requests:
+    ### Exchange username and password for an API key
+    - label: "API key"
+      method: "POST"
+      path: "/api/"
+      params:
+        type: "keygen"
+      form:
+        user: "{{ username }}"
+        password: "{{ password }}"
+      store: false
+      extract:
+        api_key:
+          regex: '<key>([^<]+)</key>'
+
+    ### Export the full configuration, pretty-printed so diffs are line based
+    - label: "configuration export"
+      method: "GET"
+      path: "/api/"
+      headers:
+        X-PAN-KEY: "{{ api_key }}"
+      params:
+        type: "export"
+        category: "configuration"
+      format: "xml"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  ### Secret masking. When enabled=false, no redaction is applied.
+  ## Note: a redacted configuration can't be imported again as-is.
+  redaction:
+    enabled: false
+    patterns:
+      - search: '(<(?:phash|password|secret|private-key|key)>)[^<]*(</)'
+        replacement: '\1[secret hidden]\2'

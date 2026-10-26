@@ -1,0 +1,63 @@
+### Cambium PMP 450 Vendor Configuration
+
+### Logs in on the web interface, then follows the links "Configuration" -> "Unit Settings" -> "<name>.cfg"
+### to download the configuration file. For the ePMP series, use cambium_epmp.yaml (SSH) instead.
+
+vendor:
+  id: "cambium_pmp450"
+  name: "Cambium PMP 450 series"
+  description: "Cambium PMP 450 series, configuration file download via the web interface"
+
+### HTTP(S) backup definition
+http:
+  requests:
+    ### Open the main page first, it sets up the web session
+    - label: "main page"
+      method: "GET"
+      path: "/main.cgi"
+      store: false
+
+    ### Log in; the returned page links to "Configuration"
+    - label: "login"
+      method: "POST"
+      path: "/login.cgi"
+      form:
+        CanopyUsername: "{{ username }}"
+        CanopyPassword: "{{ password }}"
+      store: false
+      extract:
+        configuration_page:
+          regex: '<a\s[^>]*href="([^"]+)"[^>]*>(?:\s|<[^>]+>)*Configuration(?:\s|<[^>]+>)*</a>'
+          html_unescape: true
+
+    - label: "configuration page"
+      method: "GET"
+      path: "{{ configuration_page }}"
+      store: false
+      extract:
+        unit_settings_page:
+          regex: '<a\s[^>]*href="([^"]+)"[^>]*>(?:\s|<[^>]+>)*Unit Settings(?:\s|<[^>]+>)*</a>'
+          html_unescape: true
+
+    - label: "unit settings page"
+      method: "GET"
+      path: "{{ unit_settings_page }}"
+      store: false
+      extract:
+        config_file:
+          regex: '<a\s[^>]*href="([^"]+\.cfg)"'
+          html_unescape: true
+
+    - label: "configuration file"
+      method: "GET"
+      path: "{{ config_file }}"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  ### Lines to strip from captured config (regex patterns)
+  strip_patterns:
+    - '"cfgUtcTimestamp":'
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false

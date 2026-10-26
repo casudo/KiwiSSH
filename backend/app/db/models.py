@@ -1,6 +1,6 @@
 """SQLAlchemy database models for backup jobs."""
 
-from sqlalchemy import Column, String, DateTime, Text, Integer, Float
+from sqlalchemy import Column, String, DateTime, Text, Integer, Float, Index
 from sqlalchemy.ext.declarative import declarative_base
 from app.utils.timezone import get_utc_now
 
@@ -11,6 +11,10 @@ class BackupJob(Base):
     """Backup job record for persistent storage."""
 
     __tablename__ = "backup_jobs"
+    __table_args__ = (
+        ### "Latest job per device" lookups filter by device and sort by time (device list, notifications, size checks)
+        Index("ix_backup_jobs_device_name_timestamp", "device_name", "timestamp"),
+    )
 
     id = Column(String(255), primary_key=True, index=True)  # Git commit hash or UUID# TODO: What exactly is the UUID?
     device_name = Column(String(255), nullable=False, index=True)

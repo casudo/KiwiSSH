@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.models.backup import BackupTriggerRequest, BackupTriggerResponse
 from app.services.backup_service import backup_service
 from app.services.source_service import source_service
-from app.services.git_service import git_service
+from app.services.git_service import GitObjectNotFoundError, git_service
 from app.services.log_retention_service import log_retention_service
 from app.core import get_settings
 from app.db.database import get_db
@@ -17,6 +17,9 @@ from app.db.models import BackupJob
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+### NOTE: Routes that only touch the database are plain 'def' so FastAPI runs them in its threadpool..
+## ..instead of blocking the event loop with synchronous SQLAlchemy calls
 
 
 @router.post("/trigger", response_model=BackupTriggerResponse)
@@ -101,7 +104,7 @@ async def trigger_device_backup(
 
 
 @router.get("/jobs")
-async def get_backup_jobs(
+def get_backup_jobs(
     device_name: str | None = Query(None, description="Filter by partial device name"),
     job_id: str | None = Query(None, description="Filter by partial job ID"),
     status: str | None = Query(None, description="Filter by status (success, failed, no_changes)"),
@@ -165,11 +168,7 @@ async def get_backup_jobs(
         }
     except Exception as e:
         logger.error(f"Error fetching backup jobs: {e}")
-        return {
-            "jobs": [],
-            "count": 0,
-            "error": str(e),
-        }
+        raise HTTPException(status_code=500, detail=f"Failed to fetch backup jobs: {e}")
 
 
 @router.get("/status/{job_id}")
@@ -183,21 +182,42 @@ async def get_device_backup_history(
     device_name: str,
     limit: int | None = Query(None, ge=1, description="Maximum number of history entries to return. Omit for all."),
     offset: int = Query(0, ge=0, description="Number of history entries to skip."),
+    since: datetime | None = Query(None, description="Only return backups made at or after this time (ISO 8601, UTC if no offset is given)."),
+    until: datetime | None = Query(None, description="Only return backups made before this time (ISO 8601, UTC if no offset is given)."),
 ) -> dict:
-    """Get backup history for a device."""
+    """Get backup history for a device.
+
+    With since/until, total_count, limit and offset refer to the backups within that time range.
+    """
     device = await source_service.get_device(device_name)
 
     if device is None:
         raise HTTPException(status_code=404, detail=f"Device '{device_name}' not found")
 
+    ### Timestamps without an offset are treated as UTC, so they can be compared with the commit times
+    if since is not None and since.tzinfo is None:
+        since = since.replace(tzinfo=timezone.utc)
+    if until is not None and until.tzinfo is None:
+        until = until.replace(tzinfo=timezone.utc)
+
     try:
-        total_count = await git_service.get_config_history_count(device_name, group=device.group)
-        history = await git_service.get_config_history(
-            device_name,
-            group=device.group,
-            limit=limit,
-            offset=offset,
-        )
+        if since is not None or until is not None:
+            history, total_count = await git_service.get_config_history_range(
+                device_name,
+                group=device.group,
+                since=since,
+                until=until,
+                limit=limit,
+                offset=offset,
+            )
+        else:
+            total_count = await git_service.get_config_history_count(device_name, group=device.group)
+            history = await git_service.get_config_history(
+                device_name,
+                group=device.group,
+                limit=limit,
+                offset=offset,
+            )
         return {
             "device_name": device_name,
             "history": history,
@@ -205,17 +225,12 @@ async def get_device_backup_history(
             "total_count": total_count,
             "limit": limit,
             "offset": offset,
+            "since": since.isoformat() if since is not None else None,
+            "until": until.isoformat() if until is not None else None,
         }
     except Exception as e:
-        return {
-            "device_name": device_name,
-            "history": [],
-            "count": 0,
-            "total_count": 0,
-            "limit": limit,
-            "offset": offset,
-            "error": str(e),
-        }
+        logger.error(f"Error fetching backup history for {device_name}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch backup history: {e}")
 
 
 @router.get("/history/graph/{device_name}")
@@ -253,13 +268,8 @@ async def get_device_backup_graph(
             "counts": counts,
         }
     except Exception as e:
-        return {
-            "device_name": device_name,
-            "days": days,
-            "tz_offset_minutes": tz_offset_minutes,
-            "counts": [],
-            "error": str(e),
-        }
+        logger.error(f"Error fetching backup graph for {device_name}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch backup graph: {e}")
 
 
 @router.get("/diff/{device_name}")
@@ -286,14 +296,11 @@ async def get_config_diff(
             "lines_added": diff.lines_added,
             "lines_removed": diff.lines_removed,
         }
+    except GitObjectNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        return {
-            "device_name": device_name,
-            "from_commit": from_commit,
-            "to_commit": to_commit,
-            "error": str(e),
-            "diff": "",
-        }
+        logger.error(f"Error building diff for {device_name}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to build diff: {e}")
 
 
 @router.get("/latest/{device_name}")
@@ -308,17 +315,16 @@ async def get_latest_config(device_name: str, commit: str | None = None) -> dict
         ### If commit is specified, use that, otherwise get the latest
         if commit:
             config = await git_service.get_config_at_commit(device_name, commit, group=device.group)
-            ### Get commit info from history
-            history = await git_service.get_config_history(device_name, group=device.group, limit=None, offset=0)
-            commit_info = next((c for c in history if c["hash"] == commit), None)
+            ### Look up only this commit instead of loading the device's whole history
+            commit_info = await git_service.get_commit_info(device_name, commit, group=device.group)
 
             return {
                 "device_name": device_name,
                 "config": config,
                 "commit": commit,
-                "timestamp": commit_info["timestamp"] if commit_info else None,
-                "message": commit_info["message"] if commit_info else None,
-                "version_number": commit_info.get("version_number") if commit_info else None,
+                "timestamp": commit_info["timestamp"],
+                "message": commit_info["message"],
+                "version_number": commit_info["version_number"],
             }
         else:
             ### Get latest
@@ -343,16 +349,15 @@ async def get_latest_config(device_name: str, commit: str | None = None) -> dict
                 "message": latest["message"],
                 "version_number": latest.get("version_number"),
             }
+    except GitObjectNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        return {
-            "device_name": device_name,
-            "config": None,
-            "error": str(e),
-        }
+        logger.error(f"Error fetching config for {device_name}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch config: {e}")
 
 
 @router.delete("/flush")
-async def flush_database(db: Session = Depends(get_db)) -> dict:
+def flush_database(db: Session = Depends(get_db)) -> dict:
     """Delete all backup job records from the database.
 
     WARNING: This action cannot be undone. All job history will be permanently deleted.
@@ -378,7 +383,7 @@ async def flush_database(db: Session = Depends(get_db)) -> dict:
 
 
 @router.post("/retention/run")
-async def run_log_retention(db: Session = Depends(get_db)) -> dict:
+def run_log_retention(db: Session = Depends(get_db)) -> dict:
     """Manually trigger the log retention policy.
 
     Applies the configured age and row-count limits immediately and returns

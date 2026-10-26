@@ -56,10 +56,12 @@ processing:
     - "Image Signature"
     - "System Time"
     - "conf_file_ver"
-
+    - 'Cluster Uptime'
+    - 'Virus-DB'
+    - 'Extended DB'
+    - 'AV AI/ML Model'
   # config_start: "^config"
   # config_end: "^end$"
-
   ### Secret masking. When enabled=false, no redaction is applied.
   redaction:
     enabled: false

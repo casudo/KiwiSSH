@@ -6,14 +6,16 @@ files that define how to backup different types of network devices.
 
 from typing import Any
 
-from app.core import get_settings
+from app.core import Settings, get_settings
 
 
 class VendorService:
     """Service for loading and accessing vendor configurations."""
 
-    def __init__(self) -> None:
-        self.settings = get_settings()
+    @property
+    def settings(self) -> Settings:
+        """Current settings, resolved on every access so a settings reload never leaves a stale copy behind."""
+        return get_settings()
 
     def get_vendor(self, vendor_id: str) -> dict[str, Any]:
         """

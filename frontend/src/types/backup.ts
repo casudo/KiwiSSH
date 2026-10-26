@@ -79,7 +79,18 @@ export interface BackupHistoryResponse {
   total_count: number
   limit: number | null
   offset: number
+  since?: string | null
+  until?: string | null
   error?: string
+}
+
+export interface BackupConfigResponse {
+  device_name: string
+  config: string | null
+  commit: string | null
+  timestamp: string | null
+  message: string
+  version_number?: number | null
 }
 
 export interface BackupGraphDay {

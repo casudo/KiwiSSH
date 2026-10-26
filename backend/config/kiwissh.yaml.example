@@ -122,6 +122,7 @@ groups:
     password: "password"
     protocol: "telnet" # Optional override
     vendor: "fortinet_fortigate"
+    redaction: true # Optional override
     git:
       remote:
         url: "ssh://git@<domain>/customer-bbb/firewalls.git"
@@ -137,7 +138,7 @@ groups:
         url: "ssh://git@<domain>/customer-ccc/https-http-routers.git"
 
 ### Per-node overrides
-## Nodes can override: ssh_profile, protocol, port, vendor, timeout, retry, username, password, ssh_key_file, verify_ssl, jumphost, schedule, git.commit_message_template
+## See the README.md for what each override does and how to use them
 ## Group CANNOT be overridden - change it in the source instead
 ## Remove this section if no overrides needed
 nodes:

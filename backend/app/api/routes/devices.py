@@ -1,5 +1,6 @@
 """Device management endpoints."""
 
+import asyncio
 import logging
 from fastapi import APIRouter, HTTPException, Query, Depends
 from sqlalchemy.orm import Session
@@ -8,47 +9,35 @@ from app.models.device import DeviceBase, DeviceFull, DeviceStatus
 from app.services.source_service import source_service
 from app.services.git_service import git_service
 from app.services.backup_job_service import backup_job_service
+from app.services.scheduler_service import scheduler_service
 from app.core.config import get_settings
 from app.db.database import get_db
+from app.db.models import BackupJob
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-async def _enrich_device_with_backup_info(device_base: DeviceBase, db: Session = None, latest_jobs_cache: dict = None) -> DeviceFull:
-    """Add backup info to device from database."""
+def _enrich_device_with_backup_info(device_base: DeviceBase, latest_job: BackupJob | None) -> DeviceFull:
+    """Add backup info from the device's latest backup job."""
     device = DeviceFull(**device_base.model_dump())
-    try:
-        ### Check database for latest backup job status
-        if db:
-            ### Use cached latest jobs if available, otherwise query individually
-            latest_job = None
-            if latest_jobs_cache is not None:
-                latest_job = latest_jobs_cache.get(device.device_name)
-            else:
-                latest_job = backup_job_service.get_latest_job(db, device.device_name)
-
-            if latest_job:
-                logger.debug(f"Found latest job for {device.device_name}: status={latest_job.status}, timestamp={latest_job.timestamp}")
-                device.last_backup = latest_job.timestamp
-                if latest_job.status in {"pending", "in_progress"}:
-                    device.status = DeviceStatus.BACKUP_IN_PROGRESS
-                elif latest_job.status == "success":
-                    device.status = DeviceStatus.BACKUP_SUCCESS
-                    device.last_backup_success = latest_job.timestamp
-                elif latest_job.status == "no_changes":
-                    ### No changes is still a successful backup (device connected, backup ran)
-                    device.status = DeviceStatus.BACKUP_NO_CHANGES
-                    device.last_backup_success = latest_job.timestamp
-                elif latest_job.status == "failed":
-                    device.status = DeviceStatus.BACKUP_FAILED
-                    device.last_error = latest_job.error_message
-            else:
-                logger.debug(f"No backup job found for {device.device_name}")
-
-    except Exception as e:
-        logger.warning(f"Failed to get backup info for {device.device_name}: {e}")
-        pass
+    if latest_job:
+        logger.debug(f"Found latest job for {device.device_name}: status={latest_job.status}, timestamp={latest_job.timestamp}")
+        device.last_backup = latest_job.timestamp
+        if latest_job.status in {"pending", "in_progress"}:
+            device.status = DeviceStatus.BACKUP_IN_PROGRESS
+        elif latest_job.status == "success":
+            device.status = DeviceStatus.BACKUP_SUCCESS
+            device.last_backup_success = latest_job.timestamp
+        elif latest_job.status == "no_changes":
+            ### No changes is still a successful backup (device connected, backup ran)
+            device.status = DeviceStatus.BACKUP_NO_CHANGES
+            device.last_backup_success = latest_job.timestamp
+        elif latest_job.status == "failed":
+            device.status = DeviceStatus.BACKUP_FAILED
+            device.last_error = latest_job.error_message
+    else:
+        logger.debug(f"No backup job found for {device.device_name}")
     return device
 
 
@@ -68,28 +57,29 @@ async def list_devices(
     if enabled_only:
         devices = [d for d in devices if d.enabled]
 
-    enriched_devices: list[DeviceFull] = []
-    for device in devices:
-        enriched_devices.append(device)
+    ### Return only device names for minimal list view; backup info isn't part of it, so skip the DB
+    if not include_config:
+        response_devices = [d.device_name for d in devices]
+        return {
+            "count": len(response_devices),
+            "devices": response_devices,
+        }
 
     ### Batch load latest backup jobs for all devices (much faster than per-device queries)
-    device_names = [d.device_name for d in enriched_devices]
-    latest_jobs = backup_job_service.get_latest_jobs_for_devices(db, device_names)
+    ## Runs in a thread because SQLAlchemy is synchronous and would block the event loop
+    device_names = [d.device_name for d in devices]
+    try:
+        latest_jobs = await asyncio.to_thread(backup_job_service.get_latest_jobs_for_devices, db, device_names)
+    except Exception as e:
+        logger.warning(f"Failed to get backup info for devices: {e}")
+        latest_jobs = {}
 
-    ### Enrich with backup info using cached jobs
-    enriched = []
-    for device in enriched_devices:
-        enriched_device = await _enrich_device_with_backup_info(device, db, latest_jobs)
-        enriched.append(enriched_device)
+    ### Return full device config (using model_dump), enriched with backup info
+    response_devices = [
+        _enrich_device_with_backup_info(device, latest_jobs.get(device.device_name)).model_dump()
+        for device in devices
+    ]
 
-    ### Return standardized response format
-    if include_config:
-        ### Return full device config (using model_dump)
-        response_devices = [d.model_dump() for d in enriched]
-    else:
-        ### Return only device names for minimal list view
-        response_devices = [d.device_name for d in enriched]
-    
     return {
         "count": len(response_devices),
         "devices": response_devices,
@@ -105,7 +95,12 @@ async def get_device(device_name: str, db: Session = Depends(get_db)) -> dict:
         raise HTTPException(status_code=404, detail=f"Device '{device_name}' not found")
 
     ### Enrich with backup information
-    device = await _enrich_device_with_backup_info(device_base, db)
+    try:
+        latest_job = await asyncio.to_thread(backup_job_service.get_latest_job, db, device_name)
+    except Exception as e:
+        logger.warning(f"Failed to get backup info for {device_name}: {e}")
+        latest_job = None
+    device = _enrich_device_with_backup_info(device_base, latest_job)
 
     ### All DB work is done — release the connection back to the pool now
     db.close()
@@ -133,11 +128,38 @@ async def get_device(device_name: str, db: Session = Depends(get_db)) -> dict:
 
 @router.post("/reload")
 async def reload_devices() -> dict:
-    """Reload devices from source."""
-    source_service.invalidate_cache()
-    devices = await source_service.get_all_devices()
+    """Reload devices from source and update the backup schedule accordingly."""
+    try:
+        devices = await source_service.load_devices()
+    except Exception as e:
+        logger.error(f"Failed to reload devices: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to reload devices, the previous inventory is still in use: {e}",
+        )
 
+    ### New devices get scheduled, removed or disabled ones stop being backed up
+    scheduler_service.sync_devices(devices)
+
+    skipped = source_service.skipped_rows
     return {
-        "message": "Devices reloaded successfully",
+        "message": (
+            "Devices reloaded successfully"
+            if not skipped
+            else f"Devices reloaded, {len(skipped)} invalid source row(s) skipped"
+        ),
         "count": len(devices),
+        "skipped_count": len(skipped),
+        "skipped": skipped,
+    }
+
+
+@router.get("/source/skipped")
+async def get_skipped_source_rows() -> dict:
+    """List source rows that were skipped as invalid during the last device load."""
+    await source_service.get_all_devices()
+    skipped = source_service.skipped_rows
+    return {
+        "count": len(skipped),
+        "skipped": skipped,
     }

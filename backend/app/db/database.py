@@ -36,6 +36,10 @@ def init_database(settings: Settings) -> None:
 
     ### Create tables
     Base.metadata.create_all(bind=engine)
+    ### Create indexes that were added to the models after their tables already existed
+    for table in Base.metadata.sorted_tables:
+        for index in table.indexes:
+            index.create(bind=engine, checkfirst=True)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
     logger.info("Application database initialized successfully")

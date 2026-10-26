@@ -1,0 +1,40 @@
+### Mimosa B11 Vendor Configuration
+
+### Logs in as the built-in 'configure' user with the device password, then downloads the configuration.
+### Use 'protocol: https' (and 'verify_ssl: false' for the self-signed certificate).
+
+vendor:
+  id: "mimosa_b11"
+  name: "Mimosa B11"
+  description: "Mimosa B11 backhaul radios, configuration download via HTTPS"
+
+### HTTP(S) backup definition
+## Each request supports: method, path, params, headers, form/json/body, label, expected_status,
+## store, extract, format and show_command_in_config
+http:
+  requests:
+    ### Log in (the session cookie is kept for the next request)
+    - label: "login"
+      method: "POST"
+      path: "/"
+      params:
+        q: "index.login"
+        mimosa_ajax: "1"
+      form:
+        username: "configure"
+        password: "{{ password }}"
+      store: false
+
+    - label: "configuration"
+      method: "GET"
+      path: "/"
+      params:
+        q: "preferences.configure"
+        mimosa_action: "download"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false

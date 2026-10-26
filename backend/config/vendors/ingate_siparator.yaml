@@ -1,0 +1,61 @@
+### Ingate SIParator/Firewall Vendor Configuration
+
+### Logs in to the web interface, then saves the configuration as CLI file. Use 'protocol: https'.
+
+vendor:
+  id: "ingate_siparator"
+  name: "Ingate SIParator/Firewall"
+  description: "Ingate SIParator and Firewall devices, configuration as CLI file via HTTPS"
+
+### HTTP(S) backup definition
+http:
+  requests:
+    ### Log in to the web interface (the session cookie is kept for the next request)
+    - label: "login"
+      method: "POST"
+      path: "/"
+      form:
+        security_user: "{{ username }}"
+        security_password: "{{ password }}"
+        page: "login"
+        goal: "save"
+        got_complete_form: "yes"
+        security: ""
+      store: false
+
+    ### "Save config to CLI file" on the save page
+    - label: "configuration (CLI file)"
+      method: "POST"
+      path: "/"
+      headers:
+        Accept: "application/x-config-database"
+      form:
+        "page": "save"
+        "db.webgui.testmode/1/timelimit": "30"
+        "db.webgui.testmode/__KEEP_ROWS_ALIVE": "1"
+        "db.webgui.pending_apply/1/verbosity": "always"
+        "db.webgui.pending_apply/__KEEP_ROWS_ALIVE": "1"
+        "action.admin.download_config_cli": "Save config to CLI file"
+        "upload.config_file;filename=type": "application/octet-stream"
+        "upload.clicmd_file;filename;type": "application/octet-stream"
+        "security": ""
+        "got_complete_form": "yes"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  ### Lines to strip from captured config (regex patterns)
+  strip_patterns:
+    - '^# Timestamp:'
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      ### Private keys: any *key field whose quoted value is a (multi-line) PEM private key block
+      - search: '(?s)\b([a-z_]*key)="-----BEGIN [A-Z ]*PRIVATE KEY-----.*?-----END [A-Z ]*PRIVATE KEY-----"'
+        replacement: '\1="<secret hidden>"'
+      ### Credentials are spread across many fields; match them by suffix (e.g. trunkuserpassword, radiussecret, xauth_psk)
+      - search: '\b([a-z_]*(?:password|secret|passphrase|psk|hmackey|api_token|authtoken))=(?:"[^"]*"|\S+)'
+        replacement: '\1=<secret hidden>'
+      - search: '\bcommunity=(?:"[^"]*"|\S+)'
+        replacement: 'community=<secret hidden>'

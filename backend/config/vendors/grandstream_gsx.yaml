@@ -1,0 +1,39 @@
+### Grandstream Networks GSX Vendor Configuration
+
+### Logs in with the device password, then downloads the configuration with the returned session ID.
+
+vendor:
+  id: "grandstream_gsx"
+  name: "Grandstream Networks GSX"
+  description: "Grandstream GSX devices, configuration download via HTTP(S)"
+
+### HTTP(S) backup definition
+http:
+  requests:
+    ### Log in; the JSON response carries the session ID in body.sid
+    - label: "login"
+      method: "GET"
+      path: "/cgi-bin/dologin"
+      params:
+        password: "{{ password }}"
+      store: false
+      extract:
+        sid:
+          json: "body.sid"
+
+    ### Download the configuration file
+    - label: "configuration"
+      method: "GET"
+      path: "/cgi-bin/download_cfg"
+      params:
+        sid: "{{ sid }}"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    # patterns:
+    #   - search: '^(P2 = ).*'
+    #     replacement: '\1<secret hidden>'

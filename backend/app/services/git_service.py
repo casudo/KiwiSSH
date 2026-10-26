@@ -8,15 +8,16 @@ import asyncio
 import logging
 import threading
 import time
+from collections import OrderedDict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-from git import Repo, Actor, InvalidGitRepositoryError
+from git import Repo, Actor, Commit, InvalidGitRepositoryError
 from git.exc import GitCommandError
 from git.remote import PushInfo
 
-from app.core import get_settings
+from app.core import Settings, get_settings
 from app.models.backup import BackupDiff
 from app.utils.timezone import get_utc_now
 
@@ -24,18 +25,35 @@ from app.utils.timezone import get_utc_now
 logger = logging.getLogger(__name__)
 
 
+class GitObjectNotFoundError(ValueError):
+    """Raised when a requested commit or config file does not exist in a group's repository."""
+
+
 class GitService:
     """Service for Git-based configuration storage."""
 
-    ### Backup count is cached per device to avoid spawning a git subprocess on every API request
-    _HISTORY_COUNT_TTL_SECONDS: int = 300
+    ### Backup count and history pages are cached per device: a path-filtered git log has to walk the..
+    ## ..group's whole history for rarely changed devices, which gets slow once a group has many commits
+    _HISTORY_CACHE_TTL_SECONDS: int = 300
+    _HISTORY_PAGE_CACHE_MAX_ENTRIES: int = 512
 
     def __init__(self) -> None:
-        self.settings = get_settings()
         self._repos: dict[str, Any] = {}  # Cache repos by group
         self._repo_locks: dict[str, threading.RLock] = {}
         self._repo_locks_guard = threading.Lock()
         self._history_count_cache: dict[tuple[str, str], tuple[int, float]] = {}
+        ### Keyed by (device_name, group, limit, offset), least recently used first
+        self._history_page_cache: OrderedDict[tuple[str, str, int, int], tuple[list[dict[str, Any]], float]] = OrderedDict()
+        self._history_page_cache_guard = threading.Lock()
+        ### Groups with local commits that still need to be pushed (see push_pending)
+        self._pending_push_groups: set[str] = set()
+        self._pending_push_guard = threading.Lock()
+        self._push_locks: dict[str, threading.Lock] = {}
+
+    @property
+    def settings(self) -> Settings:
+        """Current settings, resolved on every access so a settings reload never leaves a stale copy behind."""
+        return get_settings()
 
     def _get_repo_lock(self, group: str) -> threading.RLock:
         """Get per-group lock guarding GitPython repository access."""
@@ -44,6 +62,15 @@ class GitService:
             if lock is None:
                 lock = threading.RLock()
                 self._repo_locks[group] = lock
+            return lock
+
+    def _get_push_lock(self, group: str) -> threading.Lock:
+        """Get per-group lock that keeps two pushes of the same repository from running at once."""
+        with self._repo_locks_guard:
+            lock = self._push_locks.get(group)
+            if lock is None:
+                lock = threading.Lock()
+                self._push_locks[group] = lock
             return lock
 
     @property
@@ -156,6 +183,20 @@ class GitService:
             return True
         except Exception:
             return False
+
+    def _read_committed_config(self, repo: Repo, file_name: str) -> str | None:
+        """Return a config file's content at HEAD, or None if it has never been committed."""
+        if not self._has_commits(repo):
+            return None
+        try:
+            blob = repo.head.commit.tree / file_name
+        except KeyError:
+            return None
+
+        ### Normalize line endings the same way a text-mode file read does (blobs written on Windows contain CRLF)
+        content = blob.data_stream.read().decode("utf-8")
+        return content.replace("\r\n", "\n").replace("\r", "\n")
+
     def _ensure_origin_remote(self, repo: Repo, remote_url: str):
         """Ensure an origin remote exists and points to configured URL."""
         if any(existing_remote.name == "origin" for existing_remote in repo.remotes):
@@ -227,20 +268,27 @@ class GitService:
             ### Determine file path based on device info
             config_file = repo_path / f"{device_name}.conf"
 
-            ### Check if file exists and has identical content (no changes)
-            has_changes = True
+            ### Compare against the last committed version, not the working tree file
+            ## If an earlier commit failed after the file was written, the working tree is already ahead of HEAD..
+            ## ..and comparing against it would report "no changes" forever without ever committing that version
+            committed_content = self._read_committed_config(repo, config_file.name)
+            has_changes = committed_content != config_content
+
+            ### Write config to file if the working tree doesn't already hold it
+            working_tree_content = None
             if config_file.exists():
                 with open(config_file, "r", encoding="utf-8") as f:
-                    existing_content = f.read()
-                if existing_content == config_content:
-                    has_changes = False
-
-            ### Write config to file
-            with open(config_file, "w", encoding="utf-8") as f:
-                f.write(config_content)
+                    working_tree_content = f.read()
+            if working_tree_content != config_content:
+                with open(config_file, "w", encoding="utf-8") as f:
+                    f.write(config_content)
 
             ### Only commit if there are changes
             if not has_changes:
+                ### Working tree had drifted from HEAD (e.g. after a failed commit): re-stage the file so the..
+                ## ..stale version can't end up in the next commit of another device in this group
+                if working_tree_content != config_content:
+                    repo.index.add([config_file.name])
                 ### Return a dummy hash and False to indicate no changes
                 return ("", False, 0, 0) # TODO: Why do we need the hash here?
 
@@ -255,14 +303,14 @@ class GitService:
             actor = Actor("KiwiSSH Backup System", "backup@kiwissh.local")
             commit = repo.index.commit(message, author=actor, committer=actor)
 
+            ### Evict the device's cached history while still holding the lock, so no request can cache the pre-commit state
+            self.invalidate_history_cache(device_name, group)
+
+            ### Don't push here: pushing per commit holds the repo lock during network I/O and..
+            ## ..pushes N times for N changed devices. The group is pushed once later instead (see push_pending)
             if self._has_remote_target(group):
-                push_ok = self._push_to_remote_sync(group=group)
-                if not push_ok:
-                    logger.warning(
-                        "Local commit created for %s but push to remote failed (group: %s)",
-                        device_name,
-                        group,
-                    )
+                with self._pending_push_guard:
+                    self._pending_push_groups.add(group)
 
             commit_stats = commit.stats.files.get(config_file.name, {})
             lines_added = commit_stats.get("insertions", 0)
@@ -292,7 +340,18 @@ class GitService:
         limit: int | None = None,
         offset: int = 0,
     ) -> list[dict[str, Any]]:
-        """Blocking git history lookup for a device config file."""
+        """Blocking git history lookup for a device config file.
+
+        Pages are cached for _HISTORY_CACHE_TTL_SECONDS and evicted as soon as a new commit
+        is made for the device (see invalidate_history_cache).
+        """
+        ### Full-history requests (limit=None) aren't cached to keep the cache small
+        cache_key = (device_name, group, limit, offset) if limit is not None else None
+        if cache_key is not None:
+            cached = self._get_cached_history_page(cache_key)
+            if cached is not None:
+                return cached
+
         lock = self._get_repo_lock(group)
         with lock:
             ### Check if repo exists and has commits
@@ -310,38 +369,106 @@ class GitService:
 
             try:
                 for commit in repo.iter_commits(**commit_kwargs):
-                    ### Get file size at this commit
-                    file_size_bytes = 0
-                    try:
-                        file_size_bytes = (commit.tree / config_file).size
-                    except KeyError:
-                        file_size_bytes = 0
-
-                    commits.append({
-                        "hash": commit.hexsha,
-                        "short_hash": commit.hexsha[:7],
-                        "message": commit.message.strip(),
-                        "author": commit.author.name,
-                        "date": datetime.fromtimestamp(commit.committed_date, tz=timezone.utc),
-                        "timestamp": datetime.fromtimestamp(commit.committed_date, tz=timezone.utc).isoformat(),
-                        "file_size_bytes": file_size_bytes,
-                        "version_number": 0,  # Will be set after we know total count
-                    })
+                    commits.append(self._build_history_entry(commit, config_file, version_number=0)) # Will be set after we know total count
             except Exception:
                 return []
 
-            total_count = len(commits)
-            try:
-                total_count = int(repo.git.rev_list("--count", "HEAD", "--", config_file).strip())
-            except (ValueError, GitCommandError):
-                total_count = len(commits)
+            ### Reuse the cached count instead of walking the whole history a second time
+            total_count = self._get_config_history_count_sync(device_name, group) or len(commits)
 
             ### Assign version numbers globally - oldest commit = 1, newest = N
             ### Commits are newest first, so reverse the numbering
             for idx, commit in enumerate(commits):
                 commit["version_number"] = max(0, total_count - (offset + idx))
 
+            ### Store while holding the repo lock so a concurrent commit can't be overwritten by this older result
+            if cache_key is not None:
+                self._store_history_page(cache_key, commits)
+
             return commits
+
+    @staticmethod
+    def _build_history_entry(commit: Commit, config_file: str, version_number: int) -> dict[str, Any]:
+        """Build one history entry for a commit of a device config file."""
+        ### Get file size at this commit
+        try:
+            file_size_bytes = (commit.tree / config_file).size
+        except KeyError:
+            file_size_bytes = 0
+
+        committed_at = datetime.fromtimestamp(commit.committed_date, tz=timezone.utc)
+        return {
+            "hash": commit.hexsha,
+            "short_hash": commit.hexsha[:7],
+            "message": commit.message.strip(),
+            "author": commit.author.name,
+            "date": committed_at,
+            "timestamp": committed_at.isoformat(),
+            "file_size_bytes": file_size_bytes,
+            "version_number": version_number,
+        }
+
+    def _get_config_history_range_sync(
+        self,
+        device_name: str,
+        group: str,
+        since: datetime | None,
+        until: datetime | None,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> tuple[list[dict[str, Any]], int]:
+        """Blocking git history lookup for the commits of a device config file made within [since, until).
+
+        Returns the requested page of entries and the number of all entries within the range.
+        """
+        lock = self._get_repo_lock(group)
+        with lock:
+            repo = self._ensure_repo(group)
+            if not self._has_commits(repo):
+                return [], 0
+            config_file = f"{device_name}.conf"
+            total_count = self._get_config_history_count_sync(device_name, group)
+
+            commits: list[dict[str, Any]] = []
+            matched = 0
+            try:
+                ### Walk from the newest commit, so the position in the walk gives the global version number
+                for position, commit in enumerate(repo.iter_commits(paths=config_file)):
+                    committed_at = datetime.fromtimestamp(commit.committed_date, tz=timezone.utc)
+                    if until is not None and committed_at >= until:
+                        continue
+                    if since is not None and committed_at < since:
+                        break # History is newest first, so every following commit is older too
+
+                    matched += 1
+                    if matched > offset and (limit is None or len(commits) < limit):
+                        commits.append(
+                            self._build_history_entry(commit, config_file, version_number=max(0, total_count - position))
+                        )
+            except Exception:
+                return [], 0
+
+            return commits, matched
+
+    def _get_cached_history_page(self, cache_key: tuple[str, str, int, int]) -> list[dict[str, Any]] | None:
+        """Return a cached history page if it's still within the TTL."""
+        with self._history_page_cache_guard:
+            cached = self._history_page_cache.get(cache_key)
+            if cached is None:
+                return None
+            if time.monotonic() >= cached[1]:
+                del self._history_page_cache[cache_key]
+                return None
+            self._history_page_cache.move_to_end(cache_key)
+            return cached[0]
+
+    def _store_history_page(self, cache_key: tuple[str, str, int, int], commits: list[dict[str, Any]]) -> None:
+        """Cache a history page and evict the least recently used pages beyond the size limit."""
+        with self._history_page_cache_guard:
+            self._history_page_cache[cache_key] = (commits, time.monotonic() + self._HISTORY_CACHE_TTL_SECONDS)
+            self._history_page_cache.move_to_end(cache_key)
+            while len(self._history_page_cache) > self._HISTORY_PAGE_CACHE_MAX_ENTRIES:
+                self._history_page_cache.popitem(last=False)
 
     async def get_config_history(
         self,
@@ -364,12 +491,45 @@ class GitService:
         """
         return await asyncio.to_thread(self._get_config_history_sync, device_name, group, limit, offset)
 
+    async def get_config_history_range(
+        self,
+        device_name: str,
+        group: str,
+        since: datetime | None,
+        until: datetime | None,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> tuple[list[dict[str, Any]], int]:
+        """
+        Get the configuration history of a device made within [since, until).
+
+        Args:
+            device_name: Name of the device
+            group: Device group (determines which repo)
+            since: Only include commits made at or after this time. None for no lower bound.
+            until: Only include commits made before this time. None for no upper bound.
+            limit: Maximum number of entries to return. None returns all entries within the range.
+            offset: Number of most recent entries within the range to skip (for pagination)
+
+        Returns:
+            The requested history entries (with global version numbers) and the number of all entries within the range
+        """
+        return await asyncio.to_thread(
+            self._get_config_history_range_sync,
+            device_name,
+            group,
+            since,
+            until,
+            limit,
+            offset,
+        )
+
     def _get_config_history_count_sync(self, device_name: str, group: str) -> int:
         """Return commit count for a device config file using git rev-list.
 
-        Results are cached for _HISTORY_COUNT_TTL_SECONDS to avoid a git subprocess
+        Results are cached for _HISTORY_CACHE_TTL_SECONDS to avoid a git subprocess
         on every request.  The cache entry is evicted immediately when a new commit
-        is made for the device (see invalidate_history_count).
+        is made for the device (see invalidate_history_cache).
         """
         cache_key = (device_name, group)
 
@@ -395,16 +555,19 @@ class GitService:
                 except (ValueError, GitCommandError):
                     count = 0
 
-            self._history_count_cache[cache_key] = (count, time.monotonic() + self._HISTORY_COUNT_TTL_SECONDS)
+            self._history_count_cache[cache_key] = (count, time.monotonic() + self._HISTORY_CACHE_TTL_SECONDS)
             return count
 
-    def invalidate_history_count(self, device_name: str, group: str) -> None:
-        """Evict the cached history count for a device so the next request re-queries git.
+    def invalidate_history_cache(self, device_name: str, group: str) -> None:
+        """Evict the cached history count and pages for a device so the next request re-queries git.
 
-        Call this immediately after a new commit is created for the device so the
-        count stays accurate without waiting for the TTL to expire.
+        Called right after a new commit is created for the device so the history
+        stays accurate without waiting for the TTL to expire.
         """
         self._history_count_cache.pop((device_name, group), None)
+        with self._history_page_cache_guard:
+            for cache_key in [key for key in self._history_page_cache if key[:2] == (device_name, group)]:
+                del self._history_page_cache[cache_key]
 
     async def get_config_history_count(self, device_name: str, group: str) -> int:
         """Get configuration history count without loading full history."""
@@ -471,6 +634,26 @@ class GitService:
             tz_offset_minutes,
         )
 
+    def _get_config_at_commit_sync(self, device_name: str, commit_hash: str, group: str) -> str:
+        """Blocking lookup of a config file's content at a specific commit."""
+        lock = self._get_repo_lock(group)
+        with lock:
+            ### Check that repo exists
+            repo = self._ensure_repo(group)
+
+            try:
+                commit = repo.commit(commit_hash)
+            except Exception as e:
+                raise GitObjectNotFoundError(f"Commit {commit_hash} not found") from e
+
+            ### Look up the file by path instead of walking the whole tree
+            config_file = f"{device_name}.conf"
+            try:
+                blob = commit.tree / config_file
+            except KeyError as e:
+                raise GitObjectNotFoundError(f"No config found for {device_name} at commit {commit_hash}") from e
+            return blob.data_stream.read().decode("utf-8")
+
     async def get_config_at_commit(
         self,
         device_name: str,
@@ -489,8 +672,12 @@ class GitService:
             Configuration content at that commit
 
         Raises:
-            ValueError: If commit not found
+            GitObjectNotFoundError: If the commit or the device's config at that commit doesn't exist
         """
+        return await asyncio.to_thread(self._get_config_at_commit_sync, device_name, commit_hash, group)
+
+    def _get_commit_info_sync(self, device_name: str, commit_hash: str, group: str) -> dict[str, Any]:
+        """Blocking lookup of a single commit's metadata and its version number for a device."""
         lock = self._get_repo_lock(group)
         with lock:
             ### Check that repo exists
@@ -499,35 +686,39 @@ class GitService:
             try:
                 commit = repo.commit(commit_hash)
             except Exception as e:
-                raise ValueError(f"Commit {commit_hash} not found") from e
+                raise GitObjectNotFoundError(f"Commit {commit_hash} not found") from e
 
-            ### Get all files in the commit
+            ### The version number is the count of commits touching the file up to and including this one..
+            ## ..which matches the numbering in get_config_history without loading the whole history.
+            ## Counting only the newer commits and subtracting them from the cached total keeps recent versions..
+            ## ..cheap, instead of walking everything below this commit on every lookup
             config_file = f"{device_name}.conf"
-            for item in commit.tree.traverse():
-                if item.path == config_file:
-                    return item.data_stream.read().decode("utf-8")
+            try:
+                newer_count = int(repo.git.rev_list("--count", f"{commit.hexsha}..HEAD", "--", config_file).strip())
+                version_number = self._get_config_history_count_sync(device_name, group) - newer_count
+            except (ValueError, GitCommandError):
+                version_number = None
 
-            raise ValueError(f"No config found for {device_name} at commit {commit_hash}")
+            committed_at = datetime.fromtimestamp(commit.committed_date, tz=timezone.utc)
+            return {
+                "hash": commit.hexsha,
+                "message": commit.message.strip(),
+                "timestamp": committed_at.isoformat(),
+                "version_number": version_number,
+            }
 
-    async def get_diff(
+    async def get_commit_info(self, device_name: str, commit_hash: str, group: str) -> dict[str, Any]:
+        """Get metadata (timestamp, message, version number) for a single commit."""
+        return await asyncio.to_thread(self._get_commit_info_sync, device_name, commit_hash, group)
+
+    def _get_diff_sync(
         self,
         device_name: str,
         from_commit: str,
         to_commit: str,
         group: str,
     ) -> BackupDiff:
-        """
-        Get diff between two config versions.
-
-        Args:
-            device_name: Name of the device
-            from_commit: Starting commit hash
-            to_commit: Ending commit hash
-            group: Device group (determines which repo)
-
-        Returns:
-            BackupDiff object with diff information
-        """
+        """Blocking diff between two config versions."""
         lock = self._get_repo_lock(group)
         with lock:
             ### Check if repo exists
@@ -537,12 +728,13 @@ class GitService:
                 from_commit_obj = repo.commit(from_commit)
                 to_commit_obj = repo.commit(to_commit)
             except Exception as e:
-                raise ValueError(f"Commits not found: {e}") from e
+                raise GitObjectNotFoundError(f"Commits not found: {e}") from e
 
             ### Generate unified diff scoped to this device file only.
             ### Without path scoping, git includes changes from other devices in the same repo.
+            ### The resolved hashes are passed instead of the raw request values so they can never be read as git options
             config_file = f"{device_name}.conf"
-            diff_text = repo.git.diff(from_commit, to_commit, "--", config_file)
+            diff_text = repo.git.diff(from_commit_obj.hexsha, to_commit_obj.hexsha, "--", config_file)
 
             ### Calculate statistics
             added_lines = diff_text.count("\n+") - diff_text.count("\n+++")
@@ -562,6 +754,30 @@ class GitService:
                 lines_removed=max(0, removed_lines),
             )
 
+    async def get_diff(
+        self,
+        device_name: str,
+        from_commit: str,
+        to_commit: str,
+        group: str,
+    ) -> BackupDiff:
+        """
+        Get diff between two config versions.
+
+        Args:
+            device_name: Name of the device
+            from_commit: Starting commit hash
+            to_commit: Ending commit hash
+            group: Device group (determines which repo)
+
+        Returns:
+            BackupDiff object with diff information
+
+        Raises:
+            GitObjectNotFoundError: If one of the commits doesn't exist
+        """
+        return await asyncio.to_thread(self._get_diff_sync, device_name, from_commit, to_commit, group)
+
     async def get_latest_commit(self, device_name: str) -> dict[str, Any] | None:
         """
         Get the latest commit for a device.
@@ -577,54 +793,35 @@ class GitService:
         """
         raise NotImplementedError("Latest commit retrieval not yet implemented")
 
-    def _push_to_remote_sync(self, group: str | None = None) -> bool:
+    def _push_group_sync(self, group_name: str) -> bool:
         """
-        Push local commits to remote repository.
-
-        If group is provided, pushes only that group's repository.
-        Otherwise pushes all repositories loaded in this process.
+        Push a group's local commits to its remote repository.
 
         Returns:
-            True if push successful, False otherwise
+            True if push successful (or nothing to push), False otherwise
         """
-        ### Determine target groups to push
-        target_groups: list[str]
-        if group is not None:
-            target_groups = [group]
-        else:
-            target_groups = list(self._repos.keys())
+        with self._get_push_lock(group_name):
+            try:
+                ### Step 0: Prepare the local repo (remote URL, branch) under the repo lock
+                lock = self._get_repo_lock(group_name)
+                with lock:
+                    repo = self._ensure_repo(group_name)
 
-        if not target_groups:
-            logger.info("Remote push skipped because no repositories are initialized yet")
-            return False
+                    ### Step 0: Check remote target
+                    try:
+                        remote_url, branch_name = self._resolve_remote_target(group_name)
+                    except ValueError as ex:
+                        logger.warning("Remote push skipped for group %s: %s", group_name, ex)
+                        return True
 
-        overall_success = True
-        attempted_push = False
+                    if not self._has_commits(repo):
+                        logger.warning(
+                            "Remote push skipped for group %s because repository has no commits",
+                            group_name,
+                        )
+                        return True
 
-        ### Iterate over target groups and attempt push if remote is configured
-        for group_name in target_groups:
-            lock = self._get_repo_lock(group_name)
-            with lock:
-                repo = self._ensure_repo(group_name)
-
-                ### Step 0: Check remote target
-                try:
-                    remote_url, branch_name = self._resolve_remote_target(group_name)
-                except ValueError as ex:
-                    logger.warning("Remote push skipped for group %s: %s", group_name, ex)
-                    continue
-
-                if not self._has_commits(repo):
-                    logger.warning(
-                        "Remote push skipped for group %s because repository has no commits",
-                        group_name,
-                    )
-                    continue
-
-                ### Step 1: Push commits to remote and handle errors
-                try:
-                    attempted_push = True
-                    remote = self._ensure_origin_remote(repo, remote_url)
+                    self._ensure_origin_remote(repo, remote_url)
 
                     try:
                         current_branch = repo.active_branch.name
@@ -635,49 +832,64 @@ class GitService:
                     if current_branch != branch_name:
                         repo.git.checkout("-B", branch_name)
 
-                    push_results = remote.push(refspec=f"{branch_name}:{branch_name}")
-                    if not push_results:
-                        overall_success = False
-                        logger.error("Remote push returned no result for group %s", group_name)
-                        continue
+                ### Step 1: Push outside the repo lock so backups, history and diffs of this group aren't blocked by network I/O
+                with Repo(self._get_repo_path(group_name)) as push_repo:
+                    push_results = push_repo.remote("origin").push(refspec=f"{branch_name}:{branch_name}")
 
-                    errors = [
-                        result.summary
-                        for result in push_results
-                        if self._push_result_has_error(result)
-                    ]
+                if not push_results:
+                    logger.error("Remote push returned no result for group %s", group_name)
+                    return False
 
-                    if errors:
-                        overall_success = False
-                        logger.error(
-                            "Remote push failed for group %s: %s",
-                            group_name,
-                            "; ".join(errors),
-                        )
-                        continue
+                errors = [
+                    result.summary
+                    for result in push_results
+                    if self._push_result_has_error(result)
+                ]
 
-                    ### Relief..
-                    logger.info(
-                        "Successfully pushed group %s to remote branch %s",
-                        group_name,
-                        branch_name,
-                    )
-                except GitCommandError as ex:
-                    overall_success = False
+                if errors:
                     logger.error(
                         "Remote push failed for group %s: %s",
                         group_name,
-                        ex,
+                        "; ".join(errors),
                     )
-                except Exception as ex:
-                    overall_success = False
-                    logger.error("Remote push failed for group %s: %s", group_name, ex)
+                    return False
 
-        if not attempted_push:
-            logger.info("Remote push skipped because no configured remotes had commits to push")
-            return False
+                ### Relief..
+                logger.info(
+                    "Successfully pushed group %s to remote branch %s",
+                    group_name,
+                    branch_name,
+                )
+                return True
+            except GitCommandError as ex:
+                logger.error(
+                    "Remote push failed for group %s: %s",
+                    group_name,
+                    ex,
+                )
+                return False
+            except Exception as ex:
+                logger.error("Remote push failed for group %s: %s", group_name, ex)
+                return False
 
-        return overall_success
+    def has_pending_pushes(self) -> bool:
+        """Return True when at least one group has commits that haven't been pushed yet."""
+        with self._pending_push_guard:
+            return bool(self._pending_push_groups)
+
+    def _push_pending_sync(self) -> None:
+        """Push every group that received commits since the last push."""
+        with self._pending_push_guard:
+            groups = sorted(self._pending_push_groups)
+            self._pending_push_groups.clear()
+
+        ### A failed push isn't re-queued here: the group's next commit marks it again
+        for group_name in groups:
+            self._push_group_sync(group_name)
+
+    async def push_pending(self) -> None:
+        """Push all groups with unpushed commits without blocking the event loop."""
+        await asyncio.to_thread(self._push_pending_sync)
 
 
 ### Singleton instance

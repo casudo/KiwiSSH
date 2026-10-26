@@ -33,7 +33,14 @@ class QueuedBackupItem:
     source: str # origin marker (e.g. api:group:<name>, api:device:<name>, scheduler:<name>)
     enqueued_at: float # timestamp to calculate queue wait time in workers
 
-### REGEX Patterns used in config validation 
+### While backups keep running, pending git pushes are flushed at most this often (and always once the queue drains)
+PUSH_FLUSH_INTERVAL_SECONDS = 60.0
+### Upper limit of notifications sent at the same time
+MAX_CONCURRENT_NOTIFICATIONS = 4
+### How long shutdown waits for notifications that are still being sent
+NOTIFICATION_SHUTDOWN_TIMEOUT_SECONDS = 30.0
+
+### REGEX Patterns used in config validation
 CLI_ERROR_PATTERNS = [
     re.compile(r"^%\s*(?:Unrecognized command|Invalid input detected|Unknown command|Incomplete command)", re.IGNORECASE),
     re.compile(r"Invalid input detected at '\^' marker", re.IGNORECASE),
@@ -60,6 +67,12 @@ class BackupService:
         self._queue_setup_lock: asyncio.Lock | None = None
         ### Dedupe set for device names that are either waiting in queue or currently running
         self._queued_or_running: set[str] = set()
+        ### Batched git pushes: at most one flush task runs at a time
+        self._push_flush_task: asyncio.Task[None] | None = None
+        self._last_push_flush: float = time.monotonic()
+        ### Notifications are sent in the background; keep references so tasks aren't garbage collected
+        self._notification_tasks: set[asyncio.Task[None]] = set()
+        self._notification_semaphore: asyncio.Semaphore | None = None
 
     def _get_queue_state_lock(self) -> asyncio.Lock:
         """Get lock guarding queued/running device queue."""
@@ -72,6 +85,60 @@ class BackupService:
         if self._queue_setup_lock is None:
             self._queue_setup_lock = asyncio.Lock()
         return self._queue_setup_lock
+
+    def _get_notification_semaphore(self) -> asyncio.Semaphore:
+        """Get semaphore limiting how many notifications are sent concurrently."""
+        if self._notification_semaphore is None:
+            self._notification_semaphore = asyncio.Semaphore(MAX_CONCURRENT_NOTIFICATIONS)
+        return self._notification_semaphore
+
+    ###### ========================================
+    ### Batched Git Push Section
+    def _request_push_flush(self) -> None:
+        """Start pushing pending commits if the queue is idle or the last push is long enough ago."""
+        if not git_service.has_pending_pushes():
+            return
+        ### A running flush picks up new commits itself when it finishes
+        if self._push_flush_task is not None and not self._push_flush_task.done():
+            return
+
+        queue_idle = not self._queued_or_running
+        if not queue_idle and time.monotonic() - self._last_push_flush < PUSH_FLUSH_INTERVAL_SECONDS:
+            return
+
+        self._last_push_flush = time.monotonic()
+        self._push_flush_task = asyncio.create_task(self._flush_pushes())
+
+    async def _flush_pushes(self) -> None:
+        """Push all groups with pending commits, then re-check for commits made in the meantime."""
+        try:
+            await git_service.push_pending()
+        except Exception as ex:
+            logger.error("Pushing pending git commits failed: %s", ex)
+        finally:
+            self._push_flush_task = None
+
+        ### Commits created while this push was running would otherwise wait for the next backup
+        if not self._queued_or_running:
+            self._request_push_flush()
+    ###### ========================================
+
+    ###### ========================================
+    ### Background Notification Section
+    def _send_notification_in_background(self, *args, **kwargs) -> None:
+        """Send a notification without holding up the backup worker that produced it."""
+        task = asyncio.create_task(self._send_notification(*args, **kwargs))
+        self._notification_tasks.add(task)
+        task.add_done_callback(self._notification_tasks.discard)
+
+    async def _send_notification(self, *args, **kwargs) -> None:
+        """Send a notification, limited to MAX_CONCURRENT_NOTIFICATIONS at a time."""
+        async with self._get_notification_semaphore():
+            try:
+                await notification_service.send_notification(*args, **kwargs)
+            except Exception as ex:
+                logger.warning("Sending notification failed: %s", ex)
+    ###### ========================================
 
     async def _backup_queue_worker(self, worker_id: int) -> None:
         """Consume queued devices and execute backups with set worker concurrency."""
@@ -113,6 +180,7 @@ class BackupService:
                 async with state_lock:
                     self._queued_or_running.discard(queued_item.device.device_name)
                 self._backup_queue.task_done()
+                self._request_push_flush()
 
     async def _stop_backup_queue_locked(self) -> None:
         """Stop queue workers; caller must hold setup lock."""
@@ -142,6 +210,25 @@ class BackupService:
             self._queued_or_running.clear()
 
         logger.info("Stopped global backup queue workers")
+
+        ### Push commits that are still waiting for the batched push
+        ## A finishing flush may start a follow-up flush for late commits, so wait until none is left
+        while self._push_flush_task is not None and not self._push_flush_task.done():
+            await asyncio.gather(self._push_flush_task, return_exceptions=True)
+        if git_service.has_pending_pushes():
+            try:
+                await git_service.push_pending()
+            except Exception as ex:
+                logger.error("Pushing pending git commits during shutdown failed: %s", ex)
+
+        ### Give notifications that are still being sent a chance to finish
+        if self._notification_tasks:
+            _, pending = await asyncio.wait(
+                set(self._notification_tasks),
+                timeout=NOTIFICATION_SHUTDOWN_TIMEOUT_SECONDS,
+            )
+            if pending:
+                logger.warning("Shutting down with %d notification(s) still unsent", len(pending))
 
     async def _ensure_backup_queue_workers(self) -> None:
         """Ensure queue workers are running with current configured concurrency."""
@@ -485,7 +572,7 @@ class BackupService:
                     )
                 raise RuntimeError(f"Unsupported protocol: {protocol}")
 
-            ### Get config from device via SSH, Telnet or HTTP(S) (or simulator)
+            ### Get config from device via SSH, Telnet or HTTP(S)
             for attempt in range(2):
                 config, metadata_output = await _fetch_config()
                 logger.debug(f"Got config for {device.device_name} ({len(config)} bytes)")
@@ -510,15 +597,15 @@ class BackupService:
                 group=device.group,
             )
 
-            ### A new commit was created: Erase the cached history count
-            if has_changes:
-                git_service.invalidate_history_count(device.device_name, device.group)
-
             duration_seconds = max(0.0, time.perf_counter() - started_at)
 
             ### If no changes detected, return NO_CHANGES status
             if not has_changes:
-                logger.info(f"No configuration changes detected for {device.device_name}")
+                logger.info(
+                    "No configuration changes detected for %s (%.2fs)",
+                    device.device_name,
+                    duration_seconds,
+                )
                 result = BackupRecord(
                     id=str(uuid.uuid4()),
                     device_name=device.device_name,
@@ -530,6 +617,12 @@ class BackupService:
                     metadata_output=metadata_output,
                 )
                 await asyncio.to_thread(self._update_job_final_status, job_id, result)
+
+                ### No changes can still be a recovery after a failed backup, so let the notification service decide
+                self._send_notification_in_background(
+                    device.device_name, device.group, result, previous_status, settings.notifications,
+                )
+                
                 return result
 
             logger.info(
@@ -550,7 +643,7 @@ class BackupService:
                 metadata_output=metadata_output,
             )
             await asyncio.to_thread(self._update_job_final_status, job_id, result)
-            await notification_service.send_notification(
+            self._send_notification_in_background(
                 device.device_name, device.group, result, previous_status, settings.notifications,
                 lines_added=lines_added, lines_removed=lines_removed,
             )
@@ -569,8 +662,8 @@ class BackupService:
                 metadata_output=metadata_output,
             )
             await asyncio.to_thread(self._update_job_final_status, job_id, result)
-            await notification_service.send_notification(
-                device.device_name, device.group, result, previous_status, settings.notifications
+            self._send_notification_in_background(
+                device.device_name, device.group, result, previous_status, get_settings().notifications
             )
             return result
 
