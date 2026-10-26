@@ -6,7 +6,7 @@ python-dotenv==1.2.3
 asyncssh==2.24.0
 telnetlib3==5.0.0
 httpx==0.28.1
-gitpython==3.1.62
+gitpython==3.2.1
 ruff==0.15.21
 sqlalchemy==2.0.52
 psycopg[binary]==3.3.4
