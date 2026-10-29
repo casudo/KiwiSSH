@@ -314,6 +314,7 @@ class CLIService(ABC):
                     inactivity_deadline = loop.time() + timeout_seconds
 
                     ### Remove pagination marker line from captured output to avoid noisy backups
+                    buffer = buffer.rstrip() # Strip trailing blank lines first (#103)
                     if "\n" in buffer:
                         buffer = f"{buffer.rsplit('\n', 1)[0]}\n"
                     else:
