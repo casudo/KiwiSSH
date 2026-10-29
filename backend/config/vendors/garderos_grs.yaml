@@ -37,7 +37,13 @@ commands:
 ## Processing reduces diff noise and trims non-config boilerplate
 processing:
   strip_patterns:
-    # - "^% Invalid input detected at '\\^' marker\\.$"
+    - '^Uptime'
+    - '^Config Age'
+    - '^Startup'
+    - '^Wakeup Int'
+    - '^Temperature'
+    - '^ +VLAN \d+'
+    - '^ +Port \d+'
   # config_start: "^config "
   # config_end: "^end$"
   ### Secret masking. When enabled=false, no redaction is applied.
