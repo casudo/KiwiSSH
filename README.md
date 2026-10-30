@@ -752,6 +752,38 @@ The endpoint will return the following information about the device:
 
 # Future Goals
 
+**Login, user management and access control:**
+
+┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬──────────┐
+│                                                                     Part                                                                      │ Estimate │
+├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼──────────┤
+│ Users and sessions tables, password hashing (new dependency argon2-cffi), login/logout/current-user endpoints, creating the first admin       │ 2–3 days │
+├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼──────────┤
+│ Checking permissions on the 26 endpoints across 7 route files (mostly once per route file; trigger, reload, flush and retention individually) │ ~1 day   │
+├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼──────────┤
+│ User management API: create/edit/delete, roles, password reset and change, never deleting the last admin                                      │ 1–2 days │
+├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼──────────┤
+│ Frontend: login page, login state, page guards, redirect to login when the session expires, navbar per role, logout, user management page     │ 3–4 days │
+├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼──────────┤
+│ Security: login rate limiting, session expiry, secure cookie behind nginx, login audit log                                                    │ 1–2 days │
+├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼──────────┤
+│ Docs and testing (the repo has no automated tests, so auth tests should be added)                                                             │ 1–2 days │
+└───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴──────────┘
+
+What makes it bigger than it looks:
+- Monitoring tools break: the README tells people to have Uptime Kuma and similar tools poll /api/v1/devices/{name}. Once login is required, those calls fail. That needs API tokens (about +1–2 days) or leaving that endpoint public.
+- Favorites: they're shared by everyone today. Making them per user means changing the existing table, and the DB setup only creates new tables. It has no migration step for existing ones.
+- Other endpoints: /health should stay public, and /docs (Swagger) needs a decision.
+
+My recommendation: sessions in an HttpOnly cookie (frontend and API share an origin through nginx, so it's simple and safer than tokens in localStorage), and three fixed roles (admin / operator / viewer) mapped to pages and actions. Fully configurable per-page permissions can come later.
+
+Decisions to make before starting:
+- Fixed or configurable roles?
+- Favorites per user or shared?
+- API tokens for monitoring, or keep that endpoint public?
+- Users managed only in the GUI, or also set up from kiwissh.yaml?
+- Is LDAP or single sign-on planned later? That would shape the design now.
+
 **Short Term:**
 
 None
@@ -768,7 +800,7 @@ None
 - Fix logging strings to use lazy formatting instead of f-strings ([Ruff G004](https://docs.astral.sh/ruff/rules/logging-f-string/)) (Add to ruff.toml)
 - Swagger API documentation on GitHub Pages
 - Optional share anonymouse usage data for statistics (needs opt-in, privacy policy and telemetry server)
-- Login Screen, User management and RBAC
+- Login Screen, User management and RBAC (#99)
 - Allow merging of multiple device sources
 - Rename Draw.io page names to their actual filenames
 
