@@ -4,6 +4,15 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      build_frontend:
+        description: Build and push the frontend image
+        type: boolean
+        default: true
+      build_backend:
+        description: Build and push the backend image
+        type: boolean
+        default: true
 
 jobs:
   build-and-push:
@@ -28,6 +37,44 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      ### Release notes must contain a "## Versions" section, e.g.:
+      ##   Frontend: v1.5.0
+      ##   Backend: v2.7.0 -> v2.7.1
+      ### An image is only built if its line contains an arrow "->" (version bump).
+      - name: Determine which images to build
+        id: changes
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_BODY: ${{ github.event.release.body }}
+          INPUT_FRONTEND: ${{ inputs.build_frontend }}
+          INPUT_BACKEND: ${{ inputs.build_backend }}
+        run: |
+          python - <<'PY'
+          import os
+          import re
+
+          body = os.environ.get("RELEASE_BODY", "").replace("\r\n", "\n")
+          section = re.search(r"^#+\s*Versions\s*$(.*?)(?=^#|\Z)", body, re.IGNORECASE | re.MULTILINE | re.DOTALL)
+
+          def should_build(name):
+            if os.environ["EVENT_NAME"] == "workflow_dispatch":
+              return os.environ[f"INPUT_{name.upper()}"] == "true"
+            if not section:
+              print(f"::warning::No '## Versions' section in release notes, building {name} image")
+              return True
+            match = re.search(rf"^[\s*_-]*{name}[\s*_]*:(.*)$", section.group(1), re.IGNORECASE | re.MULTILINE)
+            if not match:
+              print(f"::warning::No '{name}:' line in release notes, building {name} image")
+              return True
+            return "->" in match.group(1) or "→" in match.group(1)
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+            for name in ("frontend", "backend"):
+              build = should_build(name)
+              print(f"{name}: {'build' if build else 'skip'}")
+              out.write(f"{name}={str(build).lower()}\n")
+          PY
 
       - name: Generate image names and versions
         id: meta
@@ -64,6 +111,7 @@ jobs:
       # Build frontend
       # -----------------
       - name: Build and push frontend
+        if: steps.changes.outputs.frontend == 'true'
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
@@ -78,6 +126,7 @@ jobs:
       # Build backend
       # -----------------
       - name: Build and push backend
+        if: steps.changes.outputs.backend == 'true'
         uses: docker/build-push-action@v5
         with:
           context: ./backend
