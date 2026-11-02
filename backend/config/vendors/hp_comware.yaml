@@ -9,7 +9,7 @@ vendor:
 ### Session-level output behavior.
 session:
   comment_prefix: "# "
-  prompt: '^\0*(<[\w.-]+>).?$' # sometimes the prompt might have a leading nul or trailing ASCII Bell (^G)
+  prompt: '^\0*(<[\w.&-]+>).?$' # sometimes the prompt might have a leading nul or trailing ASCII Bell (^G)
   pagination:
     enabled: true
     patterns:
