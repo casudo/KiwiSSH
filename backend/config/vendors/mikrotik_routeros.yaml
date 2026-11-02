@@ -47,6 +47,7 @@ processing:
     - '# \S+ not ready\r\n'
     - '# .+ please restart the device in order to apply the new setting\r\n'
     - '# 20.* by RouterOS'
+    - '^[ \t]*#[ \t]*(?:[a-z]{3}\/\d{1,2}\/\d{4}|\d{4}-\d{2}-\d{2})[ \t]+\d{2}:\d{2}:\d{2}[ \t]+by[ \t]+RouterOS(?:[ \t]+[^\r\n]+)?[ \t]*\r?$'
   # config_start: "^config "
   # config_end: "^end$"
   ### Secret masking. When enabled=false, no redaction is applied.
