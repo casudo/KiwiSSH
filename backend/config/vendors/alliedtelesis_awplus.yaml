@@ -49,6 +49,7 @@ processing:
   ### Lines to strip from captured config (regex patterns)
   strip_patterns:
     - '\r'
+    - '\a'
     - '\e[7m\e[m'
     - '\e[K'
     - '^System Status\s*:.*'
