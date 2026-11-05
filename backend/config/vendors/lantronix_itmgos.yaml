@@ -1,0 +1,69 @@
+### Lantronix IT Management Gateway OS Vendor Configuration
+
+### The configuration is the device's own CLI export, which it can restore with "admin config batch"
+
+vendor:
+  id: "lantronix_itmgos"
+  name: "Lantronix IT Management Gateway OS"
+  description: "Lantronix console servers and gateways (SLC 8000, SLC 9000, EMG 8500/7500, SLB)"
+
+### Session-level behavior
+session:
+  comment_prefix: "# "
+  prompt: '^\[[\w.-]{1,64}\]>\s?$'
+  pagination:
+    enabled: true
+    patterns:
+      ### The export asks before printing secrets in cleartext; enable redaction to hide them
+      - pattern: '^Do you want to continue\? \[no\]\s*$'
+        response: "yes\n"
+
+### Commands to execute for backup
+## Supported step types in command phases:
+## - command: sends command text
+## - command + then: sends command text, then sends interactive input
+commands:
+  ### Pre-backup commands (prepare the session) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  pre_backup:
+    - command: "set cli terminallines disable"
+
+  ### Main backup command(s)
+  ## Commands whose output becomes the stored configuration
+  backup:
+    - command: "admin version"
+      metadata: true
+    - command: "admin config commands copypaste"
+      show_command_in_config: true
+
+  ### Post-backup commands (cleanup) (OPTIONAL)
+  ## Command outputs aren't saved in stored configuration
+  post_backup:
+    - command: "logout"
+
+### Configuration processing rules
+## Processing reduces diff noise and trims non-config boilerplate
+processing:
+  # strip_patterns:
+  #   - 'changeme'
+  ### Only the top is cropped, so a secret whose value is "yes" stays in the export.
+  config_start: '^(?!(?:The configuration will be output.*|One moment while the file is generated.*|yes|\s*)$)'
+  # config_end: "^end$"
+  ### Secret masking. When enabled=false, no redaction is applied.
+  redaction:
+    enabled: false
+    patterns:
+      ### Prompted secrets are exported as the command, then the value and its confirmation on the next
+      ## two lines: "set tacacs+ secret", "set snmp v3password", "set ldap bindpassword",
+      ## "admin ftp password", "set site chapsecret <site>", per-port CHAP and dial-out passwords
+      ## and so on. Those two lines are hidden whatever they contain.
+      - search: '^((?:set|admin) (?:[^\n]*(?:password|phrase|secret|key)|site (?:dialoutpassword|chapsecret) \S[^\n]*?)[ \t]*)\n[^\n]*\n[^\n]*'
+        replacement: '\1\n<secret hidden>\n<secret hidden>'
+      ### SNMP communities; all three can share one quoted line: rocommunity 'public' rwcommunity ...
+      - search: '\b((?:ro|rw|trap)community) (?:''[^''\n]*''|"[^"\n]*"|\S+)'
+        replacement: '\1 ''<secret hidden>'''
+      ### Event actions that send traps carry their own community
+      - search: '(\saction snmptrap\b[^\n]*?\scommunity) (?:''[^''\n]*''|"[^"\n]*"|\S+)'
+        replacement: '\1 <secret hidden>'
+      - search: '^(set localusers password \S+ enc) \S+'
+        replacement: '\1 <secret hidden>'

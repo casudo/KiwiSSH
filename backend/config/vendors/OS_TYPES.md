@@ -124,6 +124,7 @@
 | Juniper                  | JunOS                                                                                                                                       | [juniper_junos.yaml](/backend/config/vendors/juniper_junos.yaml)                           | [JunOS](#juniper-junos)                                                  |
 | Juniper                  | ScreenOS (Netscreen)                                                                                                                        | [juniper_screenos.yaml](/backend/config/vendors/juniper_screenos.yaml)                     |                                                                          |
 | LANCOM Systems GmbH      | LCOS                                                                                                                                        | [lancom_lcos.yaml](/backend/config/vendors/lancom_lcos.yaml)                               |                                                                          |
+| Lantronix                | IT Management Gateway OS (SLC 8000, SLC 9000, EMG, SLB)                                                                                     | [lantronix_itmgos.yaml](/backend/config/vendors/lantronix_itmgos.yaml)                     | [ITMGOS](#lantronix-it-management-gateway-os)                            |
 | Lenovo                   | Lenovo Network OS                                                                                                                           | [lenovo_lenovonos.yaml](/backend/config/vendors/lenovo_lenovonos.yaml)                     |                                                                          |
 | Linux                    | Generic (e.g. CentOS, Debian)                                                                                                               | [linux_generic.yaml](/backend/config/vendors/linux_generic.yaml)                           | [Linux](#linux-generic)                                                  |
 | Mellanox                 | MLNX-OS                                                                                                                                     | [mellanox_mlnxos.yaml](/backend/config/vendors/mellanox_mlnxos.yaml)                       |                                                                          |
@@ -336,6 +337,23 @@ Create a user with `cfg-view` class set:
 set system login user kiwissh class cfg-view
 set system login user kiwissh authentication plain-text-password "yourpasswordhere"
 ```
+
+## Lantronix IT Management Gateway OS
+
+Backs up Lantronix console servers and gateways that run the IT Management Gateway OS CLI: SLC 8000, SLC 9000, EMG 8500/7500 and SLB.
+
+The configuration is the device's own export, `admin config commands copypaste`: a list of CLI commands that the device restores with `admin config batch`. KiwiSSH answers the export's confirmation prompt with `yes` and stores `admin version` (hardware, firmware, installed modules) as metadata.
+
+> [!WARNING]
+> SLC 9000 units accept SSH logins only through keyboard-interactive authentication. KiwiSSH tries it first per default.
+
+### Hiding secrets
+
+The export prints passwords, community strings and other secrets in cleartext. Turn on redaction (`groups.<group>.redaction: true`, `nodes.<device_name>.redaction: true` or `processing.redaction.enabled: true` in the vendor file) so they are replaced before the configuration is saved:
+
+- secrets the export writes on the two lines after their command, such as `set tacacs+ secret`, `set snmp v3password`, `set ldap bindpassword`, `admin ftp password`, `set site chapsecret <site>` and the per-port and USB modem CHAP and dial-out passwords
+- SNMP read, write and trap communities, including the community of trap event actions
+- local user password hashes
 
 ## Linux (generic)
 
