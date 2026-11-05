@@ -407,6 +407,9 @@ KiwiSSH will always store the device configurations in local git repositories to
 
 Commits are not pushed one by one: each group is pushed once the backup queue is empty, and at most every 60 seconds while backups are still running. If a push fails, the commits stay local and are pushed together with the next commit of that group.
 
+> [!NOTE]
+> KiwiSSH's commits dont trigger git's automatic cleanup, so it runs its own git maintenance to keep the repositories small and the device history fast. By default, it runs `git gc` and writes a commit-graph for each group every Sunday at 03:00, one group at a time. Backups and history lookups of a group wait until the maintenance of that group is finished, which usually only takes a few seconds. No backup history is removed.
+
 > [!CAUTION]
 > DO NOT delete the "backups" folder ever unless you want to lose all your local git repositories and their history.
 
@@ -416,6 +419,9 @@ Commits are not pushed one by one: each group is pushed once the backup queue is
 | `git.commit_message_template` | The global template for the git commit messages. Available placeholders: `{group}`, `{device_name}`, `{timestamp}`. | No | `"Backup: {group}/{device_name} at {timestamp}"` |
 | `git.remote.url` | The global remote git repository URL. Available placeholders: `{group}`. This can be overridden for specific groups. | No | - |
 | `git.remote.branch` | The global remote git branch to push to. This can be overridden for specific groups. | No | `main` |
+| `git.maintenance.enabled` | If set to false, the scheduled git maintenance is disabled. | No | `true` |
+| `git.maintenance.cron` | The cron expression for the git maintenance schedule. Prefer weekday names like `sun`, since numeric weekdays start with `0` for Monday. | No | `0 3 * * sun` |
+| `git.maintenance.TZ` | The timezone for the git maintenance schedule. | No | `TZ environment variable or UTC` |
 
 ### groups
 

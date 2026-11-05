@@ -84,6 +84,10 @@ sources:
 ## Paths may be absolute, or relative to the config directory.
 git:
   local_path: "/config/backups"
+  ### Scheduled cleanup of the local git repositories (git gc and commit-graph).
+  # maintenance:
+  #   enabled: true # enabled by default
+  #   cron: "0 3 * * sun"
   ### Optional global remote git location for groups without overrides.
   ### If this block is configured, git.remote.url is required.
   # remote:
