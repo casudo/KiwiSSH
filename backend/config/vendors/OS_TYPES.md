@@ -280,6 +280,20 @@ There are two models for Fortinet devices:
 - `fortigate`: for the FortiGate firewalls
 - `fortios`: for VM-Based appliances (FortiManager, FortiADC, FortiAnalyzer...)
 
+### User Permissions
+
+If the default admin user isn't used to fetch the config, make sure the user has the necessary permissions to access all required configuration sections.
+
+```bash
+config system accprofile
+    edit <profile>
+        set cli-get enable
+        set cli-show enable
+        set cli-config enable
+    next
+end
+```
+
 ### Notes for both device types
 
 #### Configuration changes / hiding passwords
