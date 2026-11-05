@@ -572,6 +572,12 @@ class GitRemoteConfig(ConfigModel):
         return self
 
 
+class GitMaintenanceConfig(ScheduleConfig):
+    """Scheduled git maintenance (gc and commit-graph) configuration."""
+    enabled: bool = True
+    cron: str | None = "0 3 * * sun"  # Every sunday at 3 AM
+
+
 ### =============================================================================
 ### Main / Root Classes Definitions
 ### =============================================================================
@@ -783,6 +789,7 @@ class GitConfig(ConfigModel):
     local_path: str = "/config/backups"
     commit_message_template: str = "Backup: {group}/{device_name} at {timestamp}"
     remote: GitRemoteConfig | None = None
+    maintenance: GitMaintenanceConfig = Field(default_factory=GitMaintenanceConfig)
 
     @field_validator("local_path", mode="before")
     @classmethod

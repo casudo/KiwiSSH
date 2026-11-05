@@ -333,6 +333,42 @@ class GitService:
             message,
         )
 
+    def _run_maintenance_sync(self, group: str) -> None:
+        """Repack a group repository and rebuild its commit-graph (blocking).
+
+        Commits made through GitPython dont trigger git's automatic gc like `git commit` does, so this is the only
+        cleanup the repositories get. Without it every backup stays a loose object and history lookups keep slowing down.
+        """
+        lock = self._get_repo_lock(group)
+        with lock:
+            repo = self._ensure_repo(group)
+            if not self._has_commits(repo):
+                return
+
+            repo.git.gc()
+
+            ### The cached cat-file processes keep replaced pack files open, which holds their disk space until a restart
+            repo.git.clear_cache()
+
+            ### Replace the commit-graph written by gc with one that knows the changed paths, for faster per-device history
+            repo.git.commit_graph("write", "--reachable", "--changed-paths")
+
+    async def run_maintenance(self) -> None:
+        """Run git maintenance for all groups, one at a time, without blocking the event loop."""
+        groups = list(self.settings.groups)
+        failed = 0
+
+        for group in groups:
+            try:
+                await asyncio.to_thread(self._run_maintenance_sync, group)
+            except Exception as ex:
+                ### TODO: Yes, we shouldn't catch all exceptions like this..
+                ### One broken repository shouldn't stop the maintenance of the remaining groups
+                failed += 1
+                logger.error("Git maintenance failed for group %s: %s", group, ex)
+
+        logger.info("Git maintenance finished: %d/%d group(s) processed", len(groups) - failed, len(groups))
+
     def _get_config_history_sync(
         self,
         device_name: str,
