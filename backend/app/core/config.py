@@ -1045,9 +1045,11 @@ class Settings(BaseSettings):
 
             ### sources
             self.sources = SourcesConfig(**file_content.get("sources", {}))
-            ## Resolve a relative sources.file path against the configuration directory
+            ## Resolve relative sources.file and sources.ansible paths against the configuration directory
             if self.sources.file:
                 self.sources.file = self._resolve_config_relative_path(self.sources.file)
+            if self.sources.ansible:
+                self.sources.ansible = self._resolve_config_relative_path(self.sources.ansible)
 
             ### git
             self.git = GitConfig(**file_content.get("git", {}))
