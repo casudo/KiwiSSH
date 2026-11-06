@@ -247,24 +247,24 @@ You can get notified if the backup of a device fails or succeeds.
 | --- | ----------- | -------- | ------------- |
 | `notifications.enabled` | Whether notifications are enabled. | No | `False` |
 | `notifications.trigger` | The notification trigger. | No | `failure` |
-| `notifications.type` | The type of notification. | **Yes** | - |
-| `notifications.smtp.host` | The SMTP server host. | **Yes** | - |
-| `notifications.large_diff_threshold` | The diff line count threshold for considering a backup change as "large". This can be used to trigger notifications only for significant changes. | No | `650` |
+| `notifications.large_diff_threshold` | The diff line count threshold for considering a backup change as "large". This can be used to trigger notifications only for significant changes. | No | `500` |
 | `notifications.notify_on_recovery` | Send a "Backup Recovered" notification when a device that failed its last backup is backed up successfully again. | No | `True` |
-| `notifications.smtp.port` | The SMTP server port. | No | `25` |
-| `notifications.smtp.sender` | The sender email address. | **Yes** | - |
-| `notifications.smtp.recipients` | The recipient email addresses (list). | **Yes** | - |
-| `notifications.smtp.username` | The username for the SMTP server. | No | - |
-| `notifications.smtp.password` | The password for the SMTP server. | No | - |
-| `notifications.smtp.use_tls` | Whether to use STARTTLS. Change the port accordingly. | No | `False` |
-| `notifications.smtp.use_ssl` | Whether to use SSL/TLS. Change the port accordingly. | No | `False` |
-| `notifications.smtp.timeout_seconds` | Timeout in seconds for connecting to and talking with the SMTP server. | No | `10` |
-| `notifications.webhook.url` | The webhook endpoint URL (must start with `http://` or `https://`). | **Yes** | - |
-| `notifications.webhook.method` | The HTTP method used for the request. One of `POST`, `PUT`, `PATCH`. | No | `POST` |
-| `notifications.webhook.format` | The payload shape the endpoint expects. `generic` sends a flat JSON body with all backup fields; `discord` sends a Discord-compatible `{"content": ...}` body. | No | `generic` |
-| `notifications.webhook.headers` | Additional HTTP headers to send (e.g. an `Authorization` header). | No | - |
-| `notifications.webhook.timeout_seconds` | Request timeout in seconds. | No | `10` |
-| `notifications.webhook.verify_ssl` | Whether to verify the endpoint's TLS certificate. | No | `True` |
+| `notifications.type` | The type of notification. | **Yes** | - |
+| `notifications.type.smtp.host` | The SMTP server host. | **Yes** | - |
+| `notifications.type.smtp.port` | The SMTP server port. | No | `25` |
+| `notifications.type.smtp.sender` | The sender email address. | **Yes** | - |
+| `notifications.type.smtp.recipients` | The recipient email addresses (list). | **Yes** | - |
+| `notifications.type.smtp.username` | The username for the SMTP server. | No | - |
+| `notifications.type.smtp.password` | The password for the SMTP server. | No | - |
+| `notifications.type.smtp.use_tls` | Whether to use STARTTLS. Change the port accordingly. | No | `False` |
+| `notifications.type.smtp.use_ssl` | Whether to use SSL/TLS. Change the port accordingly. | No | `False` |
+| `notifications.type.smtp.timeout_seconds` | Timeout in seconds for connecting to and talking with the SMTP server. | No | `10` |
+| `notifications.type.webhook.url` | The webhook endpoint URL (must start with `http://` or `https://`). | **Yes** | - |
+| `notifications.type.webhook.method` | The HTTP method used for the request. One of `POST`, `PUT`, `PATCH`. | No | `POST` |
+| `notifications.type.webhook.format` | The payload shape the endpoint expects. `generic` sends a flat JSON body with all backup fields; `discord` sends a Discord-compatible `{"content": ...}` body. | No | `generic` |
+| `notifications.type.webhook.headers` | Additional HTTP headers to send (e.g. an `Authorization` header). | No | - |
+| `notifications.type.webhook.timeout_seconds` | Request timeout in seconds. | No | `10` |
+| `notifications.type.webhook.verify_ssl` | Whether to verify the endpoint's TLS certificate. | No | `True` |
 
 ### sources
 

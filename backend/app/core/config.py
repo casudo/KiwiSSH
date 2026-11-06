@@ -365,7 +365,7 @@ class SmtpConfig(ConfigModel):
     @classmethod
     def validate_non_empty_text(cls, value: object) -> str:
         """Require non-empty strings for host and sender."""
-        return _require_text(value, "notifications.smtp host and sender must be non-empty strings")
+        return _require_text(value, "notifications.type.smtp host and sender must be non-empty strings")
 
     @field_validator("recipients", mode="before")
     @classmethod
@@ -378,14 +378,14 @@ class SmtpConfig(ConfigModel):
         if isinstance(value, list):
             cleaned = [str(r).strip() for r in value if r is not None and str(r).strip()]
         if not cleaned:
-            raise ValueError("notifications.smtp.recipients must contain at least one address")
+            raise ValueError("notifications.type.smtp.recipients must contain at least one address")
         return cleaned
 
     @model_validator(mode="after")
     def validate_tls_ssl_exclusive(self) -> "SmtpConfig":
         """Ensure use_tls and use_ssl are not both enabled simultaneously."""
         if self.use_tls and self.use_ssl:
-            raise ValueError("notifications.smtp: use_tls and use_ssl cannot both be true")
+            raise ValueError("notifications.type.smtp: use_tls and use_ssl cannot both be true")
         return self
 
 
@@ -408,9 +408,9 @@ class WebhookConfig(ConfigModel):
     @classmethod
     def validate_url(cls, value: object) -> str:
         """Require a non-empty http(s) URL."""
-        text = _require_text(value, "notifications.webhook.url must be a non-empty string")
+        text = _require_text(value, "notifications.type.webhook.url must be a non-empty string")
         if not (text.startswith("http://") or text.startswith("https://")):
-            raise ValueError("notifications.webhook.url must start with http:// or https://")
+            raise ValueError("notifications.type.webhook.url must start with http:// or https://")
         return text
 
     @field_validator("method", mode="before")
@@ -419,14 +419,14 @@ class WebhookConfig(ConfigModel):
         """Restrict to HTTP methods that carry a request body."""
         text = "POST" if value is None else str(value).strip().upper()
         if text not in ("POST", "PUT", "PATCH"):
-            raise ValueError("notifications.webhook.method must be one of POST, PUT, PATCH")
+            raise ValueError("notifications.type.webhook.method must be one of POST, PUT, PATCH")
         return text
 
     @field_validator("headers", mode="before")
     @classmethod
     def normalize_headers(cls, value: object) -> dict[str, str]:
         """Coerce header keys/values to strings and drop blanks."""
-        return _normalize_headers(value, "notifications.webhook.headers")
+        return _normalize_headers(value, "notifications.type.webhook.headers")
 
 
 class NotificationType(ConfigModel):
