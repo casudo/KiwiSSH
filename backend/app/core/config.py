@@ -268,7 +268,7 @@ class RetentionConfig(ConfigModel):
 class GroupGitRemoteConfig(ConfigModel):
     """Optional per-group override for remote git target."""
     url: str | None = None
-    branch: str = "main"
+    branch: str | None = None # Falls back to git.remote.branch
 
     @field_validator("url", mode="before")
     @classmethod
@@ -278,9 +278,9 @@ class GroupGitRemoteConfig(ConfigModel):
 
     @field_validator("branch", mode="before")
     @classmethod
-    def normalize_branch(cls, branch: object) -> str:
-        """Normalize branch value by trimming whitespace and defaulting to main."""
-        return _strip_to_none(branch) or "main"
+    def normalize_branch(cls, branch: object) -> str | None:
+        """Normalize optional branch value by trimming whitespace and converting blanks to None."""
+        return _strip_to_none(branch)
 
 
 class GroupGitConfig(ConfigModel):

@@ -443,7 +443,7 @@ Commits are not pushed one by one: each group is pushed once the backup queue is
 | `groups.<group>.schedule.timezone` | The timezone for the backup schedule for devices in this group. It is not inherited from `app.schedule.timezone`. | No | `TZ environment variable or UTC` |
 | `groups.<group>.git.commit_message_template` | The git commit message template for this group. This overrides global `git.commit_message_template`. | No | Global `git.commit_message_template` |
 | `groups.<group>.git.remote.url` | The remote git repository URL for this group. This overrides the global `git.remote.url`. | No | Global `git.remote.url` or if set globally |
-| `groups.<group>.git.remote.branch` | The remote git branch to push to for this group. This overrides the global `git.remote.branch`. | No | Global `git.remote.branch` if set globally |
+| `groups.<group>.git.remote.branch` | The remote git branch to push to for this group. This overrides the global `git.remote.branch`. | No | Global `git.remote.branch` or `main` |
 
 ### nodes
 
