@@ -421,7 +421,7 @@ Commits are not pushed one by one: each group is pushed once the backup queue is
 | `git.remote.branch` | The global remote git branch to push to. This can be overridden for specific groups. | No | `main` |
 | `git.maintenance.enabled` | If set to false, the scheduled git maintenance is disabled. | No | `true` |
 | `git.maintenance.cron` | The cron expression for the git maintenance schedule. Prefer weekday names like `sun`, since numeric weekdays start with `0` for Monday. | No | `0 3 * * sun` |
-| `git.maintenance.TZ` | The timezone for the git maintenance schedule. | No | `TZ environment variable or UTC` |
+| `git.maintenance.timezone` | The timezone for the git maintenance schedule. | No | `TZ environment variable or UTC` |
 
 ### groups
 

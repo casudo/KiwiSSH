@@ -88,6 +88,7 @@ git:
   # maintenance:
   #   enabled: true # enabled by default
   #   cron: "0 3 * * sun"
+  #   timezone: "UTC" # Default: TZ environment variable or UTC
   ### Optional global remote git location for groups without overrides.
   ### If this block is configured, git.remote.url is required.
   # remote:
