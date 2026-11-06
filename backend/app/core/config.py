@@ -182,7 +182,7 @@ class ScheduleConfig(ConfigModel):
     cron: str | None = "0 2 * * *"  # Default to daily at 2 AM, an empty string disables the schedule
     timezone: str = Field(
         default_factory=lambda: os.environ.get("TZ", "UTC"),
-        validation_alias=AliasChoices("timezone", "TZ"), # 'TZ' is accepted too since it's the key used in the docs
+        validation_alias=AliasChoices("timezone", "TZ"),
     )
 
     @field_validator("cron", mode="before")
