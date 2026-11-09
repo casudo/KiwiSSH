@@ -1,4 +1,4 @@
-<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.0.3 Chrome/140.0.7339.249 Electron/38.7.0 Safari/537.36" pages="8">
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.0.3 Chrome/140.0.7339.249 Electron/38.7.0 Safari/537.36" pages="9">
   <diagram name="Backup Services" id="o8xVrSfJphuazaFM1u5R">
     <mxGraphModel dx="2864" dy="2370" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
@@ -25,13 +25,13 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="rmfFexarqkWoB4NCqTo8-6" value="&lt;div style=&quot;font-size: 15px;&quot;&gt;&lt;span style=&quot;background-color: initial; font-size: 15px;&quot;&gt;start_backup_queue()&lt;/span&gt;&lt;br style=&quot;font-size: 15px;&quot;&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="rmfFexarqkWoB4NCqTo8-1" vertex="1">
-          <mxGeometry x="80" y="60.25" width="280" height="110" as="geometry" />
+          <mxGeometry x="280" y="60.25" width="200" height="110" as="geometry" />
         </mxCell>
         <mxCell id="rmfFexarqkWoB4NCqTo8-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="rmfFexarqkWoB4NCqTo8-1" source="rmfFexarqkWoB4NCqTo8-9" target="rmfFexarqkWoB4NCqTo8-40" edge="1">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="1020" y="220" />
-              <mxPoint x="960" y="220" />
+              <mxPoint x="1060" y="220" />
+              <mxPoint x="940" y="220" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -41,7 +41,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="rmfFexarqkWoB4NCqTo8-9" value="stop_backup_queue()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="rmfFexarqkWoB4NCqTo8-1" vertex="1">
-          <mxGeometry x="875" y="60.25" width="290" height="109.75" as="geometry" />
+          <mxGeometry x="940" y="60.25" width="240" height="109.75" as="geometry" />
         </mxCell>
         <mxCell id="rmfFexarqkWoB4NCqTo8-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="rmfFexarqkWoB4NCqTo8-1" source="rmfFexarqkWoB4NCqTo8-13" target="rmfFexarqkWoB4NCqTo8-48" edge="1">
           <mxGeometry relative="1" as="geometry">
@@ -76,14 +76,14 @@
         <mxCell id="rmfFexarqkWoB4NCqTo8-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="rmfFexarqkWoB4NCqTo8-1" source="rmfFexarqkWoB4NCqTo8-19" edge="1">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="510" y="210" />
+              <mxPoint x="600" y="210" />
               <mxPoint x="320" y="210" />
             </Array>
             <mxPoint x="320" y="280" as="targetPoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="rmfFexarqkWoB4NCqTo8-19" value="queue_device_backup()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="rmfFexarqkWoB4NCqTo8-1" vertex="1">
-          <mxGeometry x="410" y="60.25" width="200" height="110" as="geometry" />
+          <mxGeometry x="500" y="60.25" width="200" height="110" as="geometry" />
         </mxCell>
         <mxCell id="rmfFexarqkWoB4NCqTo8-20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="rmfFexarqkWoB4NCqTo8-1" source="rmfFexarqkWoB4NCqTo8-22" target="rmfFexarqkWoB4NCqTo8-52" edge="1">
           <mxGeometry relative="1" as="geometry">
@@ -196,7 +196,7 @@
         <mxCell id="rmfFexarqkWoB4NCqTo8-43" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="rmfFexarqkWoB4NCqTo8-1" source="rmfFexarqkWoB4NCqTo8-44" edge="1">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="730" y="220" />
+              <mxPoint x="820" y="220" />
               <mxPoint x="340" y="220" />
               <mxPoint x="340" y="280" />
             </Array>
@@ -204,7 +204,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="rmfFexarqkWoB4NCqTo8-44" value="&lt;div style=&quot;font-size: 15px;&quot;&gt;queue_device_backups()&lt;br style=&quot;font-size: 15px;&quot;&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="rmfFexarqkWoB4NCqTo8-1" vertex="1">
-          <mxGeometry x="630" y="60" width="200" height="110" as="geometry" />
+          <mxGeometry x="720" y="60" width="200" height="110" as="geometry" />
         </mxCell>
         <mxCell id="rmfFexarqkWoB4NCqTo8-46" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="rmfFexarqkWoB4NCqTo8-1" source="rmfFexarqkWoB4NCqTo8-48" target="rmfFexarqkWoB4NCqTo8-52" edge="1">
           <mxGeometry relative="1" as="geometry" />
@@ -363,7 +363,7 @@
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="140" y="240" />
-              <mxPoint x="30" y="240" />
+              <mxPoint x="120" y="240" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -371,7 +371,7 @@
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="140" y="240" />
-              <mxPoint x="250" y="240" />
+              <mxPoint x="340" y="240" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -447,6 +447,30 @@
         </mxCell>
         <mxCell id="TifLb4YZhCG6_eTbBv43-1" value="TODO: Make calls clearer&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Some funcs are missing too&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontStyle=1;fontSize=30;fontColor=#FF0000;" vertex="1" parent="1">
           <mxGeometry x="-770" y="610" width="190" height="380" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-bs-1" parent="rmfFexarqkWoB4NCqTo8-1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="queue_workers_alive()" vertex="1">
+          <mxGeometry height="110" width="200" x="60" y="60.25" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-bs-2" edge="1" parent="rmfFexarqkWoB4NCqTo8-1" source="kiwi-bs-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.0333;entryY=0;entryDx=0;entryDy=0;" target="rmfFexarqkWoB4NCqTo8-48">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-bs-2-label" connectable="0" parent="kiwi-bs-2" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="worker.done()&lt;br&gt;for every worker" vertex="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-bs-3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=30;fontStyle=1" value="health/ API" vertex="1">
+          <mxGeometry height="80" width="280" x="-860" y="395" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-bs-4" edge="1" parent="1" source="kiwi-bs-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=3;" target="kiwi-bs-1">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-bs-4-label" connectable="0" parent="kiwi-bs-4" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="GET /ready" vertex="1">
+          <mxGeometry relative="1" x="-0.5" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
         </mxCell>
       </root>
     </mxGraphModel>
@@ -2704,6 +2728,28 @@
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
+        <mxCell id="kiwi-sch-94" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=30;fontStyle=1" value="health/ API" vertex="1">
+          <mxGeometry height="80" width="280" x="2120" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-sch-95" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="is_running()" vertex="1">
+          <mxGeometry height="80" width="300" x="2110" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-sch-96" parent="1" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" value="return True if self.scheduler&lt;br&gt;exists and is running" vertex="1">
+          <mxGeometry height="110" width="320" x="2100" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-sch-97" edge="1" parent="1" source="kiwi-sch-94" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;" target="kiwi-sch-95">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-sch-97-label" connectable="0" parent="kiwi-sch-97" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="GET /ready" vertex="1">
+          <mxGeometry relative="1" x="-0.4" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-sch-98" edge="1" parent="1" source="kiwi-sch-95" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-sch-96">
+          <mxGeometry relative="1" as="geometry">
+          </mxGeometry>
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
@@ -3476,6 +3522,213 @@
         </mxCell>
         <mxCell id="kiwi-git-237" edge="1" parent="1" source="kiwi-git-115" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="kiwi-git-116">
           <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="Health API (health.py)" id="kiwi-health-page">
+    <mxGraphModel dx="5135" dy="2548" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="kiwi-health-1" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=3;fontSize=25;fontColor=#B20000;" value="Legend:" vertex="1">
+          <mxGeometry height="40" width="110" x="-480" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Function" vertex="1">
+          <mxGeometry height="60" width="120" x="-480" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-3" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Task" vertex="1">
+          <mxGeometry height="50" width="110" x="-340" y="75" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-4" parent="1" style="rhombus;whiteSpace=wrap;html=1;" value="Result" vertex="1">
+          <mxGeometry height="60" width="110" x="-210" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-5" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-480" y="160" as="sourcePoint" />
+            <mxPoint x="-360" y="160" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-health-6" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="Runs later, not right away" vertex="1">
+          <mxGeometry height="30" width="190" x="-350" y="145" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-10" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=30;fontStyle=1" value="Frontend" vertex="1">
+          <mxGeometry height="80" width="280" x="160" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-11" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=30;fontStyle=1" value="Docker HEALTHCHECK&lt;div style=&quot;font-size: 30px;&quot;&gt;&lt;br style=&quot;font-size: 30px;&quot;&gt;&lt;/div&gt;&lt;div style=&quot;font-size: 30px;&quot;&gt;healthcheck.py&lt;/div&gt;" vertex="1">
+          <mxGeometry height="160" width="520" x="740" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-12" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=30;fontStyle=1" value="Monitoring tools" vertex="1">
+          <mxGeometry height="80" width="280" x="1340" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-20" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelPosition=left;verticalLabelPosition=top;align=right;verticalAlign=bottom;fontStyle=1;fontSize=30;strokeWidth=5;dashed=1;perimeterSpacing=0;arcSize=3;fillColor=#E6E6E6;fontColor=#333333;strokeColor=#666666;" value="health.py" vertex="1">
+          <mxGeometry height="1660" width="2120" x="20" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-21" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;fillColor=none;strokeColor=#007FFF;fontSize=20;fontStyle=1;fontColor=#007FFF;labelPosition=center;verticalLabelPosition=top;align=left;verticalAlign=bottom;spacing=2;spacingLeft=0;" value="PUBLIC FUNCTIONS" vertex="1">
+          <mxGeometry height="1130" width="2040" x="60" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-22" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;fillColor=none;strokeColor=#B5739D;fontSize=20;fontStyle=1;fontColor=#B5739D;labelPosition=center;verticalLabelPosition=top;align=left;verticalAlign=bottom;" value="PRIVATE FUNCTIONS" vertex="1">
+          <mxGeometry height="340" width="2040" x="60" y="1580" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-30" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="health_check()" vertex="1">
+          <mxGeometry height="80" width="300" x="150" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-31" parent="1" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" value="return status, timestamp,&lt;br&gt;version, config_loaded" vertex="1">
+          <mxGeometry height="110" width="320" x="140" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-40" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="readiness_check()" vertex="1">
+          <mxGeometry height="80" width="300" x="850" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-41" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" value="Check config directory,&lt;br&gt;kiwissh.yaml, SSH profiles&lt;br&gt;and vendors" vertex="1">
+          <mxGeometry height="100" width="320" x="840" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-42" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" value="Check database" vertex="1">
+          <mxGeometry height="100" width="320" x="840" y="700" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-43" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" value="Check backup directory" vertex="1">
+          <mxGeometry height="100" width="320" x="840" y="850" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-44" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" value="scheduler_service.&lt;br&gt;is_running()" vertex="1">
+          <mxGeometry height="100" width="320" x="840" y="1000" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-45" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" value="backup_service.&lt;br&gt;queue_workers_alive()" vertex="1">
+          <mxGeometry height="100" width="320" x="840" y="1150" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-46" parent="1" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" value="HTTP 200&lt;br&gt;ready: true" vertex="1">
+          <mxGeometry height="110" width="280" x="620" y="1350" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-47" parent="1" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" value="HTTP 503&lt;br&gt;ready: false" vertex="1">
+          <mxGeometry height="110" width="280" x="1100" y="1350" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-48" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="Database and backup&lt;br&gt;directory are checked&lt;br&gt;in parallel threads" vertex="1">
+          <mxGeometry height="70" width="190" x="620" y="790" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-49" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="&lt;b&gt;SWITCH TO PAGE!&lt;/b&gt;&lt;div&gt;&lt;b&gt;scheduler_service.py&lt;/b&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="170" x="1170" y="1030" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-50" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="&lt;b&gt;SWITCH TO PAGE!&lt;/b&gt;&lt;div&gt;&lt;b&gt;Backup Services&lt;/b&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="170" x="1170" y="1180" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-60" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="_backup_dir_writable()" vertex="1">
+          <mxGeometry height="80" width="300" x="1300" y="1620" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-61" parent="1" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" value="True if git.local_path is a&lt;br&gt;writable directory" vertex="1">
+          <mxGeometry height="110" width="320" x="1290" y="1760" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-62" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="_database_reachable()" vertex="1">
+          <mxGeometry height="80" width="300" x="1700" y="1620" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-63" parent="1" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" value="True if SELECT 1&lt;br&gt;succeeds" vertex="1">
+          <mxGeometry height="110" width="320" x="1690" y="1760" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-64" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="FastAPI Server (Startup) creates&lt;br&gt;the directory if it is missing" vertex="1">
+          <mxGeometry height="40" width="260" x="1020" y="1640" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-70" edge="1" parent="1" source="kiwi-health-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;" target="kiwi-health-30">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-70-label" connectable="0" parent="kiwi-health-70" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="GET /health" vertex="1">
+          <mxGeometry relative="1" x="-0.4" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-health-71" edge="1" parent="1" source="kiwi-health-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;" target="kiwi-health-40">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-71-label" connectable="0" parent="kiwi-health-71" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="GET /ready&lt;br&gt;every 30s" vertex="1">
+          <mxGeometry relative="1" x="-0.4" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-health-72" edge="1" parent="1" source="kiwi-health-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.85;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;" target="kiwi-health-40">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1480" y="340" />
+              <mxPoint x="1105" y="340" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-health-72-label" connectable="0" parent="kiwi-health-72" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="GET /ready" vertex="1">
+          <mxGeometry relative="1" x="-0.6" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-health-73" edge="1" parent="1" source="kiwi-health-30" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-health-31">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-74" edge="1" parent="1" source="kiwi-health-40" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-health-41">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-75" edge="1" parent="1" source="kiwi-health-41" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-health-42">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-76" edge="1" parent="1" source="kiwi-health-42" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-health-43">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-77" edge="1" parent="1" source="kiwi-health-43" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-health-44">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-78" edge="1" parent="1" source="kiwi-health-44" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-health-45">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-79" edge="1" parent="1" source="kiwi-health-45" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-health-46">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1000" y="1300" />
+              <mxPoint x="760" y="1300" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-health-79-label" connectable="0" parent="kiwi-health-79" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="all checks pass" vertex="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-health-80" edge="1" parent="1" source="kiwi-health-45" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-health-47">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1000" y="1300" />
+              <mxPoint x="1240" y="1300" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-health-80-label" connectable="0" parent="kiwi-health-80" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="a check fails" vertex="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-health-81" edge="1" parent="1" source="kiwi-health-42" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-health-62">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1850" y="750" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-health-81-label" connectable="0" parent="kiwi-health-81" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="asyncio.to_thread" vertex="1">
+          <mxGeometry relative="1" x="-0.6" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-health-82" edge="1" parent="1" source="kiwi-health-43" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-health-60">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1450" y="900" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-health-82-label" connectable="0" parent="kiwi-health-82" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="asyncio.to_thread" vertex="1">
+          <mxGeometry relative="1" x="-0.4" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-health-83" edge="1" parent="1" source="kiwi-health-60" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-health-61">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-health-84" edge="1" parent="1" source="kiwi-health-62" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-health-63">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="V0s_fPKiSsaKAZNvByxj-2" parent="1" style="shape=stencil(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);lineShape=1;strokeColor=default;" value="" vertex="1">
+          <mxGeometry height="265.9399567961021" width="102.87584137510983" x="786.4151827474361" y="695.1312264564153" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
