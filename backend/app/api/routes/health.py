@@ -1,5 +1,7 @@
 """Health check endpoints."""
 
+import asyncio
+import os
 from datetime import datetime
 
 from fastapi import APIRouter, Response, status
@@ -9,6 +11,7 @@ from sqlalchemy import text
 from app import __version__
 from app.core import get_settings
 from app.db import database
+from app.services.git_service import git_service
 from app.services.scheduler_service import scheduler_service
 from app.utils.timezone import get_utc_now
 
@@ -32,6 +35,33 @@ class ReadinessResponse(BaseModel):
 
 router = APIRouter()
 
+### =========================================================================================================
+### Helper Functions
+### =========================================================================================================
+
+def _database_reachable() -> bool:
+    """Run a trivial query to check that the application database answers."""
+    if database.engine is None:
+        return False
+    try:
+        with database.engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        return True
+    except Exception:
+        return False
+
+
+def _backup_dir_writable() -> bool:
+    """Check that the backup directory (git.local_path) exists and new repositories can be created in it.
+
+    os.access reports a read-only mount as not writable.
+    """
+    backup_dir = git_service.backups_base_dir
+    return backup_dir.is_dir() and os.access(backup_dir, os.W_OK | os.X_OK)
+
+### =========================================================================================================
+### API Endpoints
+### =========================================================================================================
 
 @router.get("", response_model=HealthResponse)
 async def health_check() -> HealthResponse:
@@ -46,18 +76,6 @@ async def health_check() -> HealthResponse:
     )
 
 
-def _database_reachable() -> bool:
-    """Run a trivial query to check that the application database answers."""
-    if database.engine is None:
-        return False
-    try:
-        with database.engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        return True
-    except Exception:
-        return False
-
-
 @router.get(
     "/ready",
     response_model=ReadinessResponse,
@@ -70,12 +88,19 @@ async def readiness_check(response: Response) -> ReadinessResponse:
     """
     settings = get_settings()
 
+    ### Run blocking checks in threads to not stall the event loop
+    database_connected, backup_dir_writable = await asyncio.gather(
+        asyncio.to_thread(_database_reachable),
+        asyncio.to_thread(_backup_dir_writable),
+    )
+
     checks = {
         "config_dir_exists": settings.config_dir.exists(),
         "main_config_exists": (settings.config_dir / "kiwissh.yaml").exists(),
         "ssh_profiles_loaded": bool(settings.ssh_profiles),
         "vendors_loaded": bool(settings.vendors),
-        "database_connected": _database_reachable(),
+        "database_connected": database_connected,
+        "backup_dir_writable": backup_dir_writable,
         "scheduler_running": scheduler_service.is_running(),
     }
 
