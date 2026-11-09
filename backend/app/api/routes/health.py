@@ -22,6 +22,13 @@ class HealthResponse(BaseModel):
     config_loaded: bool
 
 
+class ReadinessResponse(BaseModel):
+    """Readiness check response."""
+
+    ready: bool
+    checks: dict[str, bool]
+
+
 router = APIRouter()
 
 
@@ -65,7 +72,4 @@ def readiness_check() -> dict:
 
     all_ready = all(checks.values())
 
-    return {
-        "ready": all_ready,
-        "checks": checks,
-    }
+    return ReadinessResponse(ready=all_ready, checks=checks)
