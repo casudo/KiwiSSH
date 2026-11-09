@@ -75,6 +75,7 @@ The backend provides:
   - [When do I choose the global `git.remote` vs per-group overrides (`groups.<group>.git.remote`)?](#when-do-i-choose-the-global-gitremote-vs-per-group-overrides-groupsgroupgitremote)
   - [fatal: Could not read from remote repository](#fatal-could-not-read-from-remote-repository)
   - [Third Party Monitoring](#third-party-monitoring)
+    - [Readiness endpoint](#readiness-endpoint)
 - [Future Goals](#future-goals)
 - [Technical Documentation](#technical-documentation)
 - [Contributing to KiwiSSH](#contributing-to-kiwissh)
@@ -755,6 +756,37 @@ The endpoint will return the following information about the device:
   "schedule": "0 5,19 * * * (Europe/Berlin)"
 }
 ```
+
+### Readiness endpoint
+
+To monitor KiwiSSH itself, use `/api/v1/health/ready`. It answers with HTTP `200` when all checks pass and with HTTP `503` as soon as one fails. The response lists every check:
+
+```json
+{
+  "ready": false,
+  "checks": {
+    "config_dir_exists": true,
+    "main_config_exists": true,
+    "ssh_profiles_loaded": true,
+    "vendors_loaded": true,
+    "database_connected": true,
+    "backup_dir_writable": false,
+    "scheduler_running": true,
+    "queue_workers_alive": true
+  }
+}
+```
+
+| Check | Fails when |
+| --- | --- |
+| `config_dir_exists`, `main_config_exists` | The configuration directory or `kiwissh.yaml` is missing |
+| `ssh_profiles_loaded`, `vendors_loaded` | No SSH profiles or vendor files were loaded |
+| `database_connected` | The application database doesn't answer |
+| `backup_dir_writable` | `git.local_path` is missing or not writable (e.g. wrong permissions or a read-only mount) |
+| `scheduler_running` | The scheduler failed to start, so no scheduled backups run |
+| `queue_workers_alive` | A backup queue worker died. Dead workers are restarted the next time a backup is queued |
+
+The Docker healthcheck of the backend image uses this endpoint. Passing checks are left out of the access log, failing ones are logged.
 
 ---
 
