@@ -2,13 +2,14 @@
 
 from datetime import datetime
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Response, status
 from pydantic import BaseModel
 from sqlalchemy import text
 
 from app import __version__
 from app.core import get_settings
 from app.db import database
+from app.services.scheduler_service import scheduler_service
 from app.utils.timezone import get_utc_now
 
 
@@ -57,9 +58,16 @@ def _database_reachable() -> bool:
         return False
 
 
-@router.get("/ready")
-def readiness_check() -> dict:
-    """Check if application is ready to serve requests."""
+@router.get(
+    "/ready",
+    response_model=ReadinessResponse,
+    responses={status.HTTP_503_SERVICE_UNAVAILABLE: {"model": ReadinessResponse, "description": "At least one check failed"}},
+)
+async def readiness_check(response: Response) -> ReadinessResponse:
+    """Check if application is ready to serve requests and run backups.
+
+    Answers with HTTP 503 if any check fails, so container healthchecks and monitoring tools can rely on the status code.
+    """
     settings = get_settings()
 
     checks = {
@@ -68,8 +76,11 @@ def readiness_check() -> dict:
         "ssh_profiles_loaded": bool(settings.ssh_profiles),
         "vendors_loaded": bool(settings.vendors),
         "database_connected": _database_reachable(),
+        "scheduler_running": scheduler_service.is_running(),
     }
 
     all_ready = all(checks.values())
+    if not all_ready:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
 
     return ReadinessResponse(ready=all_ready, checks=checks)
