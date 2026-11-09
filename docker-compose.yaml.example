@@ -68,8 +68,10 @@ services:
     #   - traefik.http.routers.kiwissh.tls=true
     #   - traefik.http.services.kiwissh.loadbalancer.server.port=8080
     #   - traefik.http.routers.kiwissh.middlewares=basic-auth@file
+    ### Only start the frontend once the backend passes its built-in healthcheck (/api/v1/health/ready)
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     hostname: kiwissh_frontend
     networks:
       - your-network
