@@ -1,6 +1,6 @@
 """Service for scheduling and triggering multiple tasks based on cron schedules.
 
-Schedules backups as well as log retention cleanup jobs.
+Schedules backups as well as log retention cleanup and git maintenance jobs.
 
 Backups: resolves device-specific schedules with precedence (app < group < node)
 and provides methods to determine which devices should have their backup triggered
@@ -19,6 +19,7 @@ from app.core.config import ScheduleConfig
 from app.db import database
 from app.models.device import DeviceBase
 from app.services.backup_service import backup_service
+from app.services.git_service import git_service
 from app.services.log_retention_service import log_retention_service
 
 logger = logging.getLogger(__name__)
@@ -116,6 +117,11 @@ class SchedulerService:
         except Exception as ex:
             logger.error("Scheduled log retention failed: %s", ex)
 
+    async def _run_git_maintenance(self) -> None:
+        """Run git maintenance on a schedule."""
+        if self.settings.git.maintenance.enabled:
+            await git_service.run_maintenance()
+
     def _schedule_device(self, device: DeviceBase) -> bool:
         """Add or replace the backup job of a device.
 
@@ -204,11 +210,13 @@ class SchedulerService:
                 }
             )
 
-            ### Schedule backups for all devices with enabled schedules
+            ### BACKUPS
+            ## Schedule backups for all devices with enabled schedules
             for device in devices:
                 self._schedule_device(device)
 
-            ### Schedule daily log retention cleanup (runs at 03:00 UTC)
+            ### LOG RETENTION
+            ## Schedule daily log retention cleanup (runs at 03:00 UTC)
             if self.settings.app.retention.enabled:
                 self.scheduler.add_job(
                     self._run_log_retention,
@@ -221,6 +229,22 @@ class SchedulerService:
                     max_instances=1,
                 )
                 logger.debug("Scheduled daily log retention job (03:00 UTC)")
+
+            ### GIT MAINTENANCE
+            ## Schedule git maintenance (must be enabled + valid cron)
+            maintenance_cfg = self.settings.git.maintenance
+            if maintenance_cfg.enabled and maintenance_cfg.cron:
+                self.scheduler.add_job(
+                    self._run_git_maintenance,
+                    trigger=CronTrigger.from_crontab(maintenance_cfg.cron, timezone=ZoneInfo(maintenance_cfg.timezone)),
+                    id="git_maintenance",
+                    name="Git Maintenance",
+                    replace_existing=True,
+                    misfire_grace_time=3600,
+                    coalesce=True,
+                    max_instances=1,
+                )
+                logger.debug("Scheduled git maintenance job (%s %s)", maintenance_cfg.cron, maintenance_cfg.timezone)
 
             ### Start the scheduler
             self.scheduler.start()

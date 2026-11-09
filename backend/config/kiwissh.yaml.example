@@ -132,6 +132,10 @@ sources:
 ## Keep the {group} placeholder in git.remote.url for dynamic repo names based on group.
 # git:
 #   local_path: "/config/backups"
+#   maintenance:
+#     enabled: true
+#     cron: "0 3 * * sun"
+#     timezone: "UTC" # Default: TZ environment variable or UTC
 #   commit_message_template: "Backup: {group}/{device_name} at {timestamp}"
 #   remote: # Optional
 #     url: "ssh://git@github.com:<YOUR_ORGANIZATION_HERE>/{group}.git" # Required
