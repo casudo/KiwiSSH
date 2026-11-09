@@ -44,5 +44,11 @@ USER kiwissh
 
 EXPOSE 8000
 
+### Mark the container unhealthy when /api/v1/health/ready fails
+## start-period covers loading the device source on startup; start-interval checks more often meanwhile so the
+## container turns healthy soon after startup
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --start-interval=5s --retries=3 \
+    CMD ["python", "healthcheck.py"]
+
 ### Run FastAPI with Uvicorn (bind on 0.0.0.0 for container)
 CMD ["python", "entrypoint.py"]
