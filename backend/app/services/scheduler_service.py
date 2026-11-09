@@ -253,6 +253,10 @@ class SchedulerService:
             logger.error(f"Failed to start scheduler: {ex}")
             self.scheduler = None
 
+    def is_running(self) -> bool:
+        """Return True if the scheduler was started successfully and has not been stopped since."""
+        return self.scheduler is not None and self.scheduler.running
+
     def stop_scheduler(self) -> None:
         """Stop the scheduler gracefully."""
         if self.scheduler is None:
