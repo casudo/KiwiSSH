@@ -50,6 +50,15 @@ const favoriteDevices = computed(() => {
 
 const dashboardDevices = computed(() => favoriteDevices.value)
 
+// "unreachable" when the health request itself failed (e.g. backend down)
+const systemStatus = computed(() => appStore.health?.status ?? "unreachable")
+
+const failedHealthChecks = computed(() =>
+  Object.entries(appStore.health?.checks ?? {})
+    .filter(([, ok]) => !ok)
+    .map(([name]) => name)
+)
+
 function goToDevice(deviceName: string) {
   router.push(`/devices/${deviceName}`)
 }
@@ -102,22 +111,31 @@ onMounted(async () => {
     </div>
 
     <!-- Health Status -->
-    <div v-if="appStore.health" class="card mb-8">
+    <div v-if="appStore.health || appStore.error" class="card mb-8">
       <div class="flex items-center justify-between">
         <div>
           <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">System Status</h2>
-          <p class="text-sm text-gray-500 dark:text-gray-400">API health check</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Backend health check</p>
         </div>
         <div class="flex items-center space-x-2">
           <span
             class="w-3 h-3 rounded-full"
-            :class="appStore.health.status === 'healthy' ? 'bg-green-500' : 'bg-red-500'"
+            :class="systemStatus === 'healthy' ? 'bg-green-500' : 'bg-red-500'"
           ></span>
-          <span class="font-medium capitalize">{{ appStore.health.status }}</span>
+          <span class="font-medium capitalize">{{ systemStatus }}</span>
         </div>
       </div>
       <div class="mt-4 text-sm text-gray-500 dark:text-gray-400">
-        Config loaded: {{ appStore.health.config_loaded ? "Yes" : "No" }}
+        <template v-if="!appStore.health">
+          The backend could not be reached: {{ appStore.error }}
+        </template>
+        <template v-else-if="failedHealthChecks.length === 0">
+          All {{ Object.keys(appStore.health.checks).length }} checks passed
+        </template>
+        <template v-else>
+          Failed checks:
+          <span class="font-mono text-red-600 dark:text-red-400">{{ failedHealthChecks.join(", ") }}</span>
+        </template>
       </div>
     </div>
 
