@@ -1,19 +1,38 @@
 ### KiwiSSH - Main Configuration
 ##
-## To see a list of all available paramaters and their descriptions, please refer to the README.md or the Pydantic models in /backend/app/core/config.py.
+## This file lists all available parameters. For detailed descriptions, please refer to the README.md or the Pydantic models in /backend/app/core/config.py.
 ##
-### WARNING: Rename this file to "kiwissh.yaml" and edit the values to suit your environment. Do not edit this example file directly!
+## How to read this file:
+##   # Required       Must be set. Inside an optional block, only if you use that block.
+##   # Optional       Not set by default, the value shown is only an example.
+##   # Default: <x>   Falls back to <x> if not set, the value shown is only an example.
+##   No comment       Optional, the value shown is its default.
+##
+## When you uncomment a nested key, uncomment its parent keys as well!
+## Never leave a parent key active without any active keys below it.
+##
+### WARNING: Rename this file to "kiwissh.yaml" and edit the values to suit your environment. DO NOT edit this example file directly!
 
 ### Application settings
 app:
-  debug: false
-  threads: 20
-  timeout: 30
-  retry: 2
-  schedule:
-    cron: "0 2 * * *" # Daily at 2 AM
+  # debug: false
+  # threads: 20
+  # timeout: 30
+  # retry: 3
+  # protocol: "ssh"
   api:
-    host: "0.0.0.0" # Should be set to 0.0.0.0 when running in Docker to be accessible from outside the container
+    host: "0.0.0.0" # Default: "127.0.0.1"
+    # port: 8000
+    # cors_origins:
+    #   - "http://localhost:5173"
+    #   - "http://127.0.0.1:5173"
+  # schedule:
+  #   cron: "0 2 * * *"
+  #   timezone: "UTC" # Default: TZ environment variable or UTC
+  # retention:
+  #   enabled: false
+  #   max_rows: 100000
+  #   max_age_days: 90
 
 ### Application database (PostgreSQL or SQLite)
 ## This database stores KiwiSSH-owned data (backup job logs, favorites, etc.)
@@ -22,35 +41,44 @@ app:
 ## The database itself and the user must already exist, the required tables will be created automatically.
 application_database:
   type: "postgresql"
-  host: "192.168.15.25"
+  host: "192.168.15.25" # Required
   port: 5432
-  database: "kiwissh"
-  username: "kiwissh_user"
-  password: "kiwissh-user-password"
+  database: "kiwissh" # Required
+  username: "kiwissh_user" # Required
+  password: "kiwissh-user-password" # Required
 
 ## Option B) SQLite (file-based, no external database server required):
 ## The file (and its parent directory) is created automatically if it does not exist
 ## Relative paths are resolved against the configuration directory
 # application_database:
-#   type: "sqlite"
-#   path: "kiwissh.db"
+#   type: "sqlite" # Required
+#   path: "kiwissh.db" # Required
 
 ### Notification settings (optional, disabled by default)
 ## Read about the configuration options in the README.md
+## At least one notification type (smtp or webhook) is required when notifications are enabled.
 notifications:
-  enabled: true
-  trigger: "always"
+  enabled: true # Default: false
+  trigger: "always" # Default: "failure"
+  # large_diff_threshold: 500
+  # notify_on_recovery: true
   type:
-    smtp:
-      host: "smtp.example.com"
-      sender: "kiwissh@example.com"
-      recipients:
+    smtp: # Optional
+      host: "smtp.example.com" # Required
+      # port: 25
+      sender: "kiwissh@example.com" # Required
+      recipients: # Required
         - "admin@example.com"
-    # webhook:
-    #   url: "https://example.com/hooks/kiwissh"
+      # username: "smtp-user" # Optional
+      # password: "smtp-password" # Optional
+      # use_tls: false
+      # use_ssl: false
+      # timeout_seconds: 10
+    # webhook: # Optional
+    #   url: "https://example.com/hooks/kiwissh" # Required
     #   method: "POST"
     #   format: "generic"
-    #   headers:
+    #   headers: # Optional
     #     Authorization: "Bearer 1d73fabef8a44f5714b585cf0xxxxx"
     #   timeout_seconds: 10
     #   verify_ssl: true
@@ -59,100 +87,158 @@ notifications:
 ## Load from a CSV file, an Ansible inventory YAML, PostgreSQL or an HTTP endpoint. Exactly one source is required.
 ## Required fields per device: group, device_name, ip_address, enabled
 ## Paths may be absolute, or relative to the config directory.
+## sources.http.map.group is not required if sources.http.default_group is set.
 sources:
-  # file: "/config/sources/devices.csv"
-  # ansible: "/config/sources/inventory.yaml"
-  postgres:
-      host: "172.16.147.56"
-      port: 5432
-      database: "existing_inventory_db"
-      table: "prod_devices"
-      username: "kiwissh"
-      password: "strongpassword"
-  # http:
-  #     url: "http://10.11.12.13/api/devices"
-  #     headers:
+  # file: "/config/sources/devices.csv" # Optional
+  # ansible: "/config/sources/inventory.yaml" # Optional
+  postgres: # Optional
+      host: "172.16.147.56" # Required
+      # port: 5432
+      database: "existing_inventory_db" # Required
+      table: "prod_devices" # Required
+      username: "kiwissh" # Required
+      password: "strongpassword" # Required
+  # http: # Optional
+  #     url: "http://10.11.12.13/api/devices" # Required
+  #     headers: # Optional
   #       X-Auth-Token: "1d73fabef8a44f5714b585cf0xxxxx"
-  #     map:            # maps KiwiSSH field -> JSON response field (defaults shown)
-  #       device_name: hostname
-  #       ip_address: ip
-  #     default_group: "core-switches"  # used when the response has no group field
+  #     map: # Required
+  #       device_name: hostname # Required
+  #       ip_address: ip # Required
+  #       group: group # Required
+  #       enabled: enabled # Optional
+  #       username: device_username # Optional
+  #       password: device_password # Optional
+  #       enable_password: device_enable_password # Optional
+  #       ssh_key_file: device_ssh_key_file # Optional
+  #       ssh_profile: device_ssh_profile # Optional
+  #       vendor: device_vendor # Optional
+  #       protocol: device_protocol # Optional
+  #       port: device_port # Optional
+  #       timeout: device_timeout # Optional
+  #       retry: device_retry # Optional
+  #     default_group: "core-switches" # Optional
+  #     items_key: "devices" # Optional
+  #     verify_tls: true
+  #     timeout: 10
 
 ### Global git backup repository settings
 ## Local git storage is always active and stores one repository per group under local_path.
 ## DO NOT delete the "backups" folder ever unless you want to lose all your local git repositories and their history.
 ## Paths may be absolute, or relative to the config directory.
-git:
-  local_path: "/config/backups"
-  ### Scheduled cleanup of the local git repositories (git gc and commit-graph).
-  # maintenance:
-  #   enabled: true # enabled by default
-  #   cron: "0 3 * * sun"
-  #   timezone: "UTC" # Default: TZ environment variable or UTC
-  ### Optional global remote git location for groups without overrides.
-  ### If this block is configured, git.remote.url is required.
-  # remote:
-  #   url: "ssh://git@github.com:<YOUR_ORGANIZATION_HERE>/{group}.git" # Keep {group} placeholder for dynamic repo names based on group
+##
+## The remote block is an optional global remote git location for groups without overrides.
+## If this block is configured, git.remote.url is required.
+## Keep the {group} placeholder in git.remote.url for dynamic repo names based on group.
+# git:
+#   local_path: "/config/backups"
+#   maintenance:
+#     enabled: true
+#     cron: "0 3 * * sun"
+#     timezone: "UTC" # Default: TZ environment variable or UTC
+#   commit_message_template: "Backup: {group}/{device_name} at {timestamp}"
+#   remote: # Optional
+#     url: "ssh://git@github.com:<YOUR_ORGANIZATION_HERE>/{group}.git" # Required
+#     branch: "main"
 
 ### Groups configuration
 ## Priority for device configuration (default to most specific): app < groups < nodes
 ## KiwiSSH closes shell sessions automatically after backup command phases, you don't need to explicitly add "exit" or "logout" but you can.
 ##
+## The first group lists all available parameters, the other groups show common variations.
+## SSH connections (devices and jumphosts) require either password or ssh_key_file, telnet requires password.
+## ssh_profile is only required for the ssh protocol.
+##
 ## TIP: You can externalize the `groups` and `nodes` sections into separate files
 ## using the `!include` tag. This keeps large/dynamic device data out of this file
 ## and makes automation (CI/CD, Ansible, scripts) much easier. For example:
 ##
-##   groups: !include groups.yaml         # single file (see groups.yaml.example)
-##   nodes: !include nodes.yaml           # single file (see nodes.yaml.example)
+##   groups: !include groups.yaml         # single file
+##   nodes: !include nodes.yaml           # single file
 ##   nodes: !include nodes.d/             # merge every *.yaml file in a directory
 ##
 ## Paths may be absolute (e.g. /config/groups.yaml) or relative to the kiwissh.yaml file's
 ## directory. Included files hold the mapping directly (no leading groups:/nodes: key needed).
 groups:
   <your-group-name-here>:
-    username: "admin"
-    password: "password"
-    ssh_profile: "modern"
-    vendor: "cisco_ios"
-    git:
-      remote:
-        url: "ssh://git@gitea/customer-aaa/switches.git"
-    jumphost:
-      username: "jumphost-user"
-      hostname: "my.jumphost.com"
-      ssh_profile: "legacy-jumphost"
-  
+    username: "admin" # Required
+    password: "password" # Optional
+    # enable_password: "enable-password" # Optional
+    # ssh_key_file: "/home/kiwissh/.ssh/key_for_group" # Optional
+    ssh_profile: "modern" # Required when protocol is ssh
+    vendor: "cisco_ios" # Required
+    # protocol: "ssh" # Default: app.protocol
+    # port: 22 # Default: 22 (ssh), 23 (telnet), 80 (http), 443 (https)
+    # verify_ssl: true
+    # redaction: true # Default: vendor YAML setting
+    # timeout: 30 # Default: app.timeout
+    # retry: 3 # Default: app.retry
+    # schedule: # Default: app.schedule
+    #   cron: "0 2 * * *"
+    #   timezone: "UTC" # Default: TZ environment variable or UTC
+    git: # Optional
+      # commit_message_template: "Backup: {group}/{device_name} at {timestamp}" # Default: git.commit_message_template
+      remote: # Optional
+        url: "ssh://git@gitea/customer-aaa/switches.git" # Default: git.remote.url
+        # branch: "main" # Default: git.remote.branch
+    jumphost: # Optional
+      hostname: "my.jumphost.com" # Required
+      # port: 22
+      username: "jumphost-user" # Required
+      password: "jumphost-password" # Optional
+      # ssh_key_file: "/home/kiwissh/.ssh/key_for_jumphost" # Optional
+      ssh_profile: "modern" # Required
+
   <another-group-name>:
-    username: "admin"
-    password: "password"
-    protocol: "telnet" # Optional override
-    vendor: "fortinet_fortigate"
-    redaction: true # Optional override
-    git:
-      remote:
-        url: "ssh://git@<domain>/customer-bbb/firewalls.git"
+    username: "admin" # Required
+    password: "password" # Required
+    protocol: "telnet" # Default: app.protocol
+    vendor: "fortinet_fortigate" # Required
+    redaction: true # Default: vendor YAML setting
+    git: # Optional
+      remote: # Optional
+        url: "ssh://git@<domain>/customer-bbb/firewalls.git" # Default: git.remote.url
 
   <http-group-name>:
-    username: "admin"
-    password: "password"
-    protocol: "https" # Fetch config over HTTP(S) API instead of SSH/Telnet
-    verify_ssl: false # Optional, default true. Set false for self-signed device certs
-    vendor: "paloalto_panosapi"
-    git:
-      remote:
-        url: "ssh://git@<domain>/customer-ccc/https-http-routers.git"
+    username: "admin" # Required
+    password: "password" # Optional
+    protocol: "https" # Default: app.protocol
+    verify_ssl: false # Default: true
+    vendor: "paloalto_panosapi" # Required
+    git: # Optional
+      remote: # Optional
+        commit_message_template: "{device_name} was backed up at {timestamp}. Group: {group}" # Default: git.commit_message_template
+        url: "ssh://git@<domain>/customer-ccc/https-http-routers.git" # Default: git.remote.url
+        branch: "develop" # Default: git.remote.branch
 
 ### Per-node overrides
 ## See the README.md for what each override does and how to use them
 ## Group CANNOT be overridden - change it in the source instead
+## All parameters are optional and fall back to the settings of the device's group
 ## Remove this section if no overrides needed
 nodes:
   <device-name-here>:
-    retry: 5
-    port: 2222
-    ssh_key_file: "/home/kiwissh/.ssh/key_for_device"
-    jumphost:
-      hostname: "10.20.30.41"
-      username: "node-jump-user"
-      # password: "node-jump-password"
-      ssh_key_file: "/home/kiwissh/.ssh/key_for_jumphost"
+    # username: "node-user" # Default: groups.<group>.username
+    # password: "node-password" # Default: groups.<group>.password
+    # enable_password: "node-enable-password" # Default: groups.<group>.enable_password
+    ssh_key_file: "/home/kiwissh/.ssh/key_for_device" # Default: groups.<group>.ssh_key_file
+    # ssh_profile: "legacy" # Default: groups.<group>.ssh_profile
+    # vendor: "cisco_ios" # Default: groups.<group>.vendor
+    # protocol: "ssh" # Default: groups.<group>.protocol
+    port: 2222 # Default: groups.<group>.port
+    # verify_ssl: true # Default: groups.<group>.verify_ssl
+    # redaction: true # Default: groups.<group>.redaction
+    # timeout: 30 # Default: groups.<group>.timeout
+    retry: 5 # Default: groups.<group>.retry
+    # schedule: # Default: groups.<group>.schedule
+    #   cron: "0 2 * * *"
+    #   timezone: "UTC" # Default: TZ environment variable or UTC
+    # git: # Optional
+    #   commit_message_template: "Backup: {group}/{device_name} at {timestamp}" # Default: groups.<group>.git.commit_message_template
+    jumphost: # Default: groups.<group>.jumphost
+      hostname: "10.20.30.41" # Default: groups.<group>.jumphost.hostname
+      # port: 22 # Default: groups.<group>.jumphost.port
+      username: "node-jump-user" # Default: groups.<group>.jumphost.username
+      # password: "node-jump-password" # Default: groups.<group>.jumphost.password
+      ssh_key_file: "/home/kiwissh/.ssh/key_for_jumphost" # Default: groups.<group>.jumphost.ssh_key_file
+      # ssh_profile: "legacy" # Default: groups.<group>.jumphost.ssh_profile

@@ -175,7 +175,7 @@ Below you'll find a detailed overview of all available configuration options in 
 > Changes to the `kiwissh.yaml` file will require a restart of the backend and frontend applications to take effect.
 
 > [!TIP]
-> You can externalize large sections of your `groups` and `nodes` configuration into separate files using the `!include` tag. This helps keep your `kiwissh.yaml` file clean and makes automation easier. [Read more in the example files](backend/config/kiwissh.yaml.example).
+> You can externalize large sections of your `groups` and `nodes` configuration into separate files using the `!include` tag. This helps keep your `kiwissh.yaml` file clean and makes automation easier. [Read more in the example file](backend/config/kiwissh.yaml.example).
 
 ### app
 
@@ -191,8 +191,8 @@ Full available options:
 | `app.api.host` | The host on which the API server will run. Should be set to 0.0.0.0 when running in Docker. | No | `127.0.0.1` |
 | `app.api.port` | The port on which the API server will run. | No | `8000` |
 | `app.api.cors_origins` | A list of allowed CORS origins for the API server. | No | `["http://localhost:5173", "http://127.0.0.1:5173"]` |
-| `app.schedule.cron` | The cron expression for the global backup schedule. | No | `0 2 * * *` |
-| `app.schedule.TZ` | The timezone for the backup schedule. | No | `TZ environment variable or UTC` |
+| `app.schedule.cron` | The cron expression for the global backup schedule. An empty string disables the schedule. | No | `0 2 * * *` |
+| `app.schedule.timezone` | The timezone for the backup schedule. `app.schedule.TZ` is accepted as an alias. | No | `TZ environment variable or UTC` |
 | `app.retention.enabled` | If set to true, log retention policies will be enforced. Will run every day at 03:00 UTC. | No | `false` |
 | `app.retention.max_age_days` | Maximum age of backup job logs in days. Logs older than this will be deleted. | No | `90` |
 | `app.retention.max_rows` | Maximum number of backup job logs to keep. Oldest logs will be deleted when this limit is exceeded. | No | `100000` |
@@ -247,24 +247,24 @@ You can get notified if the backup of a device fails or succeeds.
 | --- | ----------- | -------- | ------------- |
 | `notifications.enabled` | Whether notifications are enabled. | No | `False` |
 | `notifications.trigger` | The notification trigger. | No | `failure` |
-| `notifications.type` | The type of notification. | **Yes** | - |
-| `notifications.smtp.host` | The SMTP server host. | **Yes** | - |
-| `notifications.large_diff_threshold` | The diff line count threshold for considering a backup change as "large". This can be used to trigger notifications only for significant changes. | No | `650` |
+| `notifications.large_diff_threshold` | The diff line count threshold for considering a backup change as "large". This can be used to trigger notifications only for significant changes. | No | `500` |
 | `notifications.notify_on_recovery` | Send a "Backup Recovered" notification when a device that failed its last backup is backed up successfully again. | No | `True` |
-| `notifications.smtp.port` | The SMTP server port. | No | `25` |
-| `notifications.smtp.sender` | The sender email address. | **Yes** | - |
-| `notifications.smtp.recipients` | The recipient email addresses (list). | **Yes** | - |
-| `notifications.smtp.username` | The username for the SMTP server. | No | - |
-| `notifications.smtp.password` | The password for the SMTP server. | No | - |
-| `notifications.smtp.use_tls` | Whether to use STARTTLS. Change the port accordingly. | No | `False` |
-| `notifications.smtp.use_ssl` | Whether to use SSL/TLS. Change the port accordingly. | No | `False` |
-| `notifications.smtp.timeout_seconds` | Timeout in seconds for connecting to and talking with the SMTP server. | No | `10` |
-| `notifications.webhook.url` | The webhook endpoint URL (must start with `http://` or `https://`). | **Yes** | - |
-| `notifications.webhook.method` | The HTTP method used for the request. One of `POST`, `PUT`, `PATCH`. | No | `POST` |
-| `notifications.webhook.format` | The payload shape the endpoint expects. `generic` sends a flat JSON body with all backup fields; `discord` sends a Discord-compatible `{"content": ...}` body. | No | `generic` |
-| `notifications.webhook.headers` | Additional HTTP headers to send (e.g. an `Authorization` header). | No | - |
-| `notifications.webhook.timeout_seconds` | Request timeout in seconds. | No | `10` |
-| `notifications.webhook.verify_ssl` | Whether to verify the endpoint's TLS certificate. | No | `True` |
+| `notifications.type` | The type of notification. | **Yes** | - |
+| `notifications.type.smtp.host` | The SMTP server host. | **Yes** | - |
+| `notifications.type.smtp.port` | The SMTP server port. | No | `25` |
+| `notifications.type.smtp.sender` | The sender email address. | **Yes** | - |
+| `notifications.type.smtp.recipients` | The recipient email addresses (list). | **Yes** | - |
+| `notifications.type.smtp.username` | The username for the SMTP server. | No | - |
+| `notifications.type.smtp.password` | The password for the SMTP server. | No | - |
+| `notifications.type.smtp.use_tls` | Whether to use STARTTLS. Change the port accordingly. | No | `False` |
+| `notifications.type.smtp.use_ssl` | Whether to use SSL/TLS. Change the port accordingly. | No | `False` |
+| `notifications.type.smtp.timeout_seconds` | Timeout in seconds for connecting to and talking with the SMTP server. | No | `10` |
+| `notifications.type.webhook.url` | The webhook endpoint URL (must start with `http://` or `https://`). | **Yes** | - |
+| `notifications.type.webhook.method` | The HTTP method used for the request. One of `POST`, `PUT`, `PATCH`. | No | `POST` |
+| `notifications.type.webhook.format` | The payload shape the endpoint expects. `generic` sends a flat JSON body with all backup fields; `discord` sends a Discord-compatible `{"content": ...}` body. | No | `generic` |
+| `notifications.type.webhook.headers` | Additional HTTP headers to send (e.g. an `Authorization` header). | No | - |
+| `notifications.type.webhook.timeout_seconds` | Request timeout in seconds. | No | `10` |
+| `notifications.type.webhook.verify_ssl` | Whether to verify the endpoint's TLS certificate. | No | `True` |
 
 ### sources
 
@@ -445,10 +445,11 @@ Commits are not pushed one by one: each group is pushed once the backup queue is
 | `groups.<group>.jumphost.ssh_profile` | SSH profile for the jumphost connection. This is separate from `groups.<group>.ssh_profile` (device connection profile) and is required when a jumphost is configured. | **Yes**, if `jumphost` | - |
 | `groups.<group>.timeout` | The SSH timeout in seconds for devices in this group. This overrides the global SSH timeout. | No | Global `app.timeout` |
 | `groups.<group>.retry` | The SSH retry count for devices in this group. This overrides the global SSH retry count. | No | Global `app.retry` |
-| `groups.<group>.schedule.cron` | The cron expression for the backup schedule for devices in this group. This overrides the global backup schedule. | No | Global `app.schedule.cron` |
+| `groups.<group>.schedule.cron` | The cron expression for the backup schedule for devices in this group. This overrides the global backup schedule. The `schedule` block replaces `app.schedule` as a whole, so always set both `cron` and `timezone`. | No | Global `app.schedule.cron` |
+| `groups.<group>.schedule.timezone` | The timezone for the backup schedule for devices in this group. It is not inherited from `app.schedule.timezone`. | No | `TZ environment variable or UTC` |
 | `groups.<group>.git.commit_message_template` | The git commit message template for this group. This overrides global `git.commit_message_template`. | No | Global `git.commit_message_template` |
 | `groups.<group>.git.remote.url` | The remote git repository URL for this group. This overrides the global `git.remote.url`. | No | Global `git.remote.url` or if set globally |
-| `groups.<group>.git.remote.branch` | The remote git branch to push to for this group. This overrides the global `git.remote.branch`. | No | Global `git.remote.branch` if set globally |
+| `groups.<group>.git.remote.branch` | The remote git branch to push to for this group. This overrides the global `git.remote.branch`. | No | Global `git.remote.branch` or `main` |
 
 ### nodes
 
@@ -475,7 +476,8 @@ Commits are not pushed one by one: each group is pushed once the backup queue is
 | `nodes.<device_name>.jumphost.ssh_profile` | Node-level jumphost SSH profile override. | **Yes**, if `jumphost` | `groups.<group>.jumphost.ssh_profile` |
 | `nodes.<device_name>.timeout` | The SSH timeout in seconds for this device. This overrides the group and global SSH timeout. | No | `groups.<group>.timeout` or Global `app.timeout` |
 | `nodes.<device_name>.retry` | The SSH retry count for this device. This overrides the group and global SSH retry count. | No | `groups.<group>.retry` or Global `app.retry` |
-| `nodes.<device_name>.schedule.cron` | The cron expression for the backup schedule for this device. This overrides the group and global backup schedule. | No | `groups.<group>.schedule.cron` or Global `app.schedule.cron` |
+| `nodes.<device_name>.schedule.cron` | The cron expression for the backup schedule for this device. This overrides the group and global backup schedule. The `schedule` block replaces the group and global `schedule` as a whole, so always set both `cron` and `timezone`. | No | `groups.<group>.schedule.cron` or Global `app.schedule.cron` |
+| `nodes.<device_name>.schedule.timezone` | The timezone for the backup schedule for this device. It is not inherited from the group or global `schedule.timezone`. | No | `TZ environment variable or UTC` |
 | `nodes.<device_name>.git.commit_message_template` | The git commit message template for this device. This overrides group and global git commit templates. | No | `groups.<group>.git.commit_message_template` or global `git.commit_message_template` |
 
 ## Vendor folder
