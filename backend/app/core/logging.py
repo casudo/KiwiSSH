@@ -3,11 +3,11 @@
 import logging
 import logging.config
 
-READINESS_PATH = "/api/v1/health/ready"
+HEALTH_PATH = "/api/v1/health"
 
 
-class PassingReadinessCheckFilter(logging.Filter):
-    """Drop access log lines of **passing** readiness checks, the Docker healthcheck sends one every 30 seconds.
+class PassingHealthCheckFilter(logging.Filter):
+    """Drop access log lines of **passing** health checks, the Docker healthcheck sends one every 30 seconds.
 
     **Failing** checks (HTTP 503) are still logged.
     """
@@ -17,7 +17,7 @@ class PassingReadinessCheckFilter(logging.Filter):
         args = record.args
         if isinstance(args, tuple) and len(args) == 5:
             path, status_code = args[2], args[4]
-            return not (path == READINESS_PATH and status_code == 200)
+            return not (path == HEALTH_PATH and status_code == 200)
         return True
 
 
@@ -91,5 +91,5 @@ def configure_logging(debug: bool = False) -> None:
 
     logging.config.dictConfig(config)
 
-    ### Apply custom filter for logger "uvicorn.access" to drop passing readiness check logs
-    logging.getLogger("uvicorn.access").addFilter(PassingReadinessCheckFilter())
+    ### Apply custom filter for logger "uvicorn.access" to drop passing health check logs
+    logging.getLogger("uvicorn.access").addFilter(PassingHealthCheckFilter())

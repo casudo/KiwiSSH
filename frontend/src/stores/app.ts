@@ -1,7 +1,7 @@
 import { defineStore } from "pinia"
 import { ref } from "vue"
 import { healthApi } from "@/api/health"
-import type { HealthResponse, ReadinessResponse } from "@/types/health"
+import type { HealthResponse } from "@/types/health"
 import { APP_VERSION } from "@/main"
 
 const GITHUB_RELEASES_URL = "https://api.github.com/repos/casudo/KiwiSSH/releases/latest"
@@ -10,7 +10,6 @@ const DISMISSED_KEY = "kiwissh-dismissed-update"
 export const useAppStore = defineStore("app", () => {
   // State
   const health = ref<HealthResponse | null>(null)
-  const ready = ref(false)
   const loading = ref(false)
   const error = ref<string | null>(null)
   const latestVersion = ref<string | null>(null)
@@ -27,20 +26,10 @@ export const useAppStore = defineStore("app", () => {
     } catch (e: unknown) {
       const errMsg = e instanceof Error ? e.message : "Failed to check health"
       error.value = errMsg
+      health.value = null // null cuz dont show stale health info
       throw e
     } finally {
       loading.value = false
-    }
-  }
-
-  async function checkReady(): Promise<ReadinessResponse> {
-    try {
-      const response = await healthApi.ready()
-      ready.value = response.ready
-      return response
-    } catch (e) {
-      ready.value = false
-      return { ready: false, checks: {} }
     }
   }
 
@@ -80,7 +69,6 @@ export const useAppStore = defineStore("app", () => {
   return {
     // State
     health,
-    ready,
     loading,
     error,
     latestVersion,
@@ -88,7 +76,6 @@ export const useAppStore = defineStore("app", () => {
     updateDismissed,
     // Actions
     checkHealth,
-    checkReady,
     checkForUpdates,
     dismissUpdate,
     clearError,

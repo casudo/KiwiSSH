@@ -75,7 +75,7 @@ The backend provides:
   - [When do I choose the global `git.remote` vs per-group overrides (`groups.<group>.git.remote`)?](#when-do-i-choose-the-global-gitremote-vs-per-group-overrides-groupsgroupgitremote)
   - [fatal: Could not read from remote repository](#fatal-could-not-read-from-remote-repository)
   - [Third Party Monitoring](#third-party-monitoring)
-    - [Readiness endpoint](#readiness-endpoint)
+    - [Health endpoint](#health-endpoint)
 - [Future Goals](#future-goals)
 - [Technical Documentation](#technical-documentation)
 - [Contributing to KiwiSSH](#contributing-to-kiwissh)
@@ -757,13 +757,15 @@ The endpoint will return the following information about the device:
 }
 ```
 
-### Readiness endpoint
+### Health endpoint
 
-To monitor KiwiSSH itself, use `/api/v1/health/ready`. It answers with HTTP `200` when all checks pass and with HTTP `503` as soon as one fails. The response lists every check:
+To monitor KiwiSSH itself, use `/api/v1/health`. It answers with HTTP `200` when all checks pass and with HTTP `503` as soon as one fails. The response lists every check:
 
 ```json
 {
-  "ready": false,
+  "status": "unhealthy",
+  "timestamp": "2026-11-09T10:15:00.123456Z",
+  "version": "2.8.0",
   "checks": {
     "config_dir_exists": true,
     "main_config_exists": true,
@@ -786,7 +788,7 @@ To monitor KiwiSSH itself, use `/api/v1/health/ready`. It answers with HTTP `200
 | `scheduler_running` | The scheduler failed to start, so no scheduled backups run |
 | `queue_workers_alive` | A backup queue worker died. Dead workers are restarted the next time a backup is queued |
 
-The Docker healthcheck of the backend image uses this endpoint. Passing checks are left out of the access log, failing ones are logged.
+Passing checks are left out of the access log, failing ones are logged.
 
 ---
 

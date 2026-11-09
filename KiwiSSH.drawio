@@ -467,7 +467,7 @@
           <mxGeometry relative="1" as="geometry">
           </mxGeometry>
         </mxCell>
-        <mxCell id="kiwi-bs-4-label" connectable="0" parent="kiwi-bs-4" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="GET /ready" vertex="1">
+        <mxCell id="kiwi-bs-4-label" connectable="0" parent="kiwi-bs-4" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="GET /health" vertex="1">
           <mxGeometry relative="1" x="-0.5" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
@@ -2741,7 +2741,7 @@
           <mxGeometry relative="1" as="geometry">
           </mxGeometry>
         </mxCell>
-        <mxCell id="kiwi-sch-97-label" connectable="0" parent="kiwi-sch-97" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="GET /ready" vertex="1">
+        <mxCell id="kiwi-sch-97-label" connectable="0" parent="kiwi-sch-97" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="GET /health" vertex="1">
           <mxGeometry relative="1" x="-0.4" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
@@ -3527,7 +3527,7 @@
     </mxGraphModel>
   </diagram>
   <diagram name="Health API (health.py)" id="kiwi-health-page">
-    <mxGraphModel dx="5135" dy="2548" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="3796" dy="1752" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -3552,31 +3552,22 @@
         <mxCell id="kiwi-health-6" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="Runs later, not right away" vertex="1">
           <mxGeometry height="30" width="190" x="-350" y="145" as="geometry" />
         </mxCell>
-        <mxCell id="kiwi-health-10" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=30;fontStyle=1" value="Frontend" vertex="1">
-          <mxGeometry height="80" width="280" x="160" y="120" as="geometry" />
-        </mxCell>
         <mxCell id="kiwi-health-11" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=30;fontStyle=1" value="Docker HEALTHCHECK&lt;div style=&quot;font-size: 30px;&quot;&gt;&lt;br style=&quot;font-size: 30px;&quot;&gt;&lt;/div&gt;&lt;div style=&quot;font-size: 30px;&quot;&gt;healthcheck.py&lt;/div&gt;" vertex="1">
           <mxGeometry height="160" width="520" x="740" y="40" as="geometry" />
         </mxCell>
-        <mxCell id="kiwi-health-12" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=30;fontStyle=1" value="Monitoring tools" vertex="1">
-          <mxGeometry height="80" width="280" x="1340" y="120" as="geometry" />
+        <mxCell id="kiwi-health-12" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=30;fontStyle=1" value="Monitoring tools&lt;div&gt;KiwiSSH Frontend&lt;br&gt;etc.&lt;/div&gt;" vertex="1">
+          <mxGeometry height="160" width="280" x="1340" y="40" as="geometry" />
         </mxCell>
         <mxCell id="kiwi-health-20" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelPosition=left;verticalLabelPosition=top;align=right;verticalAlign=bottom;fontStyle=1;fontSize=30;strokeWidth=5;dashed=1;perimeterSpacing=0;arcSize=3;fillColor=#E6E6E6;fontColor=#333333;strokeColor=#666666;" value="health.py" vertex="1">
-          <mxGeometry height="1660" width="2120" x="20" y="300" as="geometry" />
+          <mxGeometry height="1660" width="1490" x="560" y="300" as="geometry" />
         </mxCell>
         <mxCell id="kiwi-health-21" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;fillColor=none;strokeColor=#007FFF;fontSize=20;fontStyle=1;fontColor=#007FFF;labelPosition=center;verticalLabelPosition=top;align=left;verticalAlign=bottom;spacing=2;spacingLeft=0;" value="PUBLIC FUNCTIONS" vertex="1">
-          <mxGeometry height="1130" width="2040" x="60" y="370" as="geometry" />
+          <mxGeometry height="1130" width="1450" x="580" y="370" as="geometry" />
         </mxCell>
         <mxCell id="kiwi-health-22" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;fillColor=none;strokeColor=#B5739D;fontSize=20;fontStyle=1;fontColor=#B5739D;labelPosition=center;verticalLabelPosition=top;align=left;verticalAlign=bottom;" value="PRIVATE FUNCTIONS" vertex="1">
-          <mxGeometry height="340" width="2040" x="60" y="1580" as="geometry" />
+          <mxGeometry height="340" width="1450" x="580" y="1580" as="geometry" />
         </mxCell>
-        <mxCell id="kiwi-health-30" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="health_check()" vertex="1">
-          <mxGeometry height="80" width="300" x="150" y="410" as="geometry" />
-        </mxCell>
-        <mxCell id="kiwi-health-31" parent="1" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" value="return status, timestamp,&lt;br&gt;version, config_loaded" vertex="1">
-          <mxGeometry height="110" width="320" x="140" y="550" as="geometry" />
-        </mxCell>
-        <mxCell id="kiwi-health-40" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="readiness_check()" vertex="1">
+        <mxCell id="kiwi-health-40" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="health_check()" vertex="1">
           <mxGeometry height="80" width="300" x="850" y="410" as="geometry" />
         </mxCell>
         <mxCell id="kiwi-health-41" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" value="Check config directory,&lt;br&gt;kiwissh.yaml, SSH profiles&lt;br&gt;and vendors" vertex="1">
@@ -3594,10 +3585,10 @@
         <mxCell id="kiwi-health-45" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" value="backup_service.&lt;br&gt;queue_workers_alive()" vertex="1">
           <mxGeometry height="100" width="320" x="840" y="1150" as="geometry" />
         </mxCell>
-        <mxCell id="kiwi-health-46" parent="1" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" value="HTTP 200&lt;br&gt;ready: true" vertex="1">
+        <mxCell id="kiwi-health-46" parent="1" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" value="HTTP 200&lt;br&gt;status: healthy" vertex="1">
           <mxGeometry height="110" width="280" x="620" y="1350" as="geometry" />
         </mxCell>
-        <mxCell id="kiwi-health-47" parent="1" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" value="HTTP 503&lt;br&gt;ready: false" vertex="1">
+        <mxCell id="kiwi-health-47" parent="1" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" value="HTTP 503&lt;br&gt;status: unhealthy" vertex="1">
           <mxGeometry height="110" width="280" x="1100" y="1350" as="geometry" />
         </mxCell>
         <mxCell id="kiwi-health-48" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="Database and backup&lt;br&gt;directory are checked&lt;br&gt;in parallel threads" vertex="1">
@@ -3622,20 +3613,12 @@
           <mxGeometry height="110" width="320" x="1690" y="1760" as="geometry" />
         </mxCell>
         <mxCell id="kiwi-health-64" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="FastAPI Server (Startup) creates&lt;br&gt;the directory if it is missing" vertex="1">
-          <mxGeometry height="40" width="260" x="1020" y="1640" as="geometry" />
-        </mxCell>
-        <mxCell id="kiwi-health-70" edge="1" parent="1" source="kiwi-health-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;" target="kiwi-health-30">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="kiwi-health-70-label" connectable="0" parent="kiwi-health-70" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="GET /health" vertex="1">
-          <mxGeometry relative="1" x="-0.4" as="geometry">
-            <mxPoint as="offset" />
-          </mxGeometry>
+          <mxGeometry height="40" width="260" x="1030" y="1640" as="geometry" />
         </mxCell>
         <mxCell id="kiwi-health-71" edge="1" parent="1" source="kiwi-health-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;" target="kiwi-health-40">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="kiwi-health-71-label" connectable="0" parent="kiwi-health-71" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="GET /ready&lt;br&gt;every 30s" vertex="1">
+        <mxCell id="kiwi-health-71-label" connectable="0" parent="kiwi-health-71" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="GET /health&lt;br&gt;every 30s" vertex="1">
           <mxGeometry relative="1" x="-0.4" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
@@ -3648,13 +3631,10 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="kiwi-health-72-label" connectable="0" parent="kiwi-health-72" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="GET /ready" vertex="1">
+        <mxCell id="kiwi-health-72-label" connectable="0" parent="kiwi-health-72" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="GET /health" vertex="1">
           <mxGeometry relative="1" x="-0.6" as="geometry">
-            <mxPoint as="offset" />
+            <mxPoint y="-57" as="offset" />
           </mxGeometry>
-        </mxCell>
-        <mxCell id="kiwi-health-73" edge="1" parent="1" source="kiwi-health-30" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-health-31">
-          <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="kiwi-health-74" edge="1" parent="1" source="kiwi-health-40" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-health-41">
           <mxGeometry relative="1" as="geometry" />
@@ -3706,7 +3686,7 @@
         </mxCell>
         <mxCell id="kiwi-health-81-label" connectable="0" parent="kiwi-health-81" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="asyncio.to_thread" vertex="1">
           <mxGeometry relative="1" x="-0.6" as="geometry">
-            <mxPoint as="offset" />
+            <mxPoint x="-232" as="offset" />
           </mxGeometry>
         </mxCell>
         <mxCell id="kiwi-health-82" edge="1" parent="1" source="kiwi-health-43" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-health-60">
@@ -3718,7 +3698,7 @@
         </mxCell>
         <mxCell id="kiwi-health-82-label" connectable="0" parent="kiwi-health-82" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="asyncio.to_thread" vertex="1">
           <mxGeometry relative="1" x="-0.4" as="geometry">
-            <mxPoint as="offset" />
+            <mxPoint x="-210" y="-13" as="offset" />
           </mxGeometry>
         </mxCell>
         <mxCell id="kiwi-health-83" edge="1" parent="1" source="kiwi-health-60" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-health-61">

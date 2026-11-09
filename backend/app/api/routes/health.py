@@ -3,6 +3,7 @@
 import asyncio
 import os
 from datetime import datetime
+from typing import Literal
 
 from fastapi import APIRouter, Response, status
 from pydantic import BaseModel
@@ -21,16 +22,9 @@ from app.utils.timezone import get_utc_now
 class HealthResponse(BaseModel):
     """Health check response."""
 
-    status: str
+    status: Literal["healthy", "unhealthy"]
     timestamp: datetime
     version: str
-    config_loaded: bool
-
-
-class ReadinessResponse(BaseModel):
-    """Readiness check response."""
-
-    ready: bool
     checks: dict[str, bool]
 
 
@@ -64,28 +58,16 @@ def _backup_dir_writable() -> bool:
 ### API Endpoints
 ### =========================================================================================================
 
-@router.get("", response_model=HealthResponse)
-async def health_check() -> HealthResponse:
-    """Check application health."""
-    settings = get_settings()
-
-    return HealthResponse(
-        status="healthy",
-        timestamp=get_utc_now(),
-        version=__version__,
-        config_loaded=bool(settings.app and settings.groups and settings.git),
-    )
-
-
 @router.get(
-    "/ready",
-    response_model=ReadinessResponse,
-    responses={status.HTTP_503_SERVICE_UNAVAILABLE: {"model": ReadinessResponse, "description": "At least one check failed"}},
+    "",
+    response_model=HealthResponse,
+    responses={status.HTTP_503_SERVICE_UNAVAILABLE: {"model": HealthResponse, "description": "At least one check failed"}},
 )
-async def readiness_check(response: Response) -> ReadinessResponse:
-    """Check if application is ready to serve requests and run backups.
+async def health_check(response: Response) -> HealthResponse:
+    """Check if the application is healthy and able to run backups.
 
     Answers with HTTP 503 if any check fails, so container healthchecks and monitoring tools can rely on the status code.
+    The body is the same either way, so the version and the failed checks are always available.
     """
     settings = get_settings()
 
@@ -106,8 +88,13 @@ async def readiness_check(response: Response) -> ReadinessResponse:
         "queue_workers_alive": backup_service.queue_workers_alive(),
     }
 
-    all_ready = all(checks.values())
-    if not all_ready:
+    healthy = all(checks.values())
+    if not healthy:
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
 
-    return ReadinessResponse(ready=all_ready, checks=checks)
+    return HealthResponse(
+        status="healthy" if healthy else "unhealthy",
+        timestamp=get_utc_now(),
+        version=__version__,
+        checks=checks,
+    )

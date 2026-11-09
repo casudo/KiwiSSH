@@ -1,6 +1,6 @@
 """Container healthcheck.
 
-Asks the readiness endpoint whether the backend is ready and exits with 0 (healthy) or 1 (unhealthy).
+Asks the health endpoint whether the backend is healthy and exits with 0 (healthy) or 1 (unhealthy).
 Used by the HEALTHCHECK instruction in Dockerfile_backend.
 
 Only the `app.api` section of kiwissh.yaml is read (for the port the API listens on).
@@ -35,14 +35,14 @@ def _resolve_api_address() -> tuple[str, int]:
 ### =========================================================================================================
 
 def main() -> int:
-    """Run the container healthcheck by querying the readiness endpoint."""
+    """Run the container healthcheck by querying the health endpoint."""
     try:
         host, port = _resolve_api_address()
     except Exception as ex:
         print(f"Could not read app.api from kiwissh.yaml: {ex}")
         return 1
 
-    url = f"http://{host}:{port}/api/v1/health/ready"
+    url = f"http://{host}:{port}/api/v1/health"
     try:
         with urllib.request.urlopen(url, timeout=REQUEST_TIMEOUT_SECONDS) as response:
             body = json.load(response)
@@ -53,14 +53,14 @@ def main() -> int:
             failed = sorted(name for name, ok in checks.items() if not ok)
         except Exception:
             failed = []
-        print(f"Not ready (HTTP {ex.code}), failed checks: {', '.join(failed) or 'unknown'}")
+        print(f"Unhealthy (HTTP {ex.code}), failed checks: {', '.join(failed) or 'unknown'}")
         return 1
     except Exception as ex:
-        print(f"Readiness endpoint {url} not reachable: {ex}")
+        print(f"Health endpoint {url} not reachable: {ex}")
         return 1
 
-    if not body.get("ready"):
-        print("Not ready")
+    if body.get("status") != "healthy":
+        print("Unhealthy")
         return 1
     return 0
 
