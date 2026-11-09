@@ -11,6 +11,7 @@ from sqlalchemy import text
 from app import __version__
 from app.core import get_settings
 from app.db import database
+from app.services.backup_service import backup_service
 from app.services.git_service import git_service
 from app.services.scheduler_service import scheduler_service
 from app.utils.timezone import get_utc_now
@@ -102,6 +103,7 @@ async def readiness_check(response: Response) -> ReadinessResponse:
         "database_connected": database_connected,
         "backup_dir_writable": backup_dir_writable,
         "scheduler_running": scheduler_service.is_running(),
+        "queue_workers_alive": backup_service.queue_workers_alive(),
     }
 
     all_ready = all(checks.values())
