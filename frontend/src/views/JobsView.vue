@@ -3,12 +3,15 @@ import { onMounted, onBeforeUnmount, computed, ref, watch } from "vue"
 import { useRoute } from "vue-router"
 import { useJobsStore } from "@/stores/jobs"
 import { useDevicesStore } from "@/stores/devices"
+import { useLiveStore } from "@/stores/live"
 import { backupApi } from "@/api/backups"
-import type { BackupJobStatus } from "@/types/backup"
+import type { BackupJobRecord, BackupJobStatus } from "@/types/backup"
 import LoadingSpinner from "@/components/LoadingSpinner.vue"
+import { throttle } from "@/utils/throttle"
 
 const jobsStore = useJobsStore()
 const devicesStore = useDevicesStore()
+const liveStore = useLiveStore()
 const route = useRoute()
 const showFilters = ref<boolean>(false)
 const showFlushDialog = ref<boolean>(false)
@@ -25,6 +28,20 @@ const pageSizeOptions = [25, 50, 100, 200]
 let jobIdSearchTimer: ReturnType<typeof setTimeout> | null = null
 let deviceSearchTimer: ReturnType<typeof setTimeout> | null = null
 
+// Reload the page (new jobs, status changes, counters) at most once per second while jobs change
+const reloadForLiveUpdate = throttle(() => void loadJobsPage(), 1000)
+let stopLiveUpdates: (() => void) | null = null
+
+function handleLiveJobs(jobs: BackupJobRecord[]) {
+  reloadForLiveUpdate()
+
+  // Also refresh the open job details (status, and the metadata output once the job finished)
+  const selected = jobsStore.selectedJob
+  if (selected && jobs.some(job => job.job_id === selected.job_id)) {
+    void jobsStore.loadJobDetails(selected.job_id)
+  }
+}
+
 onMounted(async () => {
   const routeJobId = typeof route.query.job_id === "string" ? route.query.job_id : ""
   const routeDevice = typeof route.query.device === "string" ? route.query.device : ""
@@ -35,6 +52,8 @@ onMounted(async () => {
   if (routeJobId) {
     filterJobId.value = routeJobId
   }
+
+  stopLiveUpdates = liveStore.onJobsChanged(handleLiveJobs)
 
   // Load jobs from database
   await loadJobsPage(routeJobId || undefined, routeDevice || undefined)
@@ -51,7 +70,8 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
-  jobsStore.stopAutoRefresh()
+  stopLiveUpdates?.()
+  reloadForLiveUpdate.cancel()
   if (jobIdSearchTimer) {
     clearTimeout(jobIdSearchTimer)
     jobIdSearchTimer = null
