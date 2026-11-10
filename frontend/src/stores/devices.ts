@@ -161,6 +161,26 @@ export const useDevicesStore = defineStore("devices", () => {
     }
   }
 
+  // Apply live job updates to the device status (same rules as _enrich_device_with_backup_info in the backend)
+  function applyJobUpdates(jobs: BackupJobRecord[]) {
+    if (jobs.length === 0) return
+    const devicesByName = new Map(devices.value.map(device => [device.device_name, device]))
+
+    for (const job of jobs) {
+      const status = JOB_TO_DEVICE_STATUS[job.status]
+      if (!status) continue
+
+      const targets = [devicesByName.get(job.device_name), selectedDevice.value]
+      for (const device of targets) {
+        if (!device || device.device_name !== job.device_name) continue
+        device.status = status
+        device.last_backup = job.timestamp
+        device.last_backup_success = status === "backup_success" || status === "backup_no_changes" ? job.timestamp : null
+        device.last_error = status === "backup_failed" ? job.error_message ?? null : null
+      }
+    }
+  }
+
   function clearError() {
     error.value = null
   }
@@ -194,6 +214,7 @@ export const useDevicesStore = defineStore("devices", () => {
     fetchVendors,
     fetchDevice,
     reloadDevices,
+    applyJobUpdates,
     clearError,
     clearSelectedDevice,
   }
