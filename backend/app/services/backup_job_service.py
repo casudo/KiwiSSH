@@ -1,10 +1,31 @@
 """Service for managing backup job records in the database."""
 
-from sqlalchemy.orm import Session
+from datetime import UTC
+
 from sqlalchemy import desc, func, update
+from sqlalchemy.orm import Session
+
 from app.db.models import BackupJob
 from app.utils.timezone import get_utc_now
 
+
+def job_to_dict(job: BackupJob) -> dict:
+    """Transform the database model BackupJob into a dictionary suitable for API responses."""
+    ### SQLite returns naive datetimes, the stored values are UTC
+    timestamp = job.timestamp
+    if timestamp is not None and timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=UTC)
+
+    return {
+        "job_id": job.id,
+        "device_name": job.device_name,
+        "group": job.group,
+        "status": job.status,
+        "timestamp": timestamp.isoformat() if timestamp else None,
+        "error_message": job.error_message,
+        "config_size_bytes": job.config_size_bytes,
+        "duration_seconds": job.duration_seconds,
+    }
 
 
 class BackupJobService:
