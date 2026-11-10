@@ -76,8 +76,11 @@ class BackupJobService:
         )
         db.add(job)
         db.commit()
-        db.refresh(job)
-        return job
+
+    @staticmethod
+    def get_job(db: Session, job_id: str) -> BackupJob | None:
+        """Get a job record by its ID."""
+        return db.get(BackupJob, job_id)
 
     @staticmethod
     def update_job(
