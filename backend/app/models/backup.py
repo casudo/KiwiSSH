@@ -67,4 +67,16 @@ class BackupTriggerResponse(BaseModel):
 
     message: str
     devices_queued: list[str] = Field(default_factory=list)
-    job_id: str | None = None # Not used yet, every queued device gets its own job
+
+
+class BackupJobStatusResponse(BaseModel):
+    """Current status of a backup job."""
+
+    job_id: str
+    device_name: str
+    group: str
+    status: BackupStatus
+    timestamp: AwareDatetime | None = Field(default=None, description="Time of the last status change")
+    error_message: str | None = None
+    config_size_bytes: int | None = None
+    duration_seconds: float | None = None
