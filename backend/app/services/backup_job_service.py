@@ -57,45 +57,12 @@ class BackupJobService:
         return result.rowcount or 0
 
     @staticmethod
-    def create_job(
-        db: Session,
-        job_id: str,
-        device_name: str,
-        group: str,
-        status: str,
-        error_message: str | None = None,
-        config_size_bytes: int | None = None,
-        duration_seconds: float | None = None,
-        metadata_output: str | None = None,
-    ) -> BackupJob:
-        """Create and store a backup job record.
+    def create_jobs(db: Session, jobs: list[BackupJob]) -> None:
+        """Store new job records in a single transaction (one job or e.g. all pending jobs of one trigger).
 
-        Args:
-            db: Database session
-            job_id: Unique job ID (git commit hash or UUID)
-            device_name: Name of the device
-            group: Device group
-            status: Job status (success or failed)
-            error_message: Error message if failed
-            config_size_bytes: Size of backed up config
-            duration_seconds: Time spent in backup operation in seconds
-            metadata_output: Optional metadata output captured from comment commands
-
-        Returns:
-            Created BackupJob record
+        The caller builds the records (incl. timestamp), so it can still read them before they are stored.
         """
-        job = BackupJob(
-            id=job_id,
-            device_name=device_name,
-            group=group,
-            status=status,
-            timestamp=get_utc_now(),
-            error_message=error_message,
-            config_size_bytes=config_size_bytes,
-            duration_seconds=duration_seconds,
-            metadata_output=metadata_output,
-        )
-        db.add(job)
+        db.add_all(jobs)
         db.commit()
 
     @staticmethod
