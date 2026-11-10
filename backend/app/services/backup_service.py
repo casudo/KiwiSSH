@@ -160,6 +160,7 @@ class BackupService:
                 queue_wait_seconds = max(0.0, time.perf_counter() - queued_item.enqueued_at)
                 result = await self.backup_device(
                     queued_item.device,
+                    job_id=queued_item.job_id,
                     queue_wait_seconds=queue_wait_seconds,
                     queue_source=queued_item.source,
                 )
@@ -425,27 +426,30 @@ class BackupService:
                 db.close()
         except Exception as e:
             logger.warning("Failed to create %d pending job(s): %s", len(jobs), e)
+
+    def _mark_job_in_progress(self, job_id: str, device: DeviceBase) -> None:
+        """Set a job record to 'in_progress', creating it if it wasn't stored when the device was queued."""
+        try:
+            if database.SessionLocal is None:
+                return
+
             db = database.SessionLocal()
             try:
-                job_id = str(uuid.uuid4())
-                backup_job_service.create_job(
-                    db=db,
-                    job_id=job_id,
-                    device_name=device.device_name,
-                    group=device.group,
-                    status="in_progress",
-                    error_message=None,
-                    config_size_bytes=None,
-                    duration_seconds=None,
-                    metadata_output=None,
-                )
-                logger.debug(f"Created in_progress job {job_id} for {device.device_name}")
-                return job_id
+                ### Try to update the job to 'in_progress', ...
+                if backup_job_service.update_job(db=db, job_id=job_id, status="in_progress") is None:
+                    ### ... if the job didn't exist, create it as 'in_progress'
+                    backup_job_service.create_jobs(db, [BackupJob(
+                        id=job_id,
+                        device_name=device.device_name,
+                        group=device.group,
+                        status="in_progress",
+                        timestamp=get_utc_now(),
+                    )])
+                logger.debug(f"Job {job_id} for {device.device_name} is in progress")
             finally:
                 db.close()
         except Exception as e:
-            logger.warning("Failed to create in_progress job for %s: %s", device.device_name, e)
-            return None
+            logger.warning("Failed to mark job %s for %s as in progress: %s", job_id, device.device_name, e)
 
     def _update_job_final_status(self, job_id: str, result: BackupRecord) -> None:
         """Update a backup job record with final status.
@@ -543,14 +547,15 @@ class BackupService:
         self,
         device: DeviceBase,
         *,
+        job_id: str | None = None,
         queue_wait_seconds: float | None = None,
         queue_source: str | None = None,
     ) -> BackupRecord:
         """
         Perform backup for a single device.
-        
-        Creates a job record with 'in_progress' status at start, then updates it
-        with final status when complete. This allows the UI to show backup progress.
+
+        Sets the job record to 'in_progress' at start, then updates it with the final status
+        when complete.
 
         Args:
             device: Device to backup
@@ -560,9 +565,10 @@ class BackupService:
         """
         ### Fetch previous status for notification sending
         previous_status = await asyncio.to_thread(self._get_previous_backup_status, device.device_name)
-        
-        ### Create in_progress job so UI can show backup status immediately
-        job_id = await asyncio.to_thread(self._create_in_progress_job, device)
+
+        ### Mark the job as in_progress so the UI can show the backup status immediately
+        job_id = job_id or str(uuid.uuid4()) # Create a new job ID if not provided
+        await asyncio.to_thread(self._mark_job_in_progress, job_id, device)
         started_at = time.perf_counter()
         metadata_output: str | None = None
         
