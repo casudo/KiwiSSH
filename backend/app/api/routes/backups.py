@@ -5,7 +5,8 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.models.backup import BackupTriggerRequest, BackupTriggerResponse
+from app.models.backup import BackupJobStatusResponse, BackupTriggerRequest, BackupTriggerResponse
+from app.services.backup_job_service import backup_job_service, job_to_dict
 from app.services.backup_service import backup_service
 from app.services.source_service import source_service
 from app.services.git_service import GitObjectNotFoundError, git_service
@@ -171,10 +172,17 @@ def get_backup_jobs(
         raise HTTPException(status_code=500, detail=f"Failed to fetch backup jobs: {e}")
 
 
-@router.get("/status/{job_id}")
-async def get_backup_job_status(job_id: str) -> dict:
-    """Get status of a backup job."""
-    return await backup_service.get_backup_status(job_id)
+@router.get(
+    "/status/{job_id}",
+    response_model=BackupJobStatusResponse,
+    responses={http_status.HTTP_404_NOT_FOUND: {"description": "Unknown job ID"}},
+)
+def get_backup_job_status(job_id: str, db: Session = Depends(get_db)) -> BackupJobStatusResponse:
+    """Get the current status of a backup job."""
+    job = backup_job_service.get_job(db, job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"Backup job '{job_id}' not found")
+    return BackupJobStatusResponse(**job_to_dict(job))
 
 
 @router.get("/history/{device_name}")

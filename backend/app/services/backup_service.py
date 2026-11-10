@@ -676,28 +676,6 @@ class BackupService:
             )
             return result
 
-    async def get_backup_status(self, job_id: str) -> dict:
-        """
-        Get status of a backup job.
-
-        Args:
-            job_id: Backup job identifier
-
-        Returns:
-            Status dictionary
-
-        NOTE: Stub implementation
-        """
-        return {
-            "job_id": job_id,
-            "status": "not_implemented",
-            "message": "Job tracking not yet implemented",
-            "progress": 0,
-            "total": 0,
-            "completed": 0,
-            "failed": 0,
-        }
-
 
 ### Singleton instance
 backup_service = BackupService()
