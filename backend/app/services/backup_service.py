@@ -9,6 +9,8 @@ import logging
 import re
 import time
 import uuid
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 
 from app.core import get_settings
@@ -18,7 +20,7 @@ from app.services.ssh_service import ssh_service
 from app.services.telnet_service import telnet_service
 from app.services.http_service import http_service
 from app.services.git_service import git_service
-from app.services.backup_job_service import backup_job_service
+from app.services.backup_job_service import backup_job_service, job_to_dict
 from app.services.notification_service import notification_service
 from app.db import database
 from app.db.models import BackupJob
@@ -70,6 +72,8 @@ class BackupService:
         self._queue_setup_lock: asyncio.Lock | None = None
         ### Dedupe set for device names that are either waiting in queue or currently running
         self._queued_or_running: set[str] = set()
+        ### One queue of job events per connected live update client
+        self._event_queues: set[asyncio.Queue[dict]] = set()
         ### Batched git pushes: at most one flush task runs at a time
         self._push_flush_task: asyncio.Task[None] | None = None
         self._last_push_flush: float = time.monotonic()
@@ -339,6 +343,9 @@ class BackupService:
             )
             for device in reserved
         ]
+        ### Add job to live events before committing them to the database
+        events = [job_to_dict(job) for job in jobs]
+
         ### Store the jobs in the DB before queueing them, a worker may pick them up right away
         try:
             await asyncio.to_thread(self._create_pending_jobs, jobs)
@@ -360,6 +367,10 @@ class BackupService:
             source,
             self.get_backup_queue_depth(),
         )
+
+        ### Notify live update clients about the new jobs
+        self._publish_job_events(events)
+
         return job_ids, skipped
 
     async def queue_device_backup(self, device: DeviceBase, *, source: str) -> str | None:
@@ -380,6 +391,26 @@ class BackupService:
         """
         await self._ensure_backup_queue_workers()
         return await self._queue_device_backups(devices, source=source)
+
+    ###### ========================================
+    ### Live Job Tracking Section
+    def _publish_job_events(self, jobs: list[dict]) -> None:
+        """Tell live update clients about new or changed jobs."""
+        event = {"type": "jobs", "jobs": jobs, "queue_depth": self.get_backup_queue_depth()}
+        for queue in self._event_queues:
+            queue.put_nowait(event)
+
+    @asynccontextmanager
+    async def subscribe_job_events(self) -> AsyncIterator[asyncio.Queue[dict]]:
+        """Receive all job events published while the context is open."""
+        queue: asyncio.Queue[dict] = asyncio.Queue()
+        self._event_queues.add(queue)
+        try:
+            yield queue
+        finally:
+            self._event_queues.discard(queue)
+
+    ###### ========================================
 
     def _map_status_to_job_status(self, status: BackupStatus) -> str:
         """Map backup result status to persisted job status string.
@@ -484,6 +515,19 @@ class BackupService:
                 logger.warning("Failed to update job %s: %s", result.job_id, e)
 
         await asyncio.to_thread(store)
+
+        ### Notify live update clients about the job's final status
+        self._publish_job_events([job_to_dict(BackupJob(
+            id=result.job_id,
+            device_name=device.device_name,
+            group=device.group,
+            status=job_status,
+            timestamp=result.timestamp,
+            error_message=result.error_message,
+            config_size_bytes=result.config_size_bytes,
+            duration_seconds=result.duration_seconds,
+        ))])
+
     ###### ========================================
     ### Validate Config Section
     @staticmethod
@@ -573,6 +617,16 @@ class BackupService:
         ### Mark the job as in_progress so the UI can show the backup status immediately
         job_id = job_id or str(uuid.uuid4()) # Create a new job ID if not provided
         await asyncio.to_thread(self._mark_job_in_progress, job_id, device)
+
+        ### Notify live update clients about the new job being in progress
+        self._publish_job_events([job_to_dict(BackupJob(
+            id=job_id,
+            device_name=device.device_name,
+            group=device.group,
+            status="in_progress",
+            timestamp=get_utc_now(),
+        ))])
+
         started_at = time.perf_counter()
         metadata_output: str | None = None
         

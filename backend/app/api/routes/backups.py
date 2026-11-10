@@ -2,7 +2,8 @@
 
 import logging
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, HTTPException, Depends, Query
+from urllib.parse import urlsplit
+from fastapi import APIRouter, HTTPException, Depends, Query, WebSocket, WebSocketDisconnect, status as http_status
 from sqlalchemy.orm import Session
 
 from app.models.backup import BackupJobStatusResponse, BackupTriggerRequest, BackupTriggerResponse
@@ -173,6 +174,49 @@ def get_backup_job_status(job_id: str, db: Session = Depends(get_db)) -> BackupJ
     if job is None:
         raise HTTPException(status_code=404, detail=f"Backup job '{job_id}' not found")
     return BackupJobStatusResponse(**job_to_dict(job))
+
+
+def _is_allowed_websocket_origin(websocket: WebSocket) -> bool:
+    """Check the Origin header, since the browser doesn't apply CORS to WebSocket connections.
+
+    Without this check any website could open the connection in the background and read the job events.
+    """
+    origin = websocket.headers.get("origin")
+    ### Only browsers send an Origin header, scripts and monitoring tools are allowed like for the REST API
+    if not origin:
+        return True
+    if origin in get_settings().app.api.cors_origins:
+        return True
+
+    ### The frontend is served from the same host as the API (nginx proxy), so the host names match
+    origin_host = urlsplit(origin).hostname
+    request_host = urlsplit(f"//{websocket.headers.get('host', '')}").hostname
+    if origin_host == request_host:
+        return True
+    ### The Vite dev server proxies with a rewritten Host header, so both names are only known to be loopback
+    return origin_host in {"localhost", "127.0.0.1", "::1"} and request_host in {"localhost", "127.0.0.1", "::1"}
+
+
+@router.websocket("/events")
+async def backup_job_events(websocket: WebSocket) -> None:
+    """Push backup job changes to the client.
+
+    Whenever jobs are queued, start or finish, a JSON message {"type": "jobs", "jobs": [...], "queue_depth": n}
+    is sent. Jobs have the same fields as in GET /backups/jobs.
+    """
+    if not _is_allowed_websocket_origin(websocket):
+        logger.warning("Rejected live update connection from origin %s", websocket.headers.get("origin"))
+        await websocket.close(code=http_status.WS_1008_POLICY_VIOLATION)
+        return
+
+    await websocket.accept()
+    async with backup_service.subscribe_job_events() as events:
+        try:
+            while True:
+                await websocket.send_json(await events.get())
+        except (WebSocketDisconnect, RuntimeError):
+            ### Client is gone (noticed on the next send, uvicorn closes dead connections via its ping timeout)
+            pass
 
 
 @router.get("/history/{device_name}")
