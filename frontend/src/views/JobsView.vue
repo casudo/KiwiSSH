@@ -212,7 +212,7 @@ function formatStatus(status: string): string {
     case "in_progress":
       return "In Progress"
     case "pending":
-      return "Pending"
+      return "Queued"
     default:
       return status.charAt(0).toUpperCase() + status.slice(1)
   }
@@ -480,6 +480,7 @@ async function handleFlushDatabase() {
               <label class="label">Filter by Status</label>
               <select v-model="filterStatus" @change="handleStatusFilterChange" class="input">
                 <option value="">All Status</option>
+                <option value="pending">Queued</option>
                 <option value="in_progress">In Progress</option>
                 <option value="success">Success</option>
                 <option value="no_changes">No Changes</option>
@@ -577,6 +578,7 @@ async function handleFlushDatabase() {
                     job.status === 'no_changes' ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/35 dark:text-cyan-300 dark:ring-1 dark:ring-cyan-800' :
                     job.status === 'failed' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/35 dark:text-rose-300 dark:ring-1 dark:ring-rose-800' :
                     job.status === 'in_progress' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/35 dark:text-amber-300 dark:ring-1 dark:ring-amber-800' :
+                    job.status === 'pending' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/35 dark:text-purple-300 dark:ring-1 dark:ring-purple-800' :
                     'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 dark:ring-1 dark:ring-slate-600'
                   ]"
                 >

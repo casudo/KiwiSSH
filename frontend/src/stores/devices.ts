@@ -3,7 +3,16 @@ import { ref, computed } from "vue"
 import { deviceApi } from "@/api/devices"
 import { groupApi } from "@/api/groups"
 import { vendorApi } from "@/api/vendors"
-import type { Device } from "@/types/device"
+import type { Device, DeviceStatus } from "@/types/device"
+import type { BackupJobRecord } from "@/types/backup"
+
+const JOB_TO_DEVICE_STATUS: Record<string, DeviceStatus> = {
+  pending: "backup_queued",
+  in_progress: "backup_in_progress",
+  success: "backup_success",
+  no_changes: "backup_no_changes",
+  failed: "backup_failed",
+}
 
 export const useDevicesStore = defineStore("devices", () => {
   // State

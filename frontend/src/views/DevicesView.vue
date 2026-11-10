@@ -50,6 +50,7 @@ const FILTERS_STORAGE_KEY = "devices-filters"
 
 const statusOptions = [
   { value: "unknown", label: "Unknown" },
+  { value: "backup_queued", label: "Backup Queued" },
   { value: "backup_in_progress", label: "Backup In Progress" },
   { value: "backup_success", label: "Backup Success" },
   { value: "backup_failed", label: "Backup Failed" },

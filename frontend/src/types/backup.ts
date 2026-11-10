@@ -34,7 +34,25 @@ export interface BackupTriggerRequest {
 export interface BackupTriggerResponse {
   message: string
   devices_queued: string[]
-  job_id?: string | null
+  job_ids: Record<string, string> // Job ID per queued device
+}
+
+export interface BackupJobStatusResponse {
+  job_id: string
+  device_name: string
+  group: string
+  status: BackupStatus
+  timestamp: string | null
+  error_message?: string | null
+  config_size_bytes?: number | null
+  duration_seconds?: number | null
+}
+
+/** Message received over the live update WebSocket (/api/v1/backups/events) */
+export interface JobEventMessage {
+  type: "jobs"
+  jobs: BackupJobRecord[]
+  queue_depth: number
 }
 
 export interface BackupJobStatus {

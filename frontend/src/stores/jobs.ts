@@ -61,6 +61,10 @@ export const useJobsStore = defineStore("jobs", () => {
         return `No configuration changes for ${deviceName}`
       case "failed":
         return `Failed backup for ${deviceName}`
+      case "pending":
+        return `Backup queued for ${deviceName}`
+      case "in_progress":
+        return `Backup running for ${deviceName}`
       default:
         return `Backup for ${deviceName}`
     }

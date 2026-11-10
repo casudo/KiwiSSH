@@ -6,6 +6,7 @@ export type DeviceStatus =
   | "unknown"
   | "backup_success"
   | "backup_failed"
+  | "backup_queued"
   | "backup_in_progress"
   | "backup_no_changes"
 
