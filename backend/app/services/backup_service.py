@@ -21,6 +21,7 @@ from app.services.git_service import git_service
 from app.services.backup_job_service import backup_job_service
 from app.services.notification_service import notification_service
 from app.db import database
+from app.db.models import BackupJob
 from app.utils.timezone import get_utc_now
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,8 @@ class QueuedBackupItem:
     device: DeviceBase
     source: str # origin marker (e.g. api:group:<name>, api:device:<name>, scheduler:<name>)
     enqueued_at: float # timestamp to calculate queue wait time in workers
+    job_id: str # job created when the device was queued
+
 
 ### While backups keep running, pending git pushes are flushed at most this often (and always once the queue drains)
 PUSH_FLUSH_INTERVAL_SECONDS = 60.0
@@ -293,75 +296,89 @@ class BackupService:
             return 0
         return self._backup_queue.qsize()
 
-    async def _queue_device_backup(self, device: DeviceBase, *, source: str) -> bool:
-        """Queue a single device backup assuming queue workers are already initialized."""
-        ### No backup if device is disabled
-        if not device.enabled:
-            return False
+    async def _queue_device_backups(self, devices: list[DeviceBase], *, source: str) -> tuple[dict[str, str], list[str]]:
+        """Queue backups for the given devices, assuming queue workers are already initialized.
 
+        Disabled devices and devices that are already queued or running are skipped. Every queued device gets
+        a job with status "pending" right away, so it can be tracked before a worker picks it up.
+
+        Returns:
+            Job ID per queued device name, and the names of skipped devices
+        """
         if self._backup_queue is None:
             raise RuntimeError("Backup queue is not initialized")
 
         ### Lock protects dedupe checks and updates against concurrent API/scheduler enqueue calls
+        skipped: list[str] = []
+        reserved: list[DeviceBase] = []
         state_lock = self._get_queue_state_lock()
         async with state_lock:
-            if device.device_name in self._queued_or_running:
-                logger.debug(
-                    "Skipped queue for %s from %s: already queued or running",
-                    device.device_name,
-                    source,
-                )
-                return False
+            for device in devices:
+                if not device.enabled or device.device_name in self._queued_or_running:
+                    skipped.append(device.device_name)
+                    continue
+                ### Reserve device name before enqueue so concurrent callers can't queue duplicates
+                self._queued_or_running.add(device.device_name)
+                reserved.append(device)
 
-            ### Reserve device name before enqueue so concurrent callers can't queue duplicates
-            self._queued_or_running.add(device.device_name)
+        if skipped:
+            logger.debug("Skipped queue for %d device(s) from %s: disabled, already queued or running", len(skipped), source)
+        if not reserved:
+            return {}, skipped
 
-        try:
-            ### Put now contains all context workers need (device + source + enqueue timestamp)
-            await self._backup_queue.put(
-                QueuedBackupItem(
-                    device=device,
-                    source=source,
-                    enqueued_at=time.perf_counter(),
-                )
+        queued_at = get_utc_now()
+        job_ids = {device.device_name: str(uuid.uuid4()) for device in reserved} # Create Job ID
+        jobs = [
+            BackupJob(
+                id=job_ids[device.device_name],
+                device_name=device.device_name,
+                group=device.group,
+                status="pending",
+                timestamp=queued_at,
             )
-        except Exception:
-            async with state_lock:
-                self._queued_or_running.discard(device.device_name)
+            for device in reserved
+        ]
+        ### Store the jobs in the DB before queueing them, a worker may pick them up right away
+        try:
+            await asyncio.to_thread(self._create_pending_jobs, jobs)
+        except BaseException:
+            ### Only reached when cancelled (_create_pending_jobs handles its own errors), dont leave devices reserved
+            self._queued_or_running.difference_update(device.device_name for device in reserved)
             raise
 
+        ### Place the jobs in the backup queue for processing
+        enqueued_at = time.perf_counter()
+        for device in reserved:
+            self._backup_queue.put_nowait(
+                QueuedBackupItem(device=device, source=source, enqueued_at=enqueued_at, job_id=job_ids[device.device_name])
+            )
+
         logger.debug(
-            "Queued backup for %s from %s (queue depth: %d)",
-            device.device_name,
+            "Queued %d backup(s) from %s (queue depth: %d)",
+            len(jobs),
             source,
             self.get_backup_queue_depth(),
         )
-        return True
+        return job_ids, skipped
 
-    async def queue_device_backup(self, device: DeviceBase, *, source: str) -> bool:
-        """Queue a single device backup if not already queued/running."""
+    async def queue_device_backup(self, device: DeviceBase, *, source: str) -> str | None:
+        """Queue a single device backup.
+
+        Returns:
+            The job ID, or None if the device is disabled or already queued/running
+        """
         await self._ensure_backup_queue_workers()
-        return await self._queue_device_backup(device, source=source)
+        queued, _ = await self._queue_device_backups([device], source=source)
+        return queued.get(device.device_name)
 
-    async def queue_device_backups(self, devices: list[DeviceBase], *, source: str) -> tuple[list[str], list[str]]:
-        """Queue multiple device backups and return queued/skipped device names."""
+    async def queue_device_backups(self, devices: list[DeviceBase], *, source: str) -> tuple[dict[str, str], list[str]]:
+        """Queue multiple device backups.
+
+        Returns:
+            Job ID per queued device name, and the names of skipped devices
+        """
         await self._ensure_backup_queue_workers()
-
-        queued: list[str] = []
-        skipped: list[str] = []
-
-        ### Queue each device independently so one enqueue failure doesn't abort the whole batch
-        for device in devices:
-            try:
-                if await self._queue_device_backup(device, source=source):
-                    queued.append(device.device_name)
-                else:
-                    skipped.append(device.device_name)
-            except Exception as ex:
-                skipped.append(device.device_name)
-                logger.error("Failed to queue backup for %s from %s: %s", device.device_name, source, ex)
-
-        return queued, skipped
+        return await self._queue_device_backups(devices, source=source)
 
     def _map_status_to_job_status(self, status: BackupStatus) -> str:
         """Map backup result status to persisted job status string.
@@ -392,19 +409,22 @@ class BackupService:
             logger.debug("Could not fetch previous backup status for %s: %s", device_name, ex)
             return None
 
-    def _create_in_progress_job(self, device: DeviceBase) -> str | None:
-        """Create a backup job record with 'in_progress' status.
-        
-        Args:
-            device: Device being backed up
-            
-        Returns:
-            Job ID if created, None if database not initialized
+    def _create_pending_jobs(self, jobs: list[BackupJob]) -> None:
+        """Store job records with status 'pending' for freshly queued devices in one transaction.
+
+        If this fails the backups still run, the worker then creates the record when the backup starts.
         """
         try:
             if database.SessionLocal is None:
-                return None
-            
+                return
+
+            db = database.SessionLocal()
+            try:
+                backup_job_service.create_jobs(db, jobs)
+            finally:
+                db.close()
+        except Exception as e:
+            logger.warning("Failed to create %d pending job(s): %s", len(jobs), e)
             db = database.SessionLocal()
             try:
                 job_id = str(uuid.uuid4())
