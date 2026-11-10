@@ -106,7 +106,6 @@ class BackupJobService:
         job.duration_seconds = duration_seconds
         job.metadata_output = metadata_output
         db.commit()
-        db.refresh(job)
         return job
 
     @staticmethod

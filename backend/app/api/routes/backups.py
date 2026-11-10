@@ -42,7 +42,6 @@ async def trigger_backup(
         return BackupTriggerResponse(
             message=f"No enabled devices found for group {request.group}" if request.group else "No enabled devices found",
             devices_queued=[],
-            job_id=None,
         )
 
     context_label = f"group '{request.group}'" if request.group else "all enabled devices"
@@ -98,7 +97,6 @@ async def trigger_device_backup(
             f"Current queue depth: {backup_service.get_backup_queue_depth()}."
         ),
         devices_queued=[device_name],
-        job_id=job_id,
         job_ids={device_name: job_id},
     )
 
@@ -153,14 +151,7 @@ def get_backup_jobs(
             "queue_depth": backup_service.get_backup_queue_depth(),
             "jobs": [
                 {
-                    "job_id": job.id,
-                    "device_name": job.device_name,
-                    "group": job.group,
-                    "status": job.status,
-                    "timestamp": job.timestamp.isoformat() if job.timestamp else None,
-                    "error_message": job.error_message,
-                    "config_size_bytes": job.config_size_bytes,
-                    "duration_seconds": job.duration_seconds,
+                    **job_to_dict(job),
                     "metadata_output": job.metadata_output if include_metadata else None,
                 }
                 for job in jobs
