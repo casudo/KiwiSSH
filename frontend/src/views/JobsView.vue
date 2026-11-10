@@ -447,23 +447,14 @@ async function handleFlushDatabase() {
           </div>
 
           <div class="space-y-2">
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                :checked="jobsStore.autoRefreshEnabled"
-                @change="jobsStore.toggleAutoRefresh()"
-                class="w-4 h-4 text-kiwissh-600 rounded border-gray-300"
-              >
-              <span class="text-sm text-gray-700 dark:text-gray-300">Auto-refresh (sec)</span>
-            </label>
-            <input
-              v-model.number="jobsStore.autoRefreshInterval"
-              type="number"
-              min="1"
-              step="1"
-              class="input text-sm"
-              @change="jobsStore.setAutoRefresh(jobsStore.autoRefreshEnabled, jobsStore.autoRefreshInterval)"
-            />
+            <span class="label">Live updates</span>
+            <div
+              class="flex items-center gap-2 py-2 text-sm text-gray-700 dark:text-gray-300"
+              :title="liveStore.connected ? 'Job changes are shown as they happen' : 'Connection to the backend lost, reconnecting automatically'"
+            >
+              <span class="w-2.5 h-2.5 rounded-full" :class="liveStore.connected ? 'bg-green-500' : 'bg-red-500'"></span>
+              {{ liveStore.connected ? "Connected" : "Reconnecting..." }}
+            </div>
           </div>
 
           <div class="space-y-2">
