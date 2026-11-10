@@ -44,6 +44,7 @@ class DeviceStatus(str, Enum):
     UNKNOWN = "unknown"
     BACKUP_SUCCESS = "backup_success"
     BACKUP_FAILED = "backup_failed"
+    BACKUP_QUEUED = "backup_queued"
     BACKUP_IN_PROGRESS = "backup_in_progress"
     BACKUP_NO_CHANGES = "backup_no_changes"
 
