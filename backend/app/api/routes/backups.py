@@ -47,30 +47,29 @@ async def trigger_backup(
 
     context_label = f"group '{request.group}'" if request.group else "all enabled devices"
     queue_source = f"api:group:{request.group}" if request.group else "api:all"
-    queued_devices, skipped_devices = await backup_service.queue_device_backups(
+    queued_jobs, skipped_devices = await backup_service.queue_device_backups(
         enabled_devices,
         source=queue_source,
     )
     queue_depth = backup_service.get_backup_queue_depth()
 
-    if not queued_devices:
+    if not queued_jobs:
         return BackupTriggerResponse(
             message=(
                 f"No new backups queued for {context_label}. "
                 f"{len(skipped_devices)} device(s) are already queued or currently running."
             ),
             devices_queued=[],
-            job_id=None,
         )
 
     return BackupTriggerResponse(
         message=(
-            f"Queued {len(queued_devices)} backup(s) for {context_label}. "
+            f"Queued {len(queued_jobs)} backup(s) for {context_label}. "
             f"Skipped {len(skipped_devices)} already queued/running device(s). "
             f"Current queue depth: {queue_depth}."
         ),
-        devices_queued=queued_devices,
-        job_id=None,
+        devices_queued=list(queued_jobs),
+        job_ids=queued_jobs,
     )
 
 
@@ -86,12 +85,11 @@ async def trigger_device_backup(
     if device is None:
         raise HTTPException(status_code=404, detail=f"Device '{device_name}' not found")
 
-    queued = await backup_service.queue_device_backup(device, source=f"api:device:{device_name}")
-    if not queued:
+    job_id = await backup_service.queue_device_backup(device, source=f"api:device:{device_name}")
+    if job_id is None:
         return BackupTriggerResponse(
             message=f"Backup for device {device_name} is already queued or currently running.",
             devices_queued=[],
-            job_id=None,
         )
 
     return BackupTriggerResponse(
@@ -100,7 +98,8 @@ async def trigger_device_backup(
             f"Current queue depth: {backup_service.get_backup_queue_depth()}."
         ),
         devices_queued=[device_name],
-        job_id=None,
+        job_id=job_id,
+        job_ids={device_name: job_id},
     )
 
 

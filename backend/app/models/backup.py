@@ -67,6 +67,8 @@ class BackupTriggerResponse(BaseModel):
 
     message: str
     devices_queued: list[str] = Field(default_factory=list)
+    job_id: str | None = Field(default=None, description="Job ID of the queued device (single device trigger only)")
+    job_ids: dict[str, str] = Field(default_factory=dict, description="Job ID per queued device")
 
 
 class BackupJobStatusResponse(BaseModel):
