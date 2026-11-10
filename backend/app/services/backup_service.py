@@ -451,35 +451,39 @@ class BackupService:
         except Exception as e:
             logger.warning("Failed to mark job %s for %s as in progress: %s", job_id, device.device_name, e)
 
-    def _update_job_final_status(self, job_id: str, result: BackupRecord) -> None:
-        """Update a backup job record with final status.
-        
+    async def _update_job_final_status(self, device: DeviceBase, result: BackupRecord) -> None:
+        """Store the final status of a job.
+
         Args:
-            job_id: ID of job to update
+            device: Device that was backed up
             result: BackupRecord with final backup result
         """
-        try:
-            if database.SessionLocal is None or job_id is None:
-                return
-            
-            db = database.SessionLocal()
-            try:
-                job_status = self._map_status_to_job_status(result.status)
-                backup_job_service.update_job(
-                    db=db,
-                    job_id=job_id,
-                    status=job_status,
-                    error_message=result.error_message,
-                    config_size_bytes=result.config_size_bytes,
-                    duration_seconds=result.duration_seconds,
-                    metadata_output=result.metadata_output,
-                )
-                logger.debug(f"Updated job {job_id} with final status: {job_status}")
-            finally:
-                db.close()
-        except Exception as e:
-            logger.warning("Failed to update job %s: %s", job_id, e)
+        job_status = self._map_status_to_job_status(result.status)
 
+        def store() -> None:
+            """Runs in a thread, SQLAlchemy is synchronous"""
+            try:
+                if database.SessionLocal is None or result.job_id is None:
+                    return
+
+                db = database.SessionLocal()
+                try:
+                    backup_job_service.update_job(
+                        db=db,
+                        job_id=result.job_id,
+                        status=job_status,
+                        error_message=result.error_message,
+                        config_size_bytes=result.config_size_bytes,
+                        duration_seconds=result.duration_seconds,
+                        metadata_output=result.metadata_output,
+                    )
+                    logger.debug(f"Updated job {result.job_id} with final status: {job_status}")
+                finally:
+                    db.close()
+            except Exception as e:
+                logger.warning("Failed to update job %s: %s", result.job_id, e)
+
+        await asyncio.to_thread(store)
     ###### ========================================
     ### Validate Config Section
     @staticmethod
@@ -651,7 +655,7 @@ class BackupService:
                     duration_seconds=duration_seconds,
                     metadata_output=metadata_output,
                 )
-                await asyncio.to_thread(self._update_job_final_status, job_id, result)
+                await self._update_job_final_status(device, result)
 
                 ### No changes can still be a recovery after a failed backup, so let the notification service decide
                 self._send_notification_in_background(
@@ -677,7 +681,7 @@ class BackupService:
                 duration_seconds=duration_seconds,
                 metadata_output=metadata_output,
             )
-            await asyncio.to_thread(self._update_job_final_status, job_id, result)
+            await self._update_job_final_status(device, result)
             self._send_notification_in_background(
                 device.device_name, device.group, result, previous_status, settings.notifications,
                 lines_added=lines_added, lines_removed=lines_removed,
@@ -696,7 +700,7 @@ class BackupService:
                 duration_seconds=max(0.0, time.perf_counter() - started_at),
                 metadata_output=metadata_output,
             )
-            await asyncio.to_thread(self._update_job_final_status, job_id, result)
+            await self._update_job_final_status(device, result)
             self._send_notification_in_background(
                 device.device_name, device.group, result, previous_status, get_settings().notifications
             )
