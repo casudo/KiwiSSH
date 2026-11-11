@@ -6,7 +6,7 @@ from urllib.parse import urlsplit
 from fastapi import APIRouter, HTTPException, Depends, Query, WebSocket, WebSocketDisconnect, status as http_status
 from sqlalchemy.orm import Session
 
-from app.models.backup import BackupJobStatusResponse, BackupTriggerRequest, BackupTriggerResponse
+from app.models.backup import BackupJobStatusResponse, BackupTriggerRequest, BackupTriggerResponse, DryRunResult
 from app.services.backup_job_service import backup_job_service, job_to_dict
 from app.services.backup_service import backup_service
 from app.services.source_service import source_service
@@ -174,6 +174,30 @@ def get_backup_job_status(job_id: str, db: Session = Depends(get_db)) -> BackupJ
     if job is None:
         raise HTTPException(status_code=404, detail=f"Backup job '{job_id}' not found")
     return BackupJobStatusResponse(**job_to_dict(job))
+
+
+@router.post(
+    "/dry-run/{device_name}",
+    response_model=DryRunResult,
+    status_code=http_status.HTTP_202_ACCEPTED,
+    responses={
+        http_status.HTTP_404_NOT_FOUND: {"description": "Unknown device"},
+        http_status.HTTP_409_CONFLICT: {"description": "A backup of the device is queued or running"},
+    },
+)
+async def start_device_dry_run(device_name: str) -> DryRunResult:
+    """Test the connectivity and backup commands of a device without saving anything."""
+    device = await source_service.get_device(device_name)
+    if device is None:
+        raise HTTPException(status_code=404, detail=f"Device '{device_name}' not found")
+
+    dry_run = backup_service.start_dry_run(device)
+    if dry_run is None:
+        raise HTTPException(
+            status_code=409,
+            detail=f"A backup of device '{device_name}' is queued or running, test it again once the backup finished",
+        )
+    return dry_run
 
 
 def _is_allowed_websocket_origin(websocket: WebSocket) -> bool:
