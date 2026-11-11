@@ -25,6 +25,7 @@ from app.services.http_service import http_service
 from app.services.notification_service import notification_service
 from app.services.ssh_service import ssh_service
 from app.services.telnet_service import telnet_service
+from app.utils.errors import describe_exception
 from app.utils.timezone import get_utc_now
 
 logger = logging.getLogger(__name__)
@@ -626,22 +627,6 @@ class BackupService:
     ###### ========================================
     ### Dry Run Section
 
-    @staticmethod
-    def _describe_exception(ex: BaseException) -> str:
-        """Return the actual cause of an exception.
-
-        The cause often holds the detail that is missing in the message itself,
-        e.g. "Command failed: show running-config: Timed out waiting for prompt".
-        """
-        messages: list[str] = []
-        current: BaseException | None = ex
-        while current is not None and len(messages) < 5:
-            message = str(current).strip()
-            if message and message not in messages:
-                messages.append(message)
-            current = current.__cause__
-        return ": ".join(messages) or ex.__class__.__name__
-
     def start_dry_run(self, device: DeviceBase) -> DryRunResult | None:
         """Start a dry run of a device in the background.
 
@@ -713,7 +698,7 @@ class BackupService:
                 logger.info("Dry run succeeded for %s", device.device_name)
             except Exception as ex:
                 result.status = DryRunStatus.FAILED
-                result.error_message = self._describe_exception(ex)
+                result.error_message = describe_exception(ex)
                 logger.warning("Dry run failed for %s: %s", device.device_name, result.error_message)
             finally:
                 result.duration_seconds = max(0.0, time.perf_counter() - started_at)
@@ -856,14 +841,15 @@ class BackupService:
             return result
 
         except Exception as e:
-            logger.error("Backup failed for %s: %s", device.device_name, e)
+            error_message = describe_exception(e)
+            logger.error("Backup failed for %s: %s", device.device_name, error_message)
             result = BackupRecord(
                 id=str(uuid.uuid4()),
                 device_name=device.device_name,
                 timestamp=get_utc_now(),
                 status=BackupStatus.FAILED,
                 job_id=job_id,
-                error_message=str(e),
+                error_message=error_message,
                 duration_seconds=max(0.0, time.perf_counter() - started_at),
                 metadata_output=metadata_output,
             )

@@ -13,6 +13,7 @@ from app.services.source_service import source_service
 from app.services.git_service import GitObjectNotFoundError, git_service
 from app.services.log_retention_service import log_retention_service
 from app.core import get_settings
+from app.utils.errors import describe_exception
 from app.db.database import get_db
 from sqlalchemy import desc, func
 from app.db.models import BackupJob
@@ -160,7 +161,7 @@ def get_backup_jobs(
         }
     except Exception as e:
         logger.error(f"Error fetching backup jobs: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch backup jobs: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch backup jobs: {describe_exception(e)}")
 
 
 @router.get(
@@ -312,7 +313,7 @@ async def get_device_backup_history(
         }
     except Exception as e:
         logger.error(f"Error fetching backup history for {device_name}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch backup history: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch backup history: {describe_exception(e)}")
 
 
 @router.get("/history/graph/{device_name}")
@@ -351,7 +352,7 @@ async def get_device_backup_graph(
         }
     except Exception as e:
         logger.error(f"Error fetching backup graph for {device_name}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch backup graph: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch backup graph: {describe_exception(e)}")
 
 
 @router.get("/diff/{device_name}")
@@ -379,10 +380,10 @@ async def get_config_diff(
             "lines_removed": diff.lines_removed,
         }
     except GitObjectNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=describe_exception(e))
     except Exception as e:
         logger.error(f"Error building diff for {device_name}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to build diff: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to build diff: {describe_exception(e)}")
 
 
 @router.get("/latest/{device_name}")
@@ -432,10 +433,10 @@ async def get_latest_config(device_name: str, commit: str | None = None) -> dict
                 "version_number": latest.get("version_number"),
             }
     except GitObjectNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=describe_exception(e))
     except Exception as e:
         logger.error(f"Error fetching config for {device_name}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch config: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch config: {describe_exception(e)}")
 
 
 @router.delete("/flush")
@@ -461,7 +462,7 @@ def flush_database(db: Session = Depends(get_db)) -> dict:
     except Exception as e:
         db.rollback()
         logger.error(f"Failed to flush database: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to flush database: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to flush database: {describe_exception(e)}")
 
 
 @router.post("/retention/run")
@@ -493,4 +494,4 @@ def run_log_retention(db: Session = Depends(get_db)) -> dict:
         }
     except Exception as e:
         logger.error(f"Failed to run log retention: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to run log retention: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to run log retention: {describe_exception(e)}")
