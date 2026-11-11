@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, computed, ref } from "vue"
+import { onMounted, onBeforeUnmount, computed, nextTick, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useDevicesStore } from "@/stores/devices"
 import { useFavoritesStore } from "@/stores/favorites"
@@ -23,6 +23,14 @@ interface BackupEntry {
   file_size_bytes: number
   version_number: number
 }
+
+type DetailSection = "history" | "config" | "diff"
+
+const sections: Array<{ id: DetailSection; label: string }> = [
+  { id: "history", label: "Backup History" },
+  { id: "config", label: "Configuration Browser" },
+  { id: "diff", label: "Configuration Diff" },
+]
 
 const graphHistoryCache = new Map<string, Array<{ date: string; count: number }>>()
 const graphDays = 365
@@ -76,7 +84,18 @@ const downloadingBackups = ref<Record<string, boolean>>({})
 const downloadingLatest = ref(false)
 const jobLookupLoading = ref<Record<string, boolean>>({})
 const browseCommit = ref<string>("")
-const configBrowserSection = ref<HTMLElement | null>(null)
+
+// Section shown below the submenu, the URL remembers it (?section=) so a reload or shared link opens the same one
+const activeSection = ref<DetailSection>(
+  sections.find(section => section.id === route.query.section)?.id ?? "history"
+)
+const sectionMenu = ref<HTMLElement | null>(null)
+
+function showSection(section: DetailSection) {
+  if (section === activeSection.value) return
+  activeSection.value = section
+  void router.replace({ query: { ...route.query, section: section === "history" ? undefined : section } })
+}
 
 const latestBackup = computed<BackupEntry | null>(() => {
   let latest: BackupEntry | null = null
@@ -391,9 +410,16 @@ async function openJobLog(backup: BackupEntry) {
   }
 }
 
-function browseConfig(backup: BackupEntry) {
+async function browseConfig(backup: BackupEntry) {
   browseCommit.value = backup.hash
-  configBrowserSection.value?.scrollIntoView({ behavior: "smooth", block: "start" })
+  showSection("config")
+
+  // Far down the history list the submenu is scrolled out of view (or hidden behind the navbar), so scroll back up to it
+  await nextTick()
+  const menu = sectionMenu.value
+  if (menu && menu.getBoundingClientRect().top < 64) {
+    menu.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
 }
 
 // Download config file
@@ -495,7 +521,7 @@ function formatFileSize(bytes: number): string {
     <div v-else-if="devicesStore.selectedDevice">
       <!-- Device header -->
       <div class="card mb-6">
-        <div class="flex flex-col md:flex-row md:items-start md:justify-between">
+        <div class="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div class="flex items-center space-x-3">
               <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -604,225 +630,248 @@ function formatFileSize(bytes: number): string {
         </div>
       </div>
 
-      <BackupContributionGraph
-        :daily-counts="graphDailyCounts"
-        :selected-date="selectedDateInGraph"
-        @day-selected="setSelectedGraphDate"
-        @day-cleared="clearSelectedGraphDate"
-        class="mb-6"
-      />
+      <!-- Section submenu -->
+      <div ref="sectionMenu" class="flex flex-wrap gap-2 mb-6 scroll-mt-20" role="tablist" aria-label="Device sections">
+        <button
+          v-for="section in sections"
+          :key="section.id"
+          @click="showSection(section.id)"
+          role="tab"
+          :aria-selected="activeSection === section.id"
+          :class="[
+            'px-4 py-2 rounded font-medium text-sm transition',
+            activeSection === section.id
+              ? 'bg-kiwissh-600 text-white'
+              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+          ]"
+        >
+          {{ section.label }}
+        </button>
+      </div>
 
-      <!-- Backup history section -->
-      <div class="card mb-6">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Backup History</h2>
+      <!-- Sections are only hidden (v-show), so they keep their state when switching, e.g. the search of the config browser -->
 
-        <!-- Only replace the list on the first load, page changes keep it in place so the page doesn't jump -->
-        <LoadingSpinner v-if="historyLoading && backupHistory.length === 0" size="md" />
+      <!-- Backup history section, the graph belongs to it as it filters the list by day -->
+      <div v-show="activeSection === 'history'" role="tabpanel">
+        <BackupContributionGraph
+          :daily-counts="graphDailyCounts"
+          :selected-date="selectedDateInGraph"
+          @day-selected="setSelectedGraphDate"
+          @day-cleared="clearSelectedGraphDate"
+          class="mb-6"
+        />
 
-        <div v-else-if="historyError" class="text-red-600 text-sm mb-4">
-          {{ historyError }}
-        </div>
+        <div class="card mb-6">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Backup History</h2>
 
-        <div v-else>
-          <!-- Filter controls -->
-          <div v-if="backupHistory.length > 0 || hasActiveFilters" class="p-4 mb-4 rounded-lg border border-gray-200/80 dark:border-slate-700/80 bg-white/70 dark:bg-slate-900/55 backdrop-blur-sm">
-            <div class="space-y-3">
-              <div class="flex flex-col md:flex-row gap-4">
-                <div class="flex-1">
-                  <label class="label">From Date</label>
-                  <input v-model="filterDateFrom" type="date" class="input" />
+          <!-- Only replace the list on the first load, page changes keep it in place so the page doesn't jump -->
+          <LoadingSpinner v-if="historyLoading && backupHistory.length === 0" size="md" />
+
+          <div v-else-if="historyError" class="text-red-600 text-sm mb-4">
+            {{ historyError }}
+          </div>
+
+          <div v-else>
+            <!-- Filter controls -->
+            <div v-if="backupHistory.length > 0 || hasActiveFilters" class="p-4 mb-4 rounded-lg border border-gray-200/80 dark:border-slate-700/80 bg-white/70 dark:bg-slate-900/55 backdrop-blur-sm">
+              <div class="space-y-3">
+                <div class="flex flex-col md:flex-row gap-4">
+                  <div class="flex-1">
+                    <label class="label">From Date</label>
+                    <input v-model="filterDateFrom" type="date" class="input" />
+                  </div>
+                  <div class="flex-1">
+                    <label class="label">To Date</label>
+                    <input v-model="filterDateTo" type="date" class="input" />
+                  </div>
                 </div>
-                <div class="flex-1">
-                  <label class="label">To Date</label>
-                  <input v-model="filterDateTo" type="date" class="input" />
+
+                <div>
+                  <label class="label">Search Commit Message</label>
+                  <input
+                    v-model="filterSearch"
+                    type="text"
+                    placeholder="Search backups..."
+                    class="input"
+                  />
+                </div>
+
+                <div v-if="hasActiveFilters" class="flex items-center justify-between">
+                  <span class="text-sm text-gray-600 dark:text-gray-400">{{ filteredBackupHistory.length }} of {{ backupHistory.length }} backups</span>
+                  <button @click="clearFilters" class="text-sm text-kiwissh-600 dark:text-kiwissh-400 hover:text-kiwissh-700 dark:hover:text-kiwissh-300 underline">
+                    Clear Filters
+                  </button>
+                </div>
+
+                <div class="flex items-center gap-4">
+                  <label class="label mb-0">Entries per page:</label>
+                  <select v-model.number="pageSize" @change="handlePageSizeChange" class="input w-24">
+                    <option :value="5">5</option>
+                    <option :value="10">10</option>
+                    <option :value="20">20</option>
+                    <option :value="50">50</option>
+                  </select>
                 </div>
               </div>
+            </div>
 
-              <div>
-                <label class="label">Search Commit Message</label>
-                <input
-                  v-model="filterSearch"
-                  type="text"
-                  placeholder="Search backups..."
-                  class="input"
+            <!-- Backup history list -->
+            <div v-if="filteredBackupHistory.length === 0" class="text-center text-gray-500 dark:text-gray-400 py-8">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
-              </div>
+              </svg>
+              <p>{{ hasActiveFilters ? "No backups found" : "No backup history available" }}</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                <template v-if="hasActiveFilters">No backups match your filters.</template>
+                <template v-else-if="devicesStore.selectedDevice?.enabled">Click "Trigger Backup" to create the first backup</template>
+                <template v-else>Backups are disabled for this device</template>
+              </p>
+            </div>
 
-              <div v-if="hasActiveFilters" class="flex items-center justify-between">
-                <span class="text-sm text-gray-600 dark:text-gray-400">{{ filteredBackupHistory.length }} of {{ backupHistory.length }} backups</span>
-                <button @click="clearFilters" class="text-sm text-kiwissh-600 dark:text-kiwissh-400 hover:text-kiwissh-700 dark:hover:text-kiwissh-300 underline">
-                  Clear Filters
+            <div
+              v-else
+              class="space-y-2 border border-gray-200 dark:border-gray-700 rounded-lg divide-y dark:divide-gray-700 transition-opacity"
+              :class="{ 'opacity-50': historyLoading }"
+            >
+              <div
+                v-for="backup in paginatedBackupHistory"
+                :key="backup.hash"
+                class="p-3 hover:bg-gray-50 dark:hover:bg-gray-800/70 transition-colors cursor-pointer"
+                title="Open backup job log"
+                @click="openJobLog(backup)"
+              >
+                <div class="flex items-center justify-between gap-4">
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                      <span class="text-xs font-bold px-2 py-1 rounded-full bg-kiwissh-100 text-kiwissh-700 dark:bg-kiwissh-900/40 dark:text-kiwissh-300">
+                        v{{ backup.version_number }}
+                      </span>
+                      <code class="text-sm font-mono bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-2 py-1 rounded">{{ backup.short_hash }}</code>
+                      <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatFileSize(backup.file_size_bytes) }}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-sm text-gray-700 dark:text-gray-200 font-medium truncate">{{ backup.message }}</span>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {{ backup.author }} on {{ new Date(backup.timestamp).toLocaleString() }}
+                    </p>
+                  </div>
+                  <div class="shrink-0 flex items-center gap-2">
+                    <button
+                      @click.stop="browseConfig(backup)"
+                      class="btn btn-secondary py-1 px-3 text-sm whitespace-nowrap"
+                      :class="{ 'ring-2 ring-kiwissh-500': backup.hash === browseCommit }"
+                      title="View this config in the browser"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4 inline mr-1"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                        />
+                      </svg>
+                      View
+                    </button>
+                    <button
+                      @click.stop="downloadConfig(backup)"
+                      :disabled="isDownloading(backup.hash)"
+                      class="btn btn-secondary py-1 px-3 text-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <svg
+                        v-if="isDownloading(backup.hash)"
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4 inline mr-1 animate-spin"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          class="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          stroke-width="4"
+                        />
+                        <path
+                          class="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        />
+                      </svg>
+                      <svg
+                        v-else
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4 inline mr-1"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                        />
+                      </svg>
+                      {{ isDownloading(backup.hash) ? "Downloading..." : "Download" }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pagination controls -->
+            <div v-if="filteredBackupHistory.length > 0" class="mt-4 flex items-center justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400">
+                Page {{ currentPage }} of {{ totalPages }} ({{ filteredBackupHistory.length }} total)
+              </span>
+              <div class="flex gap-2">
+                <button
+                  @click="goToPreviousHistoryPage"
+                  :disabled="currentPage === 1 || historyLoading"
+                  class="btn btn-secondary py-1 px-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  ← Previous
+                </button>
+                <button
+                  @click="goToNextHistoryPage"
+                  :disabled="currentPage === totalPages || historyLoading"
+                  class="btn btn-secondary py-1 px-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next →
                 </button>
               </div>
-
-              <div class="flex items-center gap-4">
-                <label class="label mb-0">Entries per page:</label>
-                <select v-model.number="pageSize" @change="handlePageSizeChange" class="input w-24">
-                  <option :value="5">5</option>
-                  <option :value="10">10</option>
-                  <option :value="20">20</option>
-                  <option :value="50">50</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <!-- Backup history list -->
-          <div v-if="filteredBackupHistory.length === 0" class="text-center text-gray-500 dark:text-gray-400 py-8">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <p>{{ hasActiveFilters ? "No backups found" : "No backup history available" }}</p>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              <template v-if="hasActiveFilters">No backups match your filters.</template>
-              <template v-else-if="devicesStore.selectedDevice?.enabled">Click "Trigger Backup" to create the first backup</template>
-              <template v-else>Backups are disabled for this device</template>
-            </p>
-          </div>
-
-          <div
-            v-else
-            class="space-y-2 border border-gray-200 dark:border-gray-700 rounded-lg divide-y dark:divide-gray-700 transition-opacity"
-            :class="{ 'opacity-50': historyLoading }"
-          >
-            <div
-              v-for="backup in paginatedBackupHistory"
-              :key="backup.hash"
-              class="p-3 hover:bg-gray-50 dark:hover:bg-gray-800/70 transition-colors cursor-pointer"
-              title="Open backup job log"
-              @click="openJobLog(backup)"
-            >
-              <div class="flex items-center justify-between gap-4">
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-2 mb-1">
-                    <span class="text-xs font-bold px-2 py-1 rounded-full bg-kiwissh-100 text-kiwissh-700 dark:bg-kiwissh-900/40 dark:text-kiwissh-300">
-                      v{{ backup.version_number }}
-                    </span>
-                    <code class="text-sm font-mono bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-2 py-1 rounded">{{ backup.short_hash }}</code>
-                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatFileSize(backup.file_size_bytes) }}</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span class="text-sm text-gray-700 dark:text-gray-200 font-medium truncate">{{ backup.message }}</span>
-                  </div>
-                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {{ backup.author }} on {{ new Date(backup.timestamp).toLocaleString() }}
-                  </p>
-                </div>
-                <div class="shrink-0 flex items-center gap-2">
-                  <button
-                    @click.stop="browseConfig(backup)"
-                    class="btn btn-secondary py-1 px-3 text-sm whitespace-nowrap"
-                    :class="{ 'ring-2 ring-kiwissh-500': backup.hash === browseCommit }"
-                    title="View this config in the browser"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      class="h-4 w-4 inline mr-1"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                      />
-                    </svg>
-                    View
-                  </button>
-                  <button
-                    @click.stop="downloadConfig(backup)"
-                    :disabled="isDownloading(backup.hash)"
-                    class="btn btn-secondary py-1 px-3 text-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <svg
-                      v-if="isDownloading(backup.hash)"
-                      xmlns="http://www.w3.org/2000/svg"
-                      class="h-4 w-4 inline mr-1 animate-spin"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        class="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        stroke-width="4"
-                      />
-                      <path
-                        class="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                      />
-                    </svg>
-                    <svg
-                      v-else
-                      xmlns="http://www.w3.org/2000/svg"
-                      class="h-4 w-4 inline mr-1"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                      />
-                    </svg>
-                    {{ isDownloading(backup.hash) ? "Downloading..." : "Download" }}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Pagination controls -->
-          <div v-if="filteredBackupHistory.length > 0" class="mt-4 flex items-center justify-between">
-            <span class="text-sm text-gray-600 dark:text-gray-400">
-              Page {{ currentPage }} of {{ totalPages }} ({{ filteredBackupHistory.length }} total)
-            </span>
-            <div class="flex gap-2">
-              <button
-                @click="goToPreviousHistoryPage"
-                :disabled="currentPage === 1 || historyLoading"
-                class="btn btn-secondary py-1 px-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                ← Previous
-              </button>
-              <button
-                @click="goToNextHistoryPage"
-                :disabled="currentPage === totalPages || historyLoading"
-                class="btn btn-secondary py-1 px-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next →
-              </button>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Config browser -->
-      <div ref="configBrowserSection" class="card mb-6 scroll-mt-20">
+      <div v-show="activeSection === 'config'" class="card mb-6" role="tabpanel">
         <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Configuration Browser</h2>
 
         <ConfigBrowser
@@ -833,7 +882,7 @@ function formatFileSize(bytes: number): string {
       </div>
 
       <!-- Config diff selector and viewer -->
-      <div class="card mb-6">
+      <div v-show="activeSection === 'diff'" class="card mb-6" role="tabpanel">
         <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Configuration Diff</h2>
 
         <div v-if="commitOptions.length >= 2" class="mb-4 flex flex-col md:flex-row gap-4">
