@@ -277,6 +277,15 @@ class BackupService:
         async with setup_lock:
             await self._stop_backup_queue_locked()
 
+    def queue_workers_alive(self) -> bool:
+        """Return True if the queue workers were started and none of them has died.
+
+        A dead worker is only replaced the next time a backup is queued, so until then it stays visible here.
+        """
+        if self._backup_queue is None or not self._queue_workers:
+            return False
+        return all(not worker.done() for worker in self._queue_workers)
+
     def get_backup_queue_depth(self) -> int:
         """Return number of queued devices waiting for a worker."""
         ### Depth includes only waiting items in queue, not currently running backups

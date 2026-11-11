@@ -3,13 +3,8 @@
  */
 
 export interface HealthResponse {
-  status: string
+  status: "healthy" | "unhealthy"
   timestamp: string
   version: string
-  config_loaded: boolean
-}
-
-export interface ReadinessResponse {
-  ready: boolean
   checks: Record<string, boolean>
 }

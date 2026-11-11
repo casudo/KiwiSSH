@@ -18,6 +18,7 @@ from app.services import source_service
 from app.services.backup_service import backup_service
 from app.services.scheduler_service import scheduler_service
 from app.services.backup_job_service import backup_job_service
+from app.services.git_service import git_service
 from app.services.log_retention_service import log_retention_service
 from app.db import database
 
@@ -95,6 +96,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
                 db.close()
         except Exception as e:
             logger.warning(f"Log retention startup run failed: {e}")
+
+    ### Create the backup directory up front so a missing or read-only mount shows up right away
+    try:
+        git_service.backups_base_dir.mkdir(parents=True, exist_ok=True)
+        logger.debug(f"Created backup directory at '{git_service.backups_base_dir}'")
+    except OSError as e:
+        logger.error(f"Cannot create backup directory {git_service.backups_base_dir}: {e}")
 
     ### Start global backup queue workers
     await backup_service.start_backup_queue()
