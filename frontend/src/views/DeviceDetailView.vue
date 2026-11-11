@@ -10,6 +10,7 @@ import StatusBadge from "@/components/StatusBadge.vue"
 import DiffViewer from "@/components/DiffViewer.vue"
 import ConfigBrowser from "@/components/ConfigBrowser.vue"
 import BackupContributionGraph from "@/components/BackupContributionGraph.vue"
+import DeviceDryRun from "@/components/DeviceDryRun.vue"
 import LoadingSpinner from "@/components/LoadingSpinner.vue"
 
 interface BackupEntry {
@@ -505,8 +506,9 @@ function formatFileSize(bytes: number): string {
             <p class="text-gray-500 dark:text-gray-400 font-mono mt-1">{{ devicesStore.selectedDevice.ip_address }}</p>
           </div>
 
-          <!-- Favorite Button-->
-          <div class="mt-4 md:mt-0 flex items-center gap-2">
+          <!-- Buttons Section -->
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Favorite Button -->
             <button
               @click="toggleFavorite"
               class="px-3 py-2 rounded-md text-sm font-medium transition border"
@@ -514,6 +516,7 @@ function formatFileSize(bytes: number): string {
             >
               {{ isFavorite ? "★ Favorited" : "☆ Favorite" }}
             </button>
+            <!-- Download Latest Config Button -->
             <button
               @click="downloadLatestConfig"
               :disabled="!latestBackup || downloadingLatest"
@@ -558,6 +561,9 @@ function formatFileSize(bytes: number): string {
               </svg>
               {{ downloadingLatest ? "Downloading..." : "Download Latest" }}
             </button>
+            <!-- Device Dry Run Button + Component Window -->
+            <DeviceDryRun :device-name="deviceName" />
+            <!-- Trigger Backup Button -->
             <button
               @click="triggerBackup"
               :disabled="!devicesStore.selectedDevice.enabled"
