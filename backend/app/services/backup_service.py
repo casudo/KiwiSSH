@@ -670,6 +670,19 @@ class BackupService:
         task = asyncio.create_task(self._run_dry_run(device, result))
         self._dry_runs[result.dry_run_id] = DryRun(result=result, task=task)
         return result
+
+    async def get_dry_run(self, dry_run_id: str) -> DryRunResult | None:
+        """Get a dry run.
+
+        Returns:
+            The dry run, or None if the ID is unknown or its result isn't kept anymore
+        """
+        dry_run = self._dry_runs.get(dry_run_id)
+        if dry_run is None:
+            return None
+
+        return dry_run.result
+
     async def _run_dry_run(self, device: DeviceBase, result: DryRunResult) -> None:
         """Fetch and validate the config of a device, just like `backup_device()`, storing the outcome in result."""
         async with self._get_dry_run_semaphore():
@@ -704,7 +717,7 @@ class BackupService:
                 logger.warning("Dry run failed for %s: %s", device.device_name, result.error_message)
             finally:
                 result.duration_seconds = max(0.0, time.perf_counter() - started_at)
-                ### The result holds the whole config, so drop it once the client had enough time to fetch it
+                ### The result holds the whole config, drop it after the TTL to save memory
                 asyncio.get_running_loop().call_later(
                     DRY_RUN_RESULT_TTL_SECONDS, self._dry_runs.pop, result.dry_run_id, None
                 )
