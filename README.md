@@ -12,7 +12,7 @@
 
 # About KiwiSSH <!-- omit from toc -->
 
-KiwiSSH is a network device configuration backup tool that connects to your devices via SSH, Telnet or HTTP/HTTPS, fetches their configurations, and stores them in git repositories for easy version control and change tracking. It also provides a user-friendly web interface to manage your devices, view backup logs, and see configuration changes over time. It supports over 180+ device types with templates for any edge device.
+KiwiSSH is a network device configuration backup tool that connects to your devices via SSH, Telnet or HTTP/HTTPS, fetches their configurations, and stores them in git repositories for easy version control and change tracking. It also provides a user-friendly web interface to manage your devices, view backup logs, configuration changes over time and so on. It supports over 180+ device types with templates for any edge device.
 
 It was created as better alternative to RANCID and Oxidized, with a focus on simplicity, ease of use, and modern technologies.
 
@@ -36,7 +36,7 @@ The backend provides:
 - Configurable SSH/Telnet/HTTP/HTTPS options and backup commands per vendor, group and device, making it flexible to support a wide range of devices
 - Configurable processing rules for captured configurations, including line stripping, cropping and regex-based redaction of sensitive information
 - The ability to easily add support for new vendors by creating YAML configuration files that define how to interact with the device CLI and process the output
-- RESTful API endpoints for device management, backup job logs and configuration retrieval to enable integration with other tools and automation
+- RESTful API endpoints for device management, backup job logs, dry-run tests and configuration retrieval to enable integration with other tools and automation
 
 # Table of Contents <!-- omit from toc -->
 
