@@ -200,6 +200,22 @@ async def start_device_dry_run(device_name: str) -> DryRunResult:
     return dry_run
 
 
+@router.get(
+    "/dry-run/status/{dry_run_id}",
+    response_model=DryRunResult,
+    responses={http_status.HTTP_404_NOT_FOUND: {"description": "Unknown dry run ID, or its result isn't kept anymore"}},
+)
+async def get_dry_run_status(dry_run_id: str) -> DryRunResult:
+    """Get the state of a dry run and, once it finished, its result.
+
+    The result of a finished dry run is kept for 10 minutes (`backup_service.py:DRY_RUN_RESULT_TTL_SECONDS`).
+    """
+    dry_run = await backup_service.get_dry_run(dry_run_id)
+    if dry_run is None:
+        raise HTTPException(status_code=404, detail=f"Dry run '{dry_run_id}' not found")
+    return dry_run
+
+
 def _is_allowed_websocket_origin(websocket: WebSocket) -> bool:
     """Check the Origin header, since the browser doesn't apply CORS to WebSocket connections.
 
