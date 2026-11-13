@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { onMounted, computed, ref } from "vue"
+import { onMounted, onBeforeUnmount, computed, ref } from "vue"
 import { useRouter } from "vue-router"
 import { useDevicesStore } from "@/stores/devices"
 import { useJobsStore } from "@/stores/jobs"
 import { useAppStore } from "@/stores/app"
 import { useFavoritesStore } from "@/stores/favorites"
+import { useLiveStore } from "@/stores/live"
+import { throttle } from "@/utils/throttle"
 import DeviceCard from "@/components/DeviceCard.vue"
 import StatCard from "@/components/StatCard.vue"
 import LoadingSpinner from "@/components/LoadingSpinner.vue"
@@ -14,6 +16,15 @@ const router = useRouter()
 const devicesStore = useDevicesStore()
 const jobsStore = useJobsStore()
 const appStore = useAppStore()
+const liveStore = useLiveStore()
+
+// Device statuses and the queue depth update live, the job counter needs a reload
+const reloadJobStats = throttle(() => void jobsStore.loadJobs(), 2000)
+const stopLiveUpdates = liveStore.onJobsChanged(() => reloadJobStats())
+onBeforeUnmount(() => {
+  stopLiveUpdates()
+  reloadJobStats.cancel()
+})
 const favoritesStore = useFavoritesStore()
 const configuredProfileCount = ref(0)
 

@@ -24,7 +24,9 @@ def _enrich_device_with_backup_info(device_base: DeviceBase, latest_job: BackupJ
     if latest_job:
         logger.debug(f"Found latest job for {device.device_name}: status={latest_job.status}, timestamp={latest_job.timestamp}")
         device.last_backup = latest_job.timestamp
-        if latest_job.status in {"pending", "in_progress"}:
+        if latest_job.status == "pending":
+            device.status = DeviceStatus.BACKUP_QUEUED
+        elif latest_job.status == "in_progress":
             device.status = DeviceStatus.BACKUP_IN_PROGRESS
         elif latest_job.status == "success":
             device.status = DeviceStatus.BACKUP_SUCCESS

@@ -2,8 +2,12 @@
 
 import logging
 import logging.config
+from pathlib import Path
+
+import websockets
 
 HEALTH_PATH = "/api/v1/health"
+WEBSOCKETS_DIR = str(Path(websockets.__file__).parent) # Installed websockets package
 
 
 class PassingHealthCheckFilter(logging.Filter):
@@ -19,6 +23,19 @@ class PassingHealthCheckFilter(logging.Filter):
             path, status_code = args[2], args[4]
             return not (path == HEALTH_PATH and status_code == 200)
         return True
+
+
+class WebSocketFrameFilter(logging.Filter):
+    """Drop the DEBUG lines the websockets library writes for every frame and keepalive ping (e.g. "> TEXT ...").
+
+    uvicorn hands its "uvicorn.error" logger to websockets, so these records are recognized by the file they come from.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        return not (record.levelno == logging.DEBUG and record.pathname.startswith(WEBSOCKETS_DIR))
+
+
+### ===================================================================================================================
 
 
 def configure_logging(debug: bool = False) -> None:
@@ -93,3 +110,5 @@ def configure_logging(debug: bool = False) -> None:
 
     ### Apply custom filter for logger "uvicorn.access" to drop passing health check logs
     logging.getLogger("uvicorn.access").addFilter(PassingHealthCheckFilter())
+    ### Live updates (WebSocket) would otherwise log every message and ping in debug mode
+    logging.getLogger("uvicorn.error").addFilter(WebSocketFrameFilter())

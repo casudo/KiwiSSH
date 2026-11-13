@@ -1,7 +1,7 @@
 import api from "./index"
 import type {
   BackupTriggerResponse,
-  BackupJobStatus,
+  BackupJobStatusResponse,
   BackupJobsResponse,
   BackupHistoryResponse,
   BackupGraphResponse,
@@ -36,8 +36,8 @@ export const backupApi = {
     return response.data
   },
 
-  async getJobStatus(jobId: string): Promise<BackupJobStatus> {
-    const response = await api.get<BackupJobStatus>(`/backups/status/${jobId}`)
+  async getJobStatus(jobId: string): Promise<BackupJobStatusResponse> {
+    const response = await api.get<BackupJobStatusResponse>(`/backups/status/${jobId}`)
     return response.data
   },
 

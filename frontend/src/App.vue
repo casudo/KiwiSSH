@@ -5,12 +5,17 @@ import Footer from "@/components/Footer.vue"
 import { useFavoritesStore } from "@/stores/favorites"
 import { useThemeStore } from "@/stores/theme"
 import { useAppStore } from "@/stores/app"
+import { useLiveStore } from "@/stores/live"
 
 const favoritesStore = useFavoritesStore()
 const themeStore = useThemeStore()
 const appStore = useAppStore()
+const liveStore = useLiveStore()
 
 onMounted(async () => {
+  // Live backup job updates for all pages
+  liveStore.connect()
+
   // Load theme
   if (!themeStore.isLoaded) {
     themeStore.loadTheme()

@@ -16,8 +16,6 @@ export const useJobsStore = defineStore("jobs", () => {
   // State
   const jobs = ref<BackupJobStatus[]>([])
   const selectedJob = ref<BackupJobStatus | null>(null)
-  const autoRefreshEnabled = ref(false)
-  const autoRefreshInterval = ref(3) // Default 3 seconds
   const loading = ref(false)
   const error = ref<string | null>(null)
   const totalJobs = ref(0)
@@ -32,8 +30,6 @@ export const useJobsStore = defineStore("jobs", () => {
     offset: 0,
     includeMetadata: false,
   })
-
-  let refreshTimer: ReturnType<typeof setInterval> | null = null
 
   // Getters
   const inProgressJobs = computed(() =>
@@ -61,6 +57,10 @@ export const useJobsStore = defineStore("jobs", () => {
         return `No configuration changes for ${deviceName}`
       case "failed":
         return `Failed backup for ${deviceName}`
+      case "pending":
+        return `Backup queued for ${deviceName}`
+      case "in_progress":
+        return `Backup running for ${deviceName}`
       default:
         return `Backup for ${deviceName}`
     }
@@ -181,56 +181,6 @@ export const useJobsStore = defineStore("jobs", () => {
     }
   }
 
-  function setAutoRefresh(enabled: boolean, interval?: number) {
-    autoRefreshEnabled.value = enabled
-
-    if (interval !== undefined && interval > 0) {
-      autoRefreshInterval.value = interval
-    }
-
-    if (enabled) {
-      // Stop any existing timer
-      if (refreshTimer) {
-        clearInterval(refreshTimer)
-        refreshTimer = null
-      }
-      // Start fresh with the interval
-      startAutoRefresh()
-    } else {
-      // Stop the timer and set enabled to false
-      if (refreshTimer) {
-        clearInterval(refreshTimer)
-        refreshTimer = null
-      }
-    }
-  }
-
-  function toggleAutoRefresh() {
-    setAutoRefresh(!autoRefreshEnabled.value)
-  }
-
-  function startAutoRefresh() {
-    if (refreshTimer) return
-
-    refreshTimer = setInterval(async () => {
-      await loadJobs(
-        lastQuery.value.deviceName,
-        lastQuery.value.status,
-        lastQuery.value.limit,
-        lastQuery.value.offset,
-        lastQuery.value.jobId,
-        lastQuery.value.includeMetadata,
-      )
-    }, autoRefreshInterval.value * 1000) // Convert seconds to milliseconds
-  }
-
-  function stopAutoRefresh() {
-    if (refreshTimer) {
-      clearInterval(refreshTimer)
-      refreshTimer = null
-    }
-  }
-
   function clearOldJobs(hoursOld: number = 24) {
     const cutoffTime = new Date(Date.now() - hoursOld * 60 * 60 * 1000)
     jobs.value = jobs.value.filter(job => {
@@ -262,8 +212,6 @@ export const useJobsStore = defineStore("jobs", () => {
     // State
     jobs,
     selectedJob,
-    autoRefreshEnabled,
-    autoRefreshInterval,
     loading,
     error,
     totalJobs,
@@ -284,10 +232,6 @@ export const useJobsStore = defineStore("jobs", () => {
     loadJobs,
     addJob,
     updateJob,
-    setAutoRefresh,
-    toggleAutoRefresh,
-    startAutoRefresh,
-    stopAutoRefresh,
     clearOldJobs,
     clearAllJobs,
     setSelectedJob,

@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { onMounted, computed, ref } from "vue"
+import { onMounted, onBeforeUnmount, computed, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useDevicesStore } from "@/stores/devices"
 import { useFavoritesStore } from "@/stores/favorites"
+import { useLiveStore } from "@/stores/live"
 import { backupApi } from "@/api/backups"
+import { throttle } from "@/utils/throttle"
 import StatusBadge from "@/components/StatusBadge.vue"
 import DiffViewer from "@/components/DiffViewer.vue"
 import ConfigBrowser from "@/components/ConfigBrowser.vue"
@@ -29,6 +31,7 @@ const route = useRoute()
 const router = useRouter()
 const devicesStore = useDevicesStore()
 const favoritesStore = useFavoritesStore()
+const liveStore = useLiveStore()
 
 const deviceName = computed(() => route.params.name as string)
 const isFavorite = computed(() => favoritesStore.isFavorite(deviceName.value))
@@ -89,6 +92,24 @@ const latestBackup = computed<BackupEntry | null>(() => {
     }
   }
   return latest
+})
+
+// A successful backup adds a new version, so reload history and graph (the device status updates live)
+const reloadHistoryForLiveUpdate = throttle(() => {
+  const tzOffsetMinutes = new Date().getTimezoneOffset()
+  graphHistoryCache.delete(`${deviceName.value}|${graphDays}|${tzOffsetMinutes}`)
+  void loadBackupHistory()
+  void loadGraphHistory()
+}, 1000)
+// An empty list means the changes are unknown (reconnect), so reload just in case
+const stopLiveUpdates = liveStore.onJobsChanged((jobs) => {
+  if (jobs.length === 0 || jobs.some(job => job.device_name === deviceName.value && job.status === "success")) {
+    reloadHistoryForLiveUpdate()
+  }
+})
+onBeforeUnmount(() => {
+  stopLiveUpdates()
+  reloadHistoryForLiveUpdate.cancel()
 })
 
 onMounted(async () => {
@@ -291,32 +312,14 @@ async function triggerBackup() {
   if (!devicesStore.selectedDevice?.enabled) return
 
   try {
-    // Update device status to in_progress
-    if (devicesStore.selectedDevice) {
-      devicesStore.selectedDevice.status = "backup_in_progress"
-      // Also update in the devices array
-      const deviceIndex = devicesStore.devices.findIndex((d: { device_name: string }) => d.device_name === deviceName.value)
-      if (deviceIndex >= 0) {
-        devicesStore.devices[deviceIndex].status = "backup_in_progress"
-      }
-    }
-
     console.log("[Backup] Triggering backup for device:", deviceName.value)
     const response = await backupApi.triggerDevice(deviceName.value)
     console.log("[Backup] Trigger response:", response)
     alert(`Backup triggered: ${response.message}`)
 
-
-    // Reload history after backup (for UI update)
-    await loadBackupHistory()
-    const tzOffsetMinutes = new Date().getTimezoneOffset()
-    graphHistoryCache.delete(`${deviceName.value}|${graphDays}|${tzOffsetMinutes}`)
-    await loadGraphHistory()
-
-    // Reload device data from API to get updated status from database
+    // Show the queued status even without live updates, the rest (running, finished,
+    // new history entry) arrives as live updates
     await devicesStore.fetchDevice(deviceName.value)
-
-    console.log("[Backup] Final status after reload:", devicesStore.selectedDevice?.status)
   } catch (e) {
     console.error("[Backup] Error during backup:", e)
     // Update device status to failed on error

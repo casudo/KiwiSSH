@@ -3,12 +3,15 @@ import { onMounted, onBeforeUnmount, computed, ref, watch } from "vue"
 import { useRoute } from "vue-router"
 import { useJobsStore } from "@/stores/jobs"
 import { useDevicesStore } from "@/stores/devices"
+import { useLiveStore } from "@/stores/live"
 import { backupApi } from "@/api/backups"
-import type { BackupJobStatus } from "@/types/backup"
+import type { BackupJobRecord, BackupJobStatus } from "@/types/backup"
 import LoadingSpinner from "@/components/LoadingSpinner.vue"
+import { throttle } from "@/utils/throttle"
 
 const jobsStore = useJobsStore()
 const devicesStore = useDevicesStore()
+const liveStore = useLiveStore()
 const route = useRoute()
 const showFilters = ref<boolean>(false)
 const showFlushDialog = ref<boolean>(false)
@@ -25,6 +28,20 @@ const pageSizeOptions = [25, 50, 100, 200]
 let jobIdSearchTimer: ReturnType<typeof setTimeout> | null = null
 let deviceSearchTimer: ReturnType<typeof setTimeout> | null = null
 
+// Reload the page (new jobs, status changes, counters) at most once per second while jobs change
+const reloadForLiveUpdate = throttle(() => void loadJobsPage(), 1000)
+let stopLiveUpdates: (() => void) | null = null
+
+function handleLiveJobs(jobs: BackupJobRecord[]) {
+  reloadForLiveUpdate()
+
+  // Also refresh the open job details (status, and the metadata output once the job finished)
+  const selected = jobsStore.selectedJob
+  if (selected && jobs.some(job => job.job_id === selected.job_id)) {
+    void jobsStore.loadJobDetails(selected.job_id)
+  }
+}
+
 onMounted(async () => {
   const routeJobId = typeof route.query.job_id === "string" ? route.query.job_id : ""
   const routeDevice = typeof route.query.device === "string" ? route.query.device : ""
@@ -35,6 +52,8 @@ onMounted(async () => {
   if (routeJobId) {
     filterJobId.value = routeJobId
   }
+
+  stopLiveUpdates = liveStore.onJobsChanged(handleLiveJobs)
 
   // Load jobs from database
   await loadJobsPage(routeJobId || undefined, routeDevice || undefined)
@@ -51,7 +70,8 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
-  jobsStore.stopAutoRefresh()
+  stopLiveUpdates?.()
+  reloadForLiveUpdate.cancel()
   if (jobIdSearchTimer) {
     clearTimeout(jobIdSearchTimer)
     jobIdSearchTimer = null
@@ -212,7 +232,7 @@ function formatStatus(status: string): string {
     case "in_progress":
       return "In Progress"
     case "pending":
-      return "Pending"
+      return "Queued"
     default:
       return status.charAt(0).toUpperCase() + status.slice(1)
   }
@@ -427,23 +447,14 @@ async function handleFlushDatabase() {
           </div>
 
           <div class="space-y-2">
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                :checked="jobsStore.autoRefreshEnabled"
-                @change="jobsStore.toggleAutoRefresh()"
-                class="w-4 h-4 text-kiwissh-600 rounded border-gray-300"
-              >
-              <span class="text-sm text-gray-700 dark:text-gray-300">Auto-refresh (sec)</span>
-            </label>
-            <input
-              v-model.number="jobsStore.autoRefreshInterval"
-              type="number"
-              min="1"
-              step="1"
-              class="input text-sm"
-              @change="jobsStore.setAutoRefresh(jobsStore.autoRefreshEnabled, jobsStore.autoRefreshInterval)"
-            />
+            <span class="label">Live updates</span>
+            <div
+              class="flex items-center gap-2 py-2 text-sm text-gray-700 dark:text-gray-300"
+              :title="liveStore.connected ? 'Job changes are shown as they happen' : 'Connection to the backend lost, reconnecting automatically'"
+            >
+              <span class="w-2.5 h-2.5 rounded-full" :class="liveStore.connected ? 'bg-green-500' : 'bg-red-500'"></span>
+              {{ liveStore.connected ? "Connected" : "Reconnecting..." }}
+            </div>
           </div>
 
           <div class="space-y-2">
@@ -480,6 +491,7 @@ async function handleFlushDatabase() {
               <label class="label">Filter by Status</label>
               <select v-model="filterStatus" @change="handleStatusFilterChange" class="input">
                 <option value="">All Status</option>
+                <option value="pending">Queued</option>
                 <option value="in_progress">In Progress</option>
                 <option value="success">Success</option>
                 <option value="no_changes">No Changes</option>
@@ -577,6 +589,7 @@ async function handleFlushDatabase() {
                     job.status === 'no_changes' ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/35 dark:text-cyan-300 dark:ring-1 dark:ring-cyan-800' :
                     job.status === 'failed' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/35 dark:text-rose-300 dark:ring-1 dark:ring-rose-800' :
                     job.status === 'in_progress' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/35 dark:text-amber-300 dark:ring-1 dark:ring-amber-800' :
+                    job.status === 'pending' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/35 dark:text-purple-300 dark:ring-1 dark:ring-purple-800' :
                     'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 dark:ring-1 dark:ring-slate-600'
                   ]"
                 >

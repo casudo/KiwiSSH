@@ -9,6 +9,8 @@ import logging
 import re
 import time
 import uuid
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 
 from app.core import get_settings
@@ -18,9 +20,10 @@ from app.services.ssh_service import ssh_service
 from app.services.telnet_service import telnet_service
 from app.services.http_service import http_service
 from app.services.git_service import git_service
-from app.services.backup_job_service import backup_job_service
+from app.services.backup_job_service import backup_job_service, job_to_dict
 from app.services.notification_service import notification_service
 from app.db import database
+from app.db.models import BackupJob
 from app.utils.timezone import get_utc_now
 
 logger = logging.getLogger(__name__)
@@ -32,6 +35,8 @@ class QueuedBackupItem:
     device: DeviceBase
     source: str # origin marker (e.g. api:group:<name>, api:device:<name>, scheduler:<name>)
     enqueued_at: float # timestamp to calculate queue wait time in workers
+    job_id: str # job created when the device was queued
+
 
 ### While backups keep running, pending git pushes are flushed at most this often (and always once the queue drains)
 PUSH_FLUSH_INTERVAL_SECONDS = 60.0
@@ -67,6 +72,8 @@ class BackupService:
         self._queue_setup_lock: asyncio.Lock | None = None
         ### Dedupe set for device names that are either waiting in queue or currently running
         self._queued_or_running: set[str] = set()
+        ### One queue of job events per connected live update client
+        self._event_queues: set[asyncio.Queue[dict]] = set()
         ### Batched git pushes: at most one flush task runs at a time
         self._push_flush_task: asyncio.Task[None] | None = None
         self._last_push_flush: float = time.monotonic()
@@ -157,6 +164,7 @@ class BackupService:
                 queue_wait_seconds = max(0.0, time.perf_counter() - queued_item.enqueued_at)
                 result = await self.backup_device(
                     queued_item.device,
+                    job_id=queued_item.job_id,
                     queue_wait_seconds=queue_wait_seconds,
                     queue_source=queued_item.source,
                 )
@@ -293,75 +301,116 @@ class BackupService:
             return 0
         return self._backup_queue.qsize()
 
-    async def _queue_device_backup(self, device: DeviceBase, *, source: str) -> bool:
-        """Queue a single device backup assuming queue workers are already initialized."""
-        ### No backup if device is disabled
-        if not device.enabled:
-            return False
+    async def _queue_device_backups(self, devices: list[DeviceBase], *, source: str) -> tuple[dict[str, str], list[str]]:
+        """Queue backups for the given devices, assuming queue workers are already initialized.
 
+        Disabled devices and devices that are already queued or running are skipped. Every queued device gets
+        a job with status "pending" right away, so it can be tracked before a worker picks it up.
+
+        Returns:
+            Job ID per queued device name, and the names of skipped devices
+        """
         if self._backup_queue is None:
             raise RuntimeError("Backup queue is not initialized")
 
         ### Lock protects dedupe checks and updates against concurrent API/scheduler enqueue calls
+        skipped: list[str] = []
+        reserved: list[DeviceBase] = []
         state_lock = self._get_queue_state_lock()
         async with state_lock:
-            if device.device_name in self._queued_or_running:
-                logger.debug(
-                    "Skipped queue for %s from %s: already queued or running",
-                    device.device_name,
-                    source,
-                )
-                return False
+            for device in devices:
+                if not device.enabled or device.device_name in self._queued_or_running:
+                    skipped.append(device.device_name)
+                    continue
+                ### Reserve device name before enqueue so concurrent callers can't queue duplicates
+                self._queued_or_running.add(device.device_name)
+                reserved.append(device)
 
-            ### Reserve device name before enqueue so concurrent callers can't queue duplicates
-            self._queued_or_running.add(device.device_name)
+        if skipped:
+            logger.debug("Skipped queue for %d device(s) from %s: disabled, already queued or running", len(skipped), source)
+        if not reserved:
+            return {}, skipped
 
-        try:
-            ### Put now contains all context workers need (device + source + enqueue timestamp)
-            await self._backup_queue.put(
-                QueuedBackupItem(
-                    device=device,
-                    source=source,
-                    enqueued_at=time.perf_counter(),
-                )
+        queued_at = get_utc_now()
+        job_ids = {device.device_name: str(uuid.uuid4()) for device in reserved} # Create Job ID
+        jobs = [
+            BackupJob(
+                id=job_ids[device.device_name],
+                device_name=device.device_name,
+                group=device.group,
+                status="pending",
+                timestamp=queued_at,
             )
-        except Exception:
-            async with state_lock:
-                self._queued_or_running.discard(device.device_name)
+            for device in reserved
+        ]
+        ### Add job to live events before committing them to the database
+        events = [job_to_dict(job) for job in jobs]
+
+        ### Store the jobs in the DB before queueing them, a worker may pick them up right away
+        try:
+            await asyncio.to_thread(self._create_pending_jobs, jobs)
+        except BaseException:
+            ### Only reached when cancelled (_create_pending_jobs handles its own errors), dont leave devices reserved
+            self._queued_or_running.difference_update(device.device_name for device in reserved)
             raise
 
+        ### Place the jobs in the backup queue for processing
+        enqueued_at = time.perf_counter()
+        for device in reserved:
+            self._backup_queue.put_nowait(
+                QueuedBackupItem(device=device, source=source, enqueued_at=enqueued_at, job_id=job_ids[device.device_name])
+            )
+
         logger.debug(
-            "Queued backup for %s from %s (queue depth: %d)",
-            device.device_name,
+            "Queued %d backup(s) from %s (queue depth: %d)",
+            len(jobs),
             source,
             self.get_backup_queue_depth(),
         )
-        return True
 
-    async def queue_device_backup(self, device: DeviceBase, *, source: str) -> bool:
-        """Queue a single device backup if not already queued/running."""
+        ### Notify live update clients about the new jobs
+        self._publish_job_events(events)
+
+        return job_ids, skipped
+
+    async def queue_device_backup(self, device: DeviceBase, *, source: str) -> str | None:
+        """Queue a single device backup.
+
+        Returns:
+            The job ID, or None if the device is disabled or already queued/running
+        """
         await self._ensure_backup_queue_workers()
-        return await self._queue_device_backup(device, source=source)
+        queued, _ = await self._queue_device_backups([device], source=source)
+        return queued.get(device.device_name)
 
-    async def queue_device_backups(self, devices: list[DeviceBase], *, source: str) -> tuple[list[str], list[str]]:
-        """Queue multiple device backups and return queued/skipped device names."""
+    async def queue_device_backups(self, devices: list[DeviceBase], *, source: str) -> tuple[dict[str, str], list[str]]:
+        """Queue multiple device backups.
+
+        Returns:
+            Job ID per queued device name, and the names of skipped devices
+        """
         await self._ensure_backup_queue_workers()
+        return await self._queue_device_backups(devices, source=source)
 
-        queued: list[str] = []
-        skipped: list[str] = []
+    ###### ========================================
+    ### Live Job Tracking Section
+    def _publish_job_events(self, jobs: list[dict]) -> None:
+        """Tell live update clients about new or changed jobs."""
+        event = {"type": "jobs", "jobs": jobs, "queue_depth": self.get_backup_queue_depth()}
+        for queue in self._event_queues:
+            queue.put_nowait(event)
 
-        ### Queue each device independently so one enqueue failure doesn't abort the whole batch
-        for device in devices:
-            try:
-                if await self._queue_device_backup(device, source=source):
-                    queued.append(device.device_name)
-                else:
-                    skipped.append(device.device_name)
-            except Exception as ex:
-                skipped.append(device.device_name)
-                logger.error("Failed to queue backup for %s from %s: %s", device.device_name, source, ex)
+    @asynccontextmanager
+    async def subscribe_job_events(self) -> AsyncIterator[asyncio.Queue[dict]]:
+        """Receive all job events published while the context is open."""
+        queue: asyncio.Queue[dict] = asyncio.Queue()
+        self._event_queues.add(queue)
+        try:
+            yield queue
+        finally:
+            self._event_queues.discard(queue)
 
-        return queued, skipped
+    ###### ========================================
 
     def _map_status_to_job_status(self, status: BackupStatus) -> str:
         """Map backup result status to persisted job status string.
@@ -392,69 +441,92 @@ class BackupService:
             logger.debug("Could not fetch previous backup status for %s: %s", device_name, ex)
             return None
 
-    def _create_in_progress_job(self, device: DeviceBase) -> str | None:
-        """Create a backup job record with 'in_progress' status.
-        
-        Args:
-            device: Device being backed up
-            
-        Returns:
-            Job ID if created, None if database not initialized
+    def _create_pending_jobs(self, jobs: list[BackupJob]) -> None:
+        """Store job records with status 'pending' for freshly queued devices in one transaction.
+
+        If this fails the backups still run, the worker then creates the record when the backup starts.
         """
         try:
             if database.SessionLocal is None:
-                return None
-            
+                return
+
             db = database.SessionLocal()
             try:
-                job_id = str(uuid.uuid4())
-                backup_job_service.create_job(
-                    db=db,
-                    job_id=job_id,
-                    device_name=device.device_name,
-                    group=device.group,
-                    status="in_progress",
-                    error_message=None,
-                    config_size_bytes=None,
-                    duration_seconds=None,
-                    metadata_output=None,
-                )
-                logger.debug(f"Created in_progress job {job_id} for {device.device_name}")
-                return job_id
+                backup_job_service.create_jobs(db, jobs)
             finally:
                 db.close()
         except Exception as e:
-            logger.warning("Failed to create in_progress job for %s: %s", device.device_name, e)
-            return None
+            logger.warning("Failed to create %d pending job(s): %s", len(jobs), e)
 
-    def _update_job_final_status(self, job_id: str, result: BackupRecord) -> None:
-        """Update a backup job record with final status.
-        
+    def _mark_job_in_progress(self, job_id: str, device: DeviceBase) -> None:
+        """Set a job record to 'in_progress', creating it if it wasn't stored when the device was queued."""
+        try:
+            if database.SessionLocal is None:
+                return
+
+            db = database.SessionLocal()
+            try:
+                ### Try to update the job to 'in_progress', ...
+                if backup_job_service.update_job(db=db, job_id=job_id, status="in_progress") is None:
+                    ### ... if the job didn't exist, create it as 'in_progress'
+                    backup_job_service.create_jobs(db, [BackupJob(
+                        id=job_id,
+                        device_name=device.device_name,
+                        group=device.group,
+                        status="in_progress",
+                        timestamp=get_utc_now(),
+                    )])
+                logger.debug(f"Job {job_id} for {device.device_name} is in progress")
+            finally:
+                db.close()
+        except Exception as e:
+            logger.warning("Failed to mark job %s for %s as in progress: %s", job_id, device.device_name, e)
+
+    async def _update_job_final_status(self, device: DeviceBase, result: BackupRecord) -> None:
+        """Store the final status of a job.
+
         Args:
-            job_id: ID of job to update
+            device: Device that was backed up
             result: BackupRecord with final backup result
         """
-        try:
-            if database.SessionLocal is None or job_id is None:
-                return
-            
-            db = database.SessionLocal()
+        job_status = self._map_status_to_job_status(result.status)
+
+        def store() -> None:
+            """Runs in a thread, SQLAlchemy is synchronous"""
             try:
-                job_status = self._map_status_to_job_status(result.status)
-                backup_job_service.update_job(
-                    db=db,
-                    job_id=job_id,
-                    status=job_status,
-                    error_message=result.error_message,
-                    config_size_bytes=result.config_size_bytes,
-                    duration_seconds=result.duration_seconds,
-                    metadata_output=result.metadata_output,
-                )
-                logger.debug(f"Updated job {job_id} with final status: {job_status}")
-            finally:
-                db.close()
-        except Exception as e:
-            logger.warning("Failed to update job %s: %s", job_id, e)
+                if database.SessionLocal is None or result.job_id is None:
+                    return
+
+                db = database.SessionLocal()
+                try:
+                    backup_job_service.update_job(
+                        db=db,
+                        job_id=result.job_id,
+                        status=job_status,
+                        error_message=result.error_message,
+                        config_size_bytes=result.config_size_bytes,
+                        duration_seconds=result.duration_seconds,
+                        metadata_output=result.metadata_output,
+                    )
+                    logger.debug(f"Updated job {result.job_id} with final status: {job_status}")
+                finally:
+                    db.close()
+            except Exception as e:
+                logger.warning("Failed to update job %s: %s", result.job_id, e)
+
+        await asyncio.to_thread(store)
+
+        ### Notify live update clients about the job's final status
+        self._publish_job_events([job_to_dict(BackupJob(
+            id=result.job_id,
+            device_name=device.device_name,
+            group=device.group,
+            status=job_status,
+            timestamp=result.timestamp,
+            error_message=result.error_message,
+            config_size_bytes=result.config_size_bytes,
+            duration_seconds=result.duration_seconds,
+        ))])
 
     ###### ========================================
     ### Validate Config Section
@@ -523,14 +595,15 @@ class BackupService:
         self,
         device: DeviceBase,
         *,
+        job_id: str | None = None,
         queue_wait_seconds: float | None = None,
         queue_source: str | None = None,
     ) -> BackupRecord:
         """
         Perform backup for a single device.
-        
-        Creates a job record with 'in_progress' status at start, then updates it
-        with final status when complete. This allows the UI to show backup progress.
+
+        Sets the job record to 'in_progress' at start, then updates it with the final status
+        when complete.
 
         Args:
             device: Device to backup
@@ -540,9 +613,20 @@ class BackupService:
         """
         ### Fetch previous status for notification sending
         previous_status = await asyncio.to_thread(self._get_previous_backup_status, device.device_name)
-        
-        ### Create in_progress job so UI can show backup status immediately
-        job_id = await asyncio.to_thread(self._create_in_progress_job, device)
+
+        ### Mark the job as in_progress so the UI can show the backup status immediately
+        job_id = job_id or str(uuid.uuid4()) # Create a new job ID if not provided
+        await asyncio.to_thread(self._mark_job_in_progress, job_id, device)
+
+        ### Notify live update clients about the new job being in progress
+        self._publish_job_events([job_to_dict(BackupJob(
+            id=job_id,
+            device_name=device.device_name,
+            group=device.group,
+            status="in_progress",
+            timestamp=get_utc_now(),
+        ))])
+
         started_at = time.perf_counter()
         metadata_output: str | None = None
         
@@ -625,7 +709,7 @@ class BackupService:
                     duration_seconds=duration_seconds,
                     metadata_output=metadata_output,
                 )
-                await asyncio.to_thread(self._update_job_final_status, job_id, result)
+                await self._update_job_final_status(device, result)
 
                 ### No changes can still be a recovery after a failed backup, so let the notification service decide
                 self._send_notification_in_background(
@@ -651,7 +735,7 @@ class BackupService:
                 duration_seconds=duration_seconds,
                 metadata_output=metadata_output,
             )
-            await asyncio.to_thread(self._update_job_final_status, job_id, result)
+            await self._update_job_final_status(device, result)
             self._send_notification_in_background(
                 device.device_name, device.group, result, previous_status, settings.notifications,
                 lines_added=lines_added, lines_removed=lines_removed,
@@ -670,33 +754,11 @@ class BackupService:
                 duration_seconds=max(0.0, time.perf_counter() - started_at),
                 metadata_output=metadata_output,
             )
-            await asyncio.to_thread(self._update_job_final_status, job_id, result)
+            await self._update_job_final_status(device, result)
             self._send_notification_in_background(
                 device.device_name, device.group, result, previous_status, get_settings().notifications
             )
             return result
-
-    async def get_backup_status(self, job_id: str) -> dict:
-        """
-        Get status of a backup job.
-
-        Args:
-            job_id: Backup job identifier
-
-        Returns:
-            Status dictionary
-
-        NOTE: Stub implementation
-        """
-        return {
-            "job_id": job_id,
-            "status": "not_implemented",
-            "message": "Job tracking not yet implemented",
-            "progress": 0,
-            "total": 0,
-            "completed": 0,
-            "failed": 0,
-        }
 
 
 ### Singleton instance

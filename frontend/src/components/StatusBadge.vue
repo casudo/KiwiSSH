@@ -15,6 +15,7 @@ const statusConfigMap: Record<DeviceStatus, StatusConfig> = {
   unknown: { label: "Unknown", class: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200" },
   backup_success: { label: "Backup Success", class: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300" },
   backup_failed: { label: "Backup Failed", class: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300" },
+  backup_queued: { label: "Backup Queued", class: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300" },
   backup_in_progress: { label: "Backup in Progress", class: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300" },
   backup_no_changes: { label: "No Changes", class: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300" },
 }

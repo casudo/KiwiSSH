@@ -76,6 +76,7 @@ The backend provides:
   - [fatal: Could not read from remote repository](#fatal-could-not-read-from-remote-repository)
   - [Third Party Monitoring](#third-party-monitoring)
     - [Health endpoint](#health-endpoint)
+    - [Backup job status](#backup-job-status)
 - [Future Goals](#future-goals)
 - [Technical Documentation](#technical-documentation)
 - [Contributing to KiwiSSH](#contributing-to-kiwissh)
@@ -789,6 +790,27 @@ To monitor KiwiSSH itself, use `/api/v1/health`. It answers with HTTP `200` when
 | `queue_workers_alive` | A backup queue worker died. Dead workers are restarted the next time a backup is queued |
 
 Passing checks are left out of the access log, failing ones are logged.
+
+### Backup job status
+
+Triggering a backup via `POST /api/v1/backups/trigger/{device_name}` (or `POST /api/v1/backups/trigger` for a group) returns the job ID of every queued device in `job_ids`. Use it to follow the backup with `GET /api/v1/backups/status/{job_id}`:
+
+```json
+{
+  "job_id": "0e827b3d-e99f-4ee5-bfef-6189064ba686",
+  "device_name": "hostname.domain.tld",
+  "group": "customer-abc-router",
+  "status": "pending",
+  "timestamp": "2026-11-09T12:49:42.593351Z",
+  "error_message": null,
+  "config_size_bytes": null,
+  "duration_seconds": null
+}
+```
+
+`status` goes from `pending` (queued) over `in_progress` to `success`, `no_changes` or `failed`.
+
+The frontend receives these changes live over the **WebSocket** `/api/v1/backups/events`. If you put your own reverse proxy in front of KiwiSSH, make sure it forwards WebSocket connections (Traefik does by default). Otherwise, statuses only update when you reload the page.
 
 ---
 

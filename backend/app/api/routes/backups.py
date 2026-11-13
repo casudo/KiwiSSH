@@ -2,10 +2,12 @@
 
 import logging
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, HTTPException, Depends, Query
+from urllib.parse import urlsplit
+from fastapi import APIRouter, HTTPException, Depends, Query, WebSocket, WebSocketDisconnect, status as http_status
 from sqlalchemy.orm import Session
 
-from app.models.backup import BackupTriggerRequest, BackupTriggerResponse
+from app.models.backup import BackupJobStatusResponse, BackupTriggerRequest, BackupTriggerResponse
+from app.services.backup_job_service import backup_job_service, job_to_dict
 from app.services.backup_service import backup_service
 from app.services.source_service import source_service
 from app.services.git_service import GitObjectNotFoundError, git_service
@@ -41,35 +43,33 @@ async def trigger_backup(
         return BackupTriggerResponse(
             message=f"No enabled devices found for group {request.group}" if request.group else "No enabled devices found",
             devices_queued=[],
-            job_id=None,
         )
 
     context_label = f"group '{request.group}'" if request.group else "all enabled devices"
     queue_source = f"api:group:{request.group}" if request.group else "api:all"
-    queued_devices, skipped_devices = await backup_service.queue_device_backups(
+    queued_jobs, skipped_devices = await backup_service.queue_device_backups(
         enabled_devices,
         source=queue_source,
     )
     queue_depth = backup_service.get_backup_queue_depth()
 
-    if not queued_devices:
+    if not queued_jobs:
         return BackupTriggerResponse(
             message=(
                 f"No new backups queued for {context_label}. "
                 f"{len(skipped_devices)} device(s) are already queued or currently running."
             ),
             devices_queued=[],
-            job_id=None,
         )
 
     return BackupTriggerResponse(
         message=(
-            f"Queued {len(queued_devices)} backup(s) for {context_label}. "
+            f"Queued {len(queued_jobs)} backup(s) for {context_label}. "
             f"Skipped {len(skipped_devices)} already queued/running device(s). "
             f"Current queue depth: {queue_depth}."
         ),
-        devices_queued=queued_devices,
-        job_id=None,
+        devices_queued=list(queued_jobs),
+        job_ids=queued_jobs,
     )
 
 
@@ -85,12 +85,11 @@ async def trigger_device_backup(
     if device is None:
         raise HTTPException(status_code=404, detail=f"Device '{device_name}' not found")
 
-    queued = await backup_service.queue_device_backup(device, source=f"api:device:{device_name}")
-    if not queued:
+    job_id = await backup_service.queue_device_backup(device, source=f"api:device:{device_name}")
+    if job_id is None:
         return BackupTriggerResponse(
             message=f"Backup for device {device_name} is already queued or currently running.",
             devices_queued=[],
-            job_id=None,
         )
 
     return BackupTriggerResponse(
@@ -99,7 +98,7 @@ async def trigger_device_backup(
             f"Current queue depth: {backup_service.get_backup_queue_depth()}."
         ),
         devices_queued=[device_name],
-        job_id=None,
+        job_ids={device_name: job_id},
     )
 
 
@@ -153,14 +152,7 @@ def get_backup_jobs(
             "queue_depth": backup_service.get_backup_queue_depth(),
             "jobs": [
                 {
-                    "job_id": job.id,
-                    "device_name": job.device_name,
-                    "group": job.group,
-                    "status": job.status,
-                    "timestamp": job.timestamp.isoformat() if job.timestamp else None,
-                    "error_message": job.error_message,
-                    "config_size_bytes": job.config_size_bytes,
-                    "duration_seconds": job.duration_seconds,
+                    **job_to_dict(job),
                     "metadata_output": job.metadata_output if include_metadata else None,
                 }
                 for job in jobs
@@ -171,10 +163,60 @@ def get_backup_jobs(
         raise HTTPException(status_code=500, detail=f"Failed to fetch backup jobs: {e}")
 
 
-@router.get("/status/{job_id}")
-async def get_backup_job_status(job_id: str) -> dict:
-    """Get status of a backup job."""
-    return await backup_service.get_backup_status(job_id)
+@router.get(
+    "/status/{job_id}",
+    response_model=BackupJobStatusResponse,
+    responses={http_status.HTTP_404_NOT_FOUND: {"description": "Unknown job ID"}},
+)
+def get_backup_job_status(job_id: str, db: Session = Depends(get_db)) -> BackupJobStatusResponse:
+    """Get the current status of a backup job."""
+    job = backup_job_service.get_job(db, job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"Backup job '{job_id}' not found")
+    return BackupJobStatusResponse(**job_to_dict(job))
+
+
+def _is_allowed_websocket_origin(websocket: WebSocket) -> bool:
+    """Check the Origin header, since the browser doesn't apply CORS to WebSocket connections.
+
+    Without this check any website could open the connection in the background and read the job events.
+    """
+    origin = websocket.headers.get("origin")
+    ### Only browsers send an Origin header, scripts and monitoring tools are allowed like for the REST API
+    if not origin:
+        return True
+    if origin in get_settings().app.api.cors_origins:
+        return True
+
+    ### The frontend is served from the same host as the API (nginx proxy), so the host names match
+    origin_host = urlsplit(origin).hostname
+    request_host = urlsplit(f"//{websocket.headers.get('host', '')}").hostname
+    if origin_host == request_host:
+        return True
+    ### The Vite dev server proxies with a rewritten Host header, so both names are only known to be loopback
+    return origin_host in {"localhost", "127.0.0.1", "::1"} and request_host in {"localhost", "127.0.0.1", "::1"}
+
+
+@router.websocket("/events")
+async def backup_job_events(websocket: WebSocket) -> None:
+    """Push backup job changes to the client.
+
+    Whenever jobs are queued, start or finish, a JSON message {"type": "jobs", "jobs": [...], "queue_depth": n}
+    is sent. Jobs have the same fields as in GET /backups/jobs.
+    """
+    if not _is_allowed_websocket_origin(websocket):
+        logger.warning("Rejected live update connection from origin %s", websocket.headers.get("origin"))
+        await websocket.close(code=http_status.WS_1008_POLICY_VIOLATION)
+        return
+
+    await websocket.accept()
+    async with backup_service.subscribe_job_events() as events:
+        try:
+            while True:
+                await websocket.send_json(await events.get())
+        except (WebSocketDisconnect, RuntimeError):
+            ### Client is gone (noticed on the next send, uvicorn closes dead connections via its ping timeout)
+            pass
 
 
 @router.get("/history/{device_name}")
