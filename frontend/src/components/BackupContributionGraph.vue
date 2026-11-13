@@ -199,41 +199,44 @@ const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   <div class="card">
     <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Backup Contribution Graph</h3>
 
-    <div class="overflow-x-auto pb-4">
-      <div class="inline-block min-w-max">
+    <!-- The grid stretches to the width of the card; once its cells would get too small it scrolls instead -->
+    <!-- The right padding keeps the ring of a selected day in the last week from being cut off -->
+    <div class="overflow-x-auto pb-4 pr-1">
+      <div
+        class="grid gap-[3px] min-w-[46.5rem]"
+        :style="{ gridTemplateColumns: `2.5rem repeat(${calendarWeeks.length}, minmax(0, 1fr))` }"
+      >
         <!-- Month labels row -->
-        <div class="flex gap-px mb-2">
-          <div class="w-10" /><!-- spacer for day labels -->
-          <div v-for="label in monthLabels" :key="`${label.month}-${label.startWeekIndex}`" class="text-xs text-gray-600 dark:text-gray-400 font-medium" :style="{ width: `${(label.endWeekIndex - label.startWeekIndex + 1) * 13 - 1}px` }">
-            {{ label.month }}
-          </div>
+        <div /><!-- spacer for day labels -->
+        <div
+          v-for="label in monthLabels"
+          :key="`${label.month}-${label.startWeekIndex}`"
+          class="mb-1 overflow-hidden whitespace-nowrap text-xs text-gray-600 dark:text-gray-400 font-medium"
+          :style="{ gridColumn: `span ${label.endWeekIndex - label.startWeekIndex + 1}` }"
+        >
+          <!-- A month that only covers a single week column has no room for its name -->
+          <template v-if="label.endWeekIndex > label.startWeekIndex">{{ label.month }}</template>
         </div>
 
-        <!-- Grid -->
-        <div class="flex gap-px">
-          <!-- Day labels (Y-axis) -->
-          <div class="flex flex-col gap-px min-w-max">
-            <div v-for="(label, idx) in dayLabels" :key="label" class="text-xs text-gray-600 dark:text-gray-400 font-medium text-right w-10 h-3 leading-3 flex items-center justify-end px-1">
+        <!-- One row per weekday: day label (Y-axis) followed by that weekday of every week -->
+        <template v-for="(label, dayIdx) in dayLabels" :key="label">
+          <!-- The label is taken out of the layout so only the square cells set the row height -->
+          <div class="relative">
+            <span class="absolute right-1 top-1/2 -translate-y-1/2 text-xs leading-none text-gray-600 dark:text-gray-400 font-medium">
               {{ label }}
-            </div>
+            </span>
           </div>
-
-          <!-- Weeks grid -->
-          <div class="flex gap-px">
-            <div v-for="(week, weekIdx) in calendarWeeks" :key="weekIdx" class="flex flex-col gap-px">
-              <div
-                v-for="(cell, dayIdx) in week"
-                :key="`${weekIdx}-${dayIdx}`"
-                :title="cell.displayDate ? `${cell.displayDate}: ${cell.count} backup${cell.count !== 1 ? 's' : ''}` : ''"
-                @click="handleDayClick(cell)"
-                class="w-3 h-3 rounded-sm cursor-pointer transition-colors border"
-                :class="[
-                  cell.date ? [getColorClass(cell.count), props.selectedDate === cell.date ? 'ring-2 ring-kiwissh-500 dark:ring-kiwissh-300 ring-offset-1 ring-offset-white dark:ring-offset-slate-900' : 'border-slate-200 dark:border-slate-700'] : 'bg-transparent border-transparent cursor-default',
-                ]"
-              />
-            </div>
-          </div>
-        </div>
+          <div
+            v-for="(week, weekIdx) in calendarWeeks"
+            :key="`${weekIdx}-${dayIdx}`"
+            :title="week[dayIdx].displayDate ? `${week[dayIdx].displayDate}: ${week[dayIdx].count} backup${week[dayIdx].count !== 1 ? 's' : ''}` : ''"
+            @click="handleDayClick(week[dayIdx])"
+            class="aspect-square rounded-sm cursor-pointer transition-colors border"
+            :class="[
+              week[dayIdx].date ? [getColorClass(week[dayIdx].count), props.selectedDate === week[dayIdx].date ? 'ring-2 ring-kiwissh-500 dark:ring-kiwissh-300 ring-offset-1 ring-offset-white dark:ring-offset-slate-900' : 'border-slate-200 dark:border-slate-700'] : 'bg-transparent border-transparent cursor-default',
+            ]"
+          />
+        </template>
       </div>
     </div>
 

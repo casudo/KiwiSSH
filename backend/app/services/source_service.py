@@ -463,6 +463,7 @@ class SourceService:
                 device, node_override = self._build_device_from_row(row)
             except Exception as ex:
                 logger.warning("Skipping invalid source row %s (device '%s'): %s", row_num, device_name, ex)
+                ### No describe_exception(): the cause of a row error is the raw pydantic error, which _format_validation_error() already shortened
                 skipped_rows.append({"row": str(row_num), "device_name": device_name, "error": str(ex)})
                 continue
 

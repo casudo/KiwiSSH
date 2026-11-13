@@ -333,6 +333,16 @@ class GitService:
             message,
         )
 
+    def _get_latest_config_sync(self, device_name: str, group: str) -> str | None:
+        """Blocking lookup of the config stored by the device's latest backup."""
+        lock = self._get_repo_lock(group)
+        with lock:
+            return self._read_committed_config(self._ensure_repo(group), f"{device_name}.conf")
+
+    async def get_latest_config(self, device_name: str, group: str) -> str | None:
+        """Get the config stored by the device's latest backup, or None if it has never been backed up."""
+        return await asyncio.to_thread(self._get_latest_config_sync, device_name, group)
+
     def _run_maintenance_sync(self, group: str) -> None:
         """Repack a group repository and rebuild its commit-graph (blocking).
 

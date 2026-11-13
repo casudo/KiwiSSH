@@ -6,13 +6,14 @@ from urllib.parse import urlsplit
 from fastapi import APIRouter, HTTPException, Depends, Query, WebSocket, WebSocketDisconnect, status as http_status
 from sqlalchemy.orm import Session
 
-from app.models.backup import BackupJobStatusResponse, BackupTriggerRequest, BackupTriggerResponse
+from app.models.backup import BackupJobStatusResponse, BackupTriggerRequest, BackupTriggerResponse, DryRunResult
 from app.services.backup_job_service import backup_job_service, job_to_dict
 from app.services.backup_service import backup_service
 from app.services.source_service import source_service
 from app.services.git_service import GitObjectNotFoundError, git_service
 from app.services.log_retention_service import log_retention_service
 from app.core import get_settings
+from app.utils.errors import describe_exception
 from app.db.database import get_db
 from sqlalchemy import desc, func
 from app.db.models import BackupJob
@@ -160,7 +161,7 @@ def get_backup_jobs(
         }
     except Exception as e:
         logger.error(f"Error fetching backup jobs: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch backup jobs: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch backup jobs: {describe_exception(e)}")
 
 
 @router.get(
@@ -174,6 +175,46 @@ def get_backup_job_status(job_id: str, db: Session = Depends(get_db)) -> BackupJ
     if job is None:
         raise HTTPException(status_code=404, detail=f"Backup job '{job_id}' not found")
     return BackupJobStatusResponse(**job_to_dict(job))
+
+
+@router.post(
+    "/dry-run/{device_name}",
+    response_model=DryRunResult,
+    status_code=http_status.HTTP_202_ACCEPTED,
+    responses={
+        http_status.HTTP_404_NOT_FOUND: {"description": "Unknown device"},
+        http_status.HTTP_409_CONFLICT: {"description": "A backup of the device is queued or running"},
+    },
+)
+async def start_device_dry_run(device_name: str) -> DryRunResult:
+    """Test the connectivity and backup commands of a device without saving anything."""
+    device = await source_service.get_device(device_name)
+    if device is None:
+        raise HTTPException(status_code=404, detail=f"Device '{device_name}' not found")
+
+    dry_run = backup_service.start_dry_run(device)
+    if dry_run is None:
+        raise HTTPException(
+            status_code=409,
+            detail=f"A backup of device '{device_name}' is queued or running, test it again once the backup finished",
+        )
+    return dry_run
+
+
+@router.get(
+    "/dry-run/status/{dry_run_id}",
+    response_model=DryRunResult,
+    responses={http_status.HTTP_404_NOT_FOUND: {"description": "Unknown dry run ID, or its result isn't kept anymore"}},
+)
+async def get_dry_run_status(dry_run_id: str) -> DryRunResult:
+    """Get the state of a dry run and, once it finished, its result.
+
+    The result of a finished dry run is kept for 10 minutes (`backup_service.py:DRY_RUN_RESULT_TTL_SECONDS`).
+    """
+    dry_run = await backup_service.get_dry_run(dry_run_id)
+    if dry_run is None:
+        raise HTTPException(status_code=404, detail=f"Dry run '{dry_run_id}' not found")
+    return dry_run
 
 
 def _is_allowed_websocket_origin(websocket: WebSocket) -> bool:
@@ -272,7 +313,7 @@ async def get_device_backup_history(
         }
     except Exception as e:
         logger.error(f"Error fetching backup history for {device_name}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch backup history: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch backup history: {describe_exception(e)}")
 
 
 @router.get("/history/graph/{device_name}")
@@ -311,7 +352,7 @@ async def get_device_backup_graph(
         }
     except Exception as e:
         logger.error(f"Error fetching backup graph for {device_name}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch backup graph: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch backup graph: {describe_exception(e)}")
 
 
 @router.get("/diff/{device_name}")
@@ -339,10 +380,10 @@ async def get_config_diff(
             "lines_removed": diff.lines_removed,
         }
     except GitObjectNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=describe_exception(e))
     except Exception as e:
         logger.error(f"Error building diff for {device_name}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to build diff: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to build diff: {describe_exception(e)}")
 
 
 @router.get("/latest/{device_name}")
@@ -392,10 +433,10 @@ async def get_latest_config(device_name: str, commit: str | None = None) -> dict
                 "version_number": latest.get("version_number"),
             }
     except GitObjectNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=describe_exception(e))
     except Exception as e:
         logger.error(f"Error fetching config for {device_name}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch config: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch config: {describe_exception(e)}")
 
 
 @router.delete("/flush")
@@ -421,7 +462,7 @@ def flush_database(db: Session = Depends(get_db)) -> dict:
     except Exception as e:
         db.rollback()
         logger.error(f"Failed to flush database: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to flush database: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to flush database: {describe_exception(e)}")
 
 
 @router.post("/retention/run")
@@ -453,4 +494,4 @@ def run_log_retention(db: Session = Depends(get_db)) -> dict:
         }
     except Exception as e:
         logger.error(f"Failed to run log retention: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to run log retention: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to run log retention: {describe_exception(e)}")

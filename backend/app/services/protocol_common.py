@@ -163,6 +163,8 @@ async def fetch_with_retries(
                 f"{protocol_label} config fetch timed out after {timeout_seconds}s "
                 f"(attempt {attempt}/{max_attempts})"
             )
+            ### Keep what timed out (e.g. waiting for the prompt) for callers that report the cause
+            last_exception.__cause__ = ex
             logger.warning(
                 "Config fetch timeout for device '%s' on attempt %d/%d",
                 device.device_name,

@@ -12,18 +12,20 @@ import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
+from typing import Any
 
 from app.core import get_settings
-from app.models.backup import BackupRecord, BackupStatus
-from app.models.device import DeviceBase
-from app.services.ssh_service import ssh_service
-from app.services.telnet_service import telnet_service
-from app.services.http_service import http_service
-from app.services.git_service import git_service
-from app.services.backup_job_service import backup_job_service, job_to_dict
-from app.services.notification_service import notification_service
 from app.db import database
 from app.db.models import BackupJob
+from app.models.backup import BackupRecord, BackupStatus, DryRunResult, DryRunStatus
+from app.models.device import DeviceBase
+from app.services.backup_job_service import backup_job_service, job_to_dict
+from app.services.git_service import git_service
+from app.services.http_service import http_service
+from app.services.notification_service import notification_service
+from app.services.ssh_service import ssh_service
+from app.services.telnet_service import telnet_service
+from app.utils.errors import describe_exception
 from app.utils.timezone import get_utc_now
 
 logger = logging.getLogger(__name__)
@@ -38,12 +40,23 @@ class QueuedBackupItem:
     job_id: str # job created when the device was queued
 
 
+@dataclass(slots=True)
+class DryRun:
+    """A running or recently finished dry run."""
+    result: DryRunResult
+    task: asyncio.Task[None]
+
+
 ### While backups keep running, pending git pushes are flushed at most this often (and always once the queue drains)
 PUSH_FLUSH_INTERVAL_SECONDS = 60.0
 ### Upper limit of notifications sent at the same time
 MAX_CONCURRENT_NOTIFICATIONS = 4
 ### How long shutdown waits for notifications that are still being sent
 NOTIFICATION_SHUTDOWN_TIMEOUT_SECONDS = 30.0
+### Semaphore: Upper limit of dry runs connecting to devices at the same time, they dont use the backup queue workers
+MAX_CONCURRENT_DRY_RUNS = 4
+### How long the result of a finished dry run can be fetched
+DRY_RUN_RESULT_TTL_SECONDS = 600.0
 
 ### REGEX Patterns used in config validation
 CLI_ERROR_PATTERNS = [
@@ -80,6 +93,9 @@ class BackupService:
         ### Notifications are sent in the background; keep references so tasks aren't garbage collected
         self._notification_tasks: set[asyncio.Task[None]] = set()
         self._notification_semaphore: asyncio.Semaphore | None = None
+        ### Running and recently finished dry runs by ID, kept in memory only
+        self._dry_runs: dict[str, DryRun] = {}
+        self._dry_run_semaphore: asyncio.Semaphore | None = None
 
     def _get_queue_state_lock(self) -> asyncio.Lock:
         """Get lock guarding queued/running device queue."""
@@ -98,6 +114,12 @@ class BackupService:
         if self._notification_semaphore is None:
             self._notification_semaphore = asyncio.Semaphore(MAX_CONCURRENT_NOTIFICATIONS)
         return self._notification_semaphore
+
+    def _get_dry_run_semaphore(self) -> asyncio.Semaphore:
+        """Get semaphore limiting how many dry runs connect to devices concurrently."""
+        if self._dry_run_semaphore is None:
+            self._dry_run_semaphore = asyncio.Semaphore(MAX_CONCURRENT_DRY_RUNS)
+        return self._dry_run_semaphore
 
     ###### ========================================
     ### Batched Git Push Section
@@ -591,6 +613,101 @@ class BackupService:
         return config_size
     ###### ========================================
 
+    async def _fetch_config(self, device: DeviceBase, device_config: dict[str, Any]) -> tuple[str, str | None]:
+        """Get the config plus optional metadata from a device via its protocol (SSH, Telnet or HTTP(S))."""
+        protocol = str(device_config.get("protocol") or "ssh").strip().lower()
+        if protocol == "telnet":
+            return await telnet_service.get_config(device, device_config=device_config)
+        if protocol == "ssh":
+            return await ssh_service.get_config(device, device_config=device_config)
+        if protocol in ("http", "https"):
+            return await http_service.get_config(device, device_config=device_config)
+        raise RuntimeError(f"Unsupported protocol: {protocol}")
+
+    ###### ========================================
+    ### Dry Run Section
+
+    def start_dry_run(self, device: DeviceBase) -> DryRunResult | None:
+        """Start a dry run of a device in the background.
+
+        A dry run fetches and validates the config for a device backup, but creates no job record,
+        backup version and notification. Disabled devices can be tested as well.
+
+        Returns:
+            The started dry run (or the one already running for the device),
+            or None if a backup of the device is queued or running
+        """
+        for dry_run in self._dry_runs.values():
+            if dry_run.result.device_name == device.device_name and not dry_run.task.done():
+                return dry_run.result
+
+        ### Dont open a session next to the one of a backup
+        if device.device_name in self._queued_or_running:
+            return None
+
+        ### Create 'in_progress' dry run
+        result = DryRunResult(
+            dry_run_id=str(uuid.uuid4()),
+            device_name=device.device_name,
+            status=DryRunStatus.IN_PROGRESS,
+        )
+        ### Run the dry run async
+        task = asyncio.create_task(self._run_dry_run(device, result))
+        self._dry_runs[result.dry_run_id] = DryRun(result=result, task=task)
+        return result
+
+    async def get_dry_run(self, dry_run_id: str) -> DryRunResult | None:
+        """Get a dry run.
+
+        Returns:
+            The dry run, or None if the ID is unknown or its result isn't kept anymore
+        """
+        dry_run = self._dry_runs.get(dry_run_id)
+        if dry_run is None:
+            return None
+
+        return dry_run.result
+
+    async def _run_dry_run(self, device: DeviceBase, result: DryRunResult) -> None:
+        """Fetch and validate the config of a device, just like `backup_device()`, storing the outcome in result."""
+        async with self._get_dry_run_semaphore():
+            logger.info("Starting dry run for device: %s (group: %s)", device.device_name, device.group)
+            started_at = time.perf_counter()
+
+            try:
+                device_config = get_settings().get_device_config(device.group, device.device_name)
+
+                ### Only one attempt for dry runs
+                config, result.metadata_output = await self._fetch_config(device, {**device_config, "retry": 0})
+
+                ### Store the fetched config and its size
+                result.config = config
+                result.config_size_bytes = await asyncio.to_thread(
+                    self._validate_config_capture, device.device_name, config
+                )
+
+                ### Same comparison a backup uses to decide whether to store a new version
+                try:
+                    latest_config = await git_service.get_latest_config(device.device_name, group=device.group)
+                    if latest_config is not None:
+                        result.has_changes = latest_config != config
+                except Exception as ex:
+                    logger.debug("Could not compare dry run of %s with its latest backup: %s", device.device_name, ex)
+
+                result.status = DryRunStatus.SUCCESS
+                logger.info("Dry run succeeded for %s", device.device_name)
+            except Exception as ex:
+                result.status = DryRunStatus.FAILED
+                result.error_message = describe_exception(ex)
+                logger.warning("Dry run failed for %s: %s", device.device_name, result.error_message)
+            finally:
+                result.duration_seconds = max(0.0, time.perf_counter() - started_at)
+                ### The result holds the whole config, drop it after the TTL to save memory
+                asyncio.get_running_loop().call_later(
+                    DRY_RUN_RESULT_TTL_SECONDS, self._dry_runs.pop, result.dry_run_id, None
+                )
+    ###### ========================================
+
     async def backup_device(
         self,
         device: DeviceBase,
@@ -642,32 +759,13 @@ class BackupService:
                     queue_wait_seconds,
                 )
 
-            ### Resolve device config once to choose protocol
+            ### Resolve device config once to choose protocol in _fetch_config()
             settings = get_settings()
             device_config = settings.get_device_config(device.group, device.device_name)
-            protocol = str(device_config.get("protocol") or "ssh").strip().lower()
-
-            async def _fetch_config() -> tuple[str, str | None]:
-                if protocol == "telnet":
-                    return await telnet_service.get_config(
-                        device,
-                        device_config=device_config,
-                    )
-                if protocol == "ssh":
-                    return await ssh_service.get_config(
-                        device,
-                        device_config=device_config,
-                    )
-                if protocol in ("http", "https"):
-                    return await http_service.get_config(
-                        device,
-                        device_config=device_config,
-                    )
-                raise RuntimeError(f"Unsupported protocol: {protocol}")
 
             ### Get config from device via SSH, Telnet or HTTP(S)
             for attempt in range(2):
-                config, metadata_output = await _fetch_config()
+                config, metadata_output = await self._fetch_config(device, device_config)
                 logger.debug(f"Got config for {device.device_name} ({len(config)} bytes)")
                 try:
                     ### Validate config for obvious capture issues before saving to git
@@ -743,14 +841,15 @@ class BackupService:
             return result
 
         except Exception as e:
-            logger.error("Backup failed for %s: %s", device.device_name, e)
+            error_message = describe_exception(e)
+            logger.error("Backup failed for %s: %s", device.device_name, error_message)
             result = BackupRecord(
                 id=str(uuid.uuid4()),
                 device_name=device.device_name,
                 timestamp=get_utc_now(),
                 status=BackupStatus.FAILED,
                 job_id=job_id,
-                error_message=str(e),
+                error_message=error_message,
                 duration_seconds=max(0.0, time.perf_counter() - started_at),
                 metadata_output=metadata_output,
             )
