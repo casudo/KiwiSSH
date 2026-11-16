@@ -15,6 +15,8 @@ from dotenv import load_dotenv
 from pydantic import AliasChoices, BaseModel, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.utils.errors import describe_exception
+
 ### Load .env file early to ensure environment variables are available
 load_dotenv()
 
@@ -210,7 +212,7 @@ class ScheduleConfig(ConfigModel):
         try:
             CronTrigger.from_crontab(cron)
         except Exception as e:
-            raise ValueError(f"Invalid cron expression '{cron}': {str(e)}")
+            raise ValueError(f"Invalid cron expression '{cron}': {describe_exception(e)}")
         
         return cron
     

@@ -48,6 +48,22 @@ export interface BackupJobStatusResponse {
   duration_seconds?: number | null
 }
 
+export type DryRunStatus = "in_progress" | "success" | "failed"
+
+/** State of a device dry run and, once it finished, its result */
+export interface DryRunResult {
+  dry_run_id: string
+  device_name: string
+  status: DryRunStatus
+  started_at: string
+  duration_seconds?: number | null
+  error_message?: string | null
+  config_size_bytes?: number | null // Only set when the captured config is valid
+  has_changes?: boolean | null // Compared to the latest backup, not set if there is none yet
+  metadata_output?: string | null
+  config?: string | null
+}
+
 /** Message received over the live update WebSocket (/api/v1/backups/events) */
 export interface JobEventMessage {
   type: "jobs"

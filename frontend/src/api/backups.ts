@@ -2,6 +2,7 @@ import api from "./index"
 import type {
   BackupTriggerResponse,
   BackupJobStatusResponse,
+  DryRunResult,
   BackupJobsResponse,
   BackupHistoryResponse,
   BackupGraphResponse,
@@ -38,6 +39,16 @@ export const backupApi = {
 
   async getJobStatus(jobId: string): Promise<BackupJobStatusResponse> {
     const response = await api.get<BackupJobStatusResponse>(`/backups/status/${jobId}`)
+    return response.data
+  },
+
+  async startDryRun(deviceName: string): Promise<DryRunResult> {
+    const response = await api.post<DryRunResult>(`/backups/dry-run/${encodeURIComponent(deviceName)}`)
+    return response.data
+  },
+
+  async getDryRun(dryRunId: string): Promise<DryRunResult> {
+    const response = await api.get<DryRunResult>(`/backups/dry-run/status/${dryRunId}`)
     return response.data
   },
 

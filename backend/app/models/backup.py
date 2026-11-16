@@ -81,3 +81,29 @@ class BackupJobStatusResponse(BaseModel):
     error_message: str | None = None
     config_size_bytes: int | None = None
     duration_seconds: float | None = None
+
+
+class DryRunStatus(str, Enum):
+    """Dry run status."""
+
+    IN_PROGRESS = "in_progress"
+    SUCCESS = "success"
+    FAILED = "failed"
+
+
+class DryRunResult(BaseModel):
+    """Result of a device dry run."""
+
+    dry_run_id: str
+    device_name: str
+    status: DryRunStatus
+    started_at: AwareDatetime = Field(default_factory=get_utc_now)
+    duration_seconds: float | None = None
+    error_message: str | None = None
+    config_size_bytes: int | None = Field(default=None, description="Only set when the captured config is valid")
+    has_changes: bool | None = Field(
+        default=None,
+        description="Whether the captured config differs from the latest backup. Not set if there is no backup yet.",
+    )
+    metadata_output: str | None = None
+    config: str | None = Field(default=None, description="The captured config, as a backup would store it")
