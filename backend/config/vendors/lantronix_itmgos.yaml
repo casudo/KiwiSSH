@@ -57,7 +57,7 @@ processing:
       ## two lines: "set tacacs+ secret", "set snmp v3password", "set ldap bindpassword",
       ## "admin ftp password", "set site chapsecret <site>", per-port CHAP and dial-out passwords
       ## and so on. Those two lines are hidden whatever they contain.
-      - search: '^((?:set|admin) (?:[^\n]*(?:password|phrase|secret|key)|site (?:dialoutpassword|chapsecret) \S[^\n]*?)[ \t]*)\n[^\n]*\n[^\n]*'
+      - search: '^(?:(?:set|admin) (?:.*(?:password|phrase|secret|key)|site (?:dialoutpassword|chapsecret) \S.*?)|set ntp localserverkey \d+ format (?:hex|ascii))\s*$'
         replacement: '\1\n<secret hidden>\n<secret hidden>'
       ### SNMP communities; all three can share one quoted line: rocommunity 'public' rwcommunity ...
       - search: '\b((?:ro|rw|trap)community) (?:''[^''\n]*''|"[^"\n]*"|\S+)'
