@@ -21,6 +21,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: "Device Detail" }
   },
   {
+    path: "/compare",
+    name: "compare",
+    component: () => import("@/views/CompareView.vue"),
+    meta: { title: "Compare Configs" }
+  },
+  {
     path: "/vendors",
     name: "vendors",
     component: () => import("@/views/VendorsView.vue"),

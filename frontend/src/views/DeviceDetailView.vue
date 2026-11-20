@@ -320,6 +320,10 @@ function goBack() {
   router.push("/devices")
 }
 
+function compareWithOtherDevice() {
+  router.push({ name: "compare", query: { left: deviceName.value } })
+}
+
 async function toggleFavorite() {
   try {
     await favoritesStore.toggleFavorite(deviceName.value)
@@ -586,6 +590,14 @@ function formatFileSize(bytes: number): string {
                 />
               </svg>
               {{ downloadingLatest ? "Downloading..." : "Download Latest" }}
+            </button>
+            <!-- Compare With Another Device Button -->
+            <button
+              @click="compareWithOtherDevice"
+              class="btn btn-secondary"
+              title="Compare the config with another device"
+            >
+              Compare
             </button>
             <!-- Device Dry Run Button + Component Window -->
             <DeviceDryRun :device-name="deviceName" />
