@@ -44,6 +44,18 @@ class BackupDiff(BaseModel):
     lines_added: int = Field(default=0, ge=0)
     lines_removed: int = Field(default=0, ge=0)
 
+class ConfigCompareSide(BaseModel):
+    """One of the two configurations of a comparison."""
+
+    device_name: str = Field(..., min_length=1)
+    group: str
+    vendor: str
+    commit: str = Field(..., min_length=1, description="Commit the configuration was read from")
+    timestamp: AwareDatetime | None = None
+    version_number: int | None = None
+    line_count: int = Field(default=0, ge=0, description="Number of lines of the stored configuration")
+    strip_pattern_count: int = Field(default=0, ge=0, description="Number of vendor strip patterns applied for the comparison")
+    redaction_pattern_count: int = Field(default=0, ge=0, description="Number of vendor redaction patterns applied for the comparison")
 
 class BackupTriggerRequest(BaseModel):
     """Request to trigger a backup."""
