@@ -6,9 +6,24 @@ from urllib.parse import urlsplit
 from fastapi import APIRouter, HTTPException, Depends, Query, WebSocket, WebSocketDisconnect, status as http_status
 from sqlalchemy.orm import Session
 
-from app.models.backup import BackupJobStatusResponse, BackupTriggerRequest, BackupTriggerResponse, DryRunResult
+from app.models.backup import (
+    BackupJobStatusResponse,
+    BackupTriggerRequest,
+    BackupTriggerResponse,
+    BuiltinIgnoreRule,
+    ConfigCompareResponse,
+    ConfigCompareSide,
+    DryRunResult,
+)
 from app.services.backup_job_service import backup_job_service, job_to_dict
 from app.services.backup_service import backup_service
+from app.services.config_compare_service import (
+    IGNORED_TEXT_PLACEHOLDER,
+    CompareOptions,
+    CompareSide,
+    InvalidIgnorePatternError,
+    config_compare_service,
+)
 from app.services.source_service import source_service
 from app.services.git_service import GitObjectNotFoundError, git_service
 from app.services.log_retention_service import log_retention_service
@@ -384,6 +399,136 @@ async def get_config_diff(
     except Exception as e:
         logger.error(f"Error building diff for {device_name}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to build diff: {describe_exception(e)}")
+
+
+async def _load_config_for_compare(
+    device_name: str,
+    commit: str | None,
+    *,
+    apply_strip_patterns: bool,
+    apply_redaction: bool,
+) -> tuple[CompareSide, ConfigCompareSide]:
+    """Load a device's config at a commit (the latest backup if None) and describe the version that was loaded."""
+    device = await source_service.get_device(device_name)
+    if device is None:
+        raise HTTPException(status_code=404, detail=f"Device '{device_name}' not found")
+
+    if commit:
+        version = await git_service.get_commit_info(device_name, commit, group=device.group)
+    else:
+        history = await git_service.get_config_history(device_name, group=device.group, limit=1, offset=0)
+        if not history:
+            raise HTTPException(status_code=404, detail=f"No backup found for device '{device_name}'")
+        version = history[0]
+
+    config = await git_service.get_config_at_commit(device_name, version["hash"], group=device.group)
+    vendor_rules = config_compare_service.resolve_vendor_rules(
+        device.vendor,
+        apply_strip_patterns=apply_strip_patterns,
+        apply_redaction=apply_redaction,
+    )
+    return CompareSide(device_name=device_name, config=config, vendor_rules=vendor_rules), ConfigCompareSide(
+        device_name=device_name,
+        group=device.group,
+        vendor=device.vendor,
+        commit=version["hash"],
+        timestamp=version["timestamp"],
+        version_number=version.get("version_number"),
+        line_count=len(config.splitlines()),
+        strip_pattern_count=len(vendor_rules.strip_patterns),
+        redaction_pattern_count=len(vendor_rules.redaction_patterns),
+    )
+
+
+@router.get(
+    "/compare",
+    response_model=ConfigCompareResponse,
+    responses={
+        http_status.HTTP_404_NOT_FOUND: {"description": "Unknown device or commit, or the device has no backup yet"},
+        http_status.HTTP_422_UNPROCESSABLE_CONTENT: {"description": "Invalid ignore pattern"},
+    },
+)
+async def compare_device_configs(
+    left_device: str = Query(..., min_length=1, description="Device shown on the left side"),
+    right_device: str = Query(..., min_length=1, description="Device shown on the right side"),
+    left_commit: str | None = Query(None, description="Commit of the left device's config. Omit for its latest backup."),
+    right_commit: str | None = Query(None, description="Commit of the right device's config. Omit for its latest backup."),
+    ignore: list[BuiltinIgnoreRule] | None = Query(None, description="Obvious differences to ignore"),
+    ignore_whitespace: bool = Query(False, description="Ignore changes in the amount of whitespace and added/removed blank lines"),
+    ignore_pattern: list[str] | None = Query(
+        None,
+        description=(
+            "Regular expression (Python syntax), can be repeated. Text matching it is replaced with "
+            f"'{IGNORED_TEXT_PLACEHOLDER}' in both configs before they are compared, e.g. 'ENC \\S+'."
+        ),
+    ),
+    apply_strip_patterns: bool = Query(
+        False,
+        description="Remove the lines matching the processing.strip_patterns of each device's vendor first, like a backup does",
+    ),
+    apply_redaction: bool = Query(
+        False,
+        description=(
+            "Redact each config with the processing.redaction.patterns of its vendor first, even if redaction is disabled for the device. "
+            "Lines that were already redacted during the backup stay as they are."
+        ),
+    ),
+) -> ConfigCompareResponse:
+    """Compare the backed up configurations of two devices.
+
+    Lines starting with '-' are only in the left config.
+    Lines starting with '+' are only in the right one.
+    """
+    ### Check the patterns first, so a typo doesnt wait for both configs to be read
+    patterns = [pattern for pattern in (ignore_pattern or []) if pattern.strip()]
+    try:
+        compiled_patterns = config_compare_service.compile_ignore_patterns(patterns)
+    except InvalidIgnorePatternError as e:
+        raise HTTPException(status_code=http_status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(e))
+
+    builtin_rules = list(dict.fromkeys(ignore or [])) # Drop duplicates, keep the order
+    options = CompareOptions(
+        builtin_rules=frozenset(builtin_rules),
+        ignore_patterns=compiled_patterns,
+        ignore_whitespace=ignore_whitespace,
+    )
+
+    try:
+        left, left_side = await _load_config_for_compare(
+            left_device,
+            left_commit,
+            apply_strip_patterns=apply_strip_patterns,
+            apply_redaction=apply_redaction,
+        )
+        right, right_side = await _load_config_for_compare(
+            right_device,
+            right_commit,
+            apply_strip_patterns=apply_strip_patterns,
+            apply_redaction=apply_redaction,
+        )
+        comparison = await config_compare_service.compare(left, right, options)
+    except HTTPException:
+        raise
+    except GitObjectNotFoundError as e:
+        raise HTTPException(status_code=404, detail=describe_exception(e))
+    except Exception as e:
+        logger.error(f"Error comparing configs of {left_device} and {right_device}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to compare configs: {describe_exception(e)}")
+
+    return ConfigCompareResponse(
+        left=left_side,
+        right=right_side,
+        identical=comparison.identical,
+        has_differences=comparison.has_differences,
+        lines_only_left=comparison.lines_only_left,
+        lines_only_right=comparison.lines_only_right,
+        ignore=builtin_rules,
+        ignore_whitespace=ignore_whitespace,
+        ignore_patterns=patterns,
+        apply_strip_patterns=apply_strip_patterns,
+        apply_redaction=apply_redaction,
+        diff=comparison.diff,
+    )
 
 
 @router.get("/latest/{device_name}")
