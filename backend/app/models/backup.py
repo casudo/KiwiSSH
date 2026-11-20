@@ -44,6 +44,16 @@ class BackupDiff(BaseModel):
     lines_added: int = Field(default=0, ge=0)
     lines_removed: int = Field(default=0, ge=0)
 
+
+class BuiltinIgnoreRule(str, Enum):
+    """Obvious differences between devices that a config comparison can ignore."""
+
+    HOSTNAME = "hostname"
+    IPV4 = "ipv4"
+    IPV6 = "ipv6"
+    MAC = "mac"
+
+
 class ConfigCompareSide(BaseModel):
     """One of the two configurations of a comparison."""
 
@@ -56,6 +66,24 @@ class ConfigCompareSide(BaseModel):
     line_count: int = Field(default=0, ge=0, description="Number of lines of the stored configuration")
     strip_pattern_count: int = Field(default=0, ge=0, description="Number of vendor strip patterns applied for the comparison")
     redaction_pattern_count: int = Field(default=0, ge=0, description="Number of vendor redaction patterns applied for the comparison")
+
+
+class ConfigCompareResponse(BaseModel):
+    """Comparison of the configurations of two devices or of two versions of the same device."""
+
+    left: ConfigCompareSide
+    right: ConfigCompareSide
+    identical: bool = Field(..., description="Both configurations are exactly the same, before the ignore options are applied")
+    has_differences: bool = Field(..., description="Differences remain after the ignore options are applied")
+    lines_only_left: int = Field(default=0, ge=0, description="Number of lines only the left configuration contains")
+    lines_only_right: int = Field(default=0, ge=0, description="Number of lines only the right configuration contains")
+    ignore: list[BuiltinIgnoreRule] = Field(default_factory=list)
+    ignore_whitespace: bool = False
+    ignore_patterns: list[str] = Field(default_factory=list)
+    apply_strip_patterns: bool = False
+    apply_redaction: bool = False
+    diff: str = Field(..., description="Unified diff from left to right, without the file header. Empty when nothing differs.")
+
 
 class BackupTriggerRequest(BaseModel):
     """Request to trigger a backup."""
