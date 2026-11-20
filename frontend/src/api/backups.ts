@@ -7,6 +7,8 @@ import type {
   BackupHistoryResponse,
   BackupGraphResponse,
   BackupConfigResponse,
+  ConfigCompareRequest,
+  ConfigCompareResponse,
 } from "../types/backup"
 
 export const backupApi = {
@@ -86,6 +88,26 @@ export const backupApi = {
   ): Promise<Record<string, unknown>> {
     const response = await api.get(`/backups/diff/${deviceName}`, {
       params: { from_commit: fromCommit, to_commit: toCommit }
+    })
+    return response.data
+  },
+
+  async compare(request: ConfigCompareRequest): Promise<ConfigCompareResponse> {
+    const params: Record<string, string | boolean | string[]> = {
+      left_device: request.leftDevice,
+      right_device: request.rightDevice,
+    }
+    if (request.leftCommit) params.left_commit = request.leftCommit
+    if (request.rightCommit) params.right_commit = request.rightCommit
+    if (request.ignore?.length) params.ignore = request.ignore
+    if (request.ignoreWhitespace) params.ignore_whitespace = true
+    if (request.ignorePatterns?.length) params.ignore_pattern = request.ignorePatterns
+    if (request.applyStripPatterns) params.apply_strip_patterns = true
+    if (request.applyRedaction) params.apply_redaction = true
+    const response = await api.get<ConfigCompareResponse>("/backups/compare", {
+      params,
+      // Repeat the key for every list value (ignore=a&ignore=b) instead of ignore[]=a, FastAPI reads that as a list
+      paramsSerializer: { indexes: null },
     })
     return response.data
   },
