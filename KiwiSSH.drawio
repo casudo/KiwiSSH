@@ -1,4 +1,4 @@
-<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.0.3 Chrome/140.0.7339.249 Electron/38.7.0 Safari/537.36" pages="10">
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.0.3 Chrome/140.0.7339.249 Electron/38.7.0 Safari/537.36" version="29.0.3" pages="11">
   <diagram name="backup_service.py" id="o8xVrSfJphuazaFM1u5R">
     <mxGraphModel dx="5189" dy="3272" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
@@ -4238,6 +4238,805 @@
         </mxCell>
         <mxCell id="kiwi-git-251" edge="1" parent="1" source="kiwi-git-244" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="kiwi-git-246">
           <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="config_compare_service.py" id="kiwi-compare-page">
+    <mxGraphModel dx="2528" dy="2089" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="kiwi-compare-1" value="Legend:" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=3;fontSize=25;fontColor=#B20000;" parent="1" vertex="1">
+          <mxGeometry x="-490" y="-100" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-2" value="Function" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="-490" y="-50" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-3" value="Task" style="ellipse;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="-350" y="-45" width="110" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-4" value="Result" style="rhombus;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="-220" y="-50" width="110" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-490" y="40" as="sourcePoint" />
+            <mxPoint x="-370" y="40" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-compare-6" value="Runs later, not right away" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="-360" y="25" width="190" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-7" value="KiwiSSH Frontend&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-weight: normal;&quot;&gt;&lt;font style=&quot;font-size: 20px;&quot;&gt;CompareView.vue (/compare)&lt;/font&gt;&lt;/span&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fontSize=30;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="-10" y="20" width="500" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-8" value="backups.py&lt;div&gt;&lt;span style=&quot;font-weight: normal;&quot;&gt;&lt;font style=&quot;font-size: 20px;&quot;&gt;only the compare endpoint&lt;/font&gt;&lt;/span&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;labelPosition=left;verticalLabelPosition=top;align=right;verticalAlign=bottom;fontStyle=1;fontSize=30;strokeWidth=5;dashed=1;perimeterSpacing=0;arcSize=3;fillColor=#E6E6E6;fontColor=#333333;strokeColor=#666666;" parent="1" vertex="1">
+          <mxGeometry x="-40" y="300" width="1400" height="2270" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-9" value="PUBLIC FUNCTIONS" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;fillColor=none;strokeColor=#007FFF;fontSize=20;fontStyle=1;fontColor=#007FFF;labelPosition=center;verticalLabelPosition=top;align=left;verticalAlign=bottom;spacing=2;spacingLeft=0;" parent="1" vertex="1">
+          <mxGeometry y="380" width="1320" height="1120" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-10" value="PRIVATE FUNCTIONS" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;fillColor=none;strokeColor=#B5739D;fontSize=20;fontStyle=1;fontColor=#B5739D;labelPosition=center;verticalLabelPosition=top;align=left;verticalAlign=bottom;" parent="1" vertex="1">
+          <mxGeometry y="1570" width="1320" height="960" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-11" value="compare_device_configs()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="90" y="420" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;" parent="1" source="kiwi-compare-7" target="kiwi-compare-11" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-12-label" value="GET /backups/compare" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="kiwi-compare-12" connectable="0" vertex="1">
+          <mxGeometry x="-0.3" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-compare-13" value="Compile the custom&lt;br&gt;ignore patterns" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="80" y="570" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-14" value="config_compare_service.&lt;br&gt;compile_ignore_patterns()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="460" y="580" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-15" value="&lt;b&gt;SEE ON THIS PAGE!&lt;/b&gt;&lt;div&gt;&lt;b&gt;config_compare_service.py&lt;/b&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="525" y="530" width="170" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-16" value="HTTP 422&lt;br&gt;invalid ignore&lt;br&gt;pattern" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="1000" y="560" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-17" value="Build CompareOptions&lt;br&gt;(built-in rules without&lt;br&gt;duplicates, whitespace)" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="80" y="720" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-18" value="Load the left config" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="80" y="870" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-19" value="_load_config_for_compare()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="460" y="880" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-20" value="Load the right config" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="80" y="1020" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-21" value="_load_config_for_compare()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="460" y="1030" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-22" value="Compare both configs" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="80" y="1170" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-23" value="config_compare_service.&lt;br&gt;compare()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="460" y="1180" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-24" value="&lt;b&gt;SEE ON THIS PAGE!&lt;/b&gt;&lt;div&gt;&lt;b&gt;config_compare_service.py&lt;/b&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="790" y="1200" width="170" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-25" value="HTTP 200&lt;br&gt;ConfigCompareResponse" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="90" y="1340" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-26" value="HTTP 404&lt;br&gt;unknown commit" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="500" y="1340" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-27" value="HTTP 500&lt;br&gt;any other error" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="910" y="1340" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-28" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-11" target="kiwi-compare-13" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-29" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-13" target="kiwi-compare-17" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-30" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-17" target="kiwi-compare-18" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-31" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-18" target="kiwi-compare-20" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-32" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-20" target="kiwi-compare-22" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-33" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-13" target="kiwi-compare-14" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-34" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-14" target="kiwi-compare-16" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-34-label" value="InvalidIgnorePatternError" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="kiwi-compare-34" connectable="0" vertex="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-compare-35" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-18" target="kiwi-compare-19" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-36" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-20" target="kiwi-compare-21" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-37" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-22" target="kiwi-compare-23" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-38" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-22" target="kiwi-compare-25" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-38-label" value="success" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="kiwi-compare-38" connectable="0" vertex="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-40" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-compare-39" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-22" target="kiwi-compare-26" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="240" y="1305" />
+              <mxPoint x="650" y="1305" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-compare-39-label" value="GitObjectNotFoundError" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="kiwi-compare-39" connectable="0" vertex="1">
+          <mxGeometry x="0.25" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-compare-40" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-22" target="kiwi-compare-27" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="240" y="1305" />
+              <mxPoint x="1060" y="1305" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-compare-40-label" value="other exception" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="kiwi-compare-40" connectable="0" vertex="1">
+          <mxGeometry x="0.55" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-compare-41" value="_load_config_for_compare()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="90" y="1610" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-42" value="source_service.&lt;br&gt;get_device()" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="80" y="1760" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-43" value="&lt;b&gt;SWITCH TO PAGE!&lt;/b&gt;&lt;div&gt;&lt;b&gt;Source Service&lt;/b&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="420" y="1720" width="170" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-44" value="HTTP 404&lt;br&gt;device not found" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="640" y="1750" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-45" value="git_service.&lt;br&gt;get_commit_info()" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="80" y="1910" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-46" value="git_service.&lt;br&gt;get_config_history()&lt;br&gt;limit=1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="560" y="1910" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-47" value="HTTP 404&lt;br&gt;no backup found" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="960" y="1900" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-48" value="git_service.&lt;br&gt;get_config_at_commit()" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="80" y="2060" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-49" value="&lt;b&gt;SWITCH TO PAGE!&lt;/b&gt;&lt;div&gt;&lt;b&gt;git_service.py&lt;/b&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="420" y="2090" width="170" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-50" value="Resolve the vendor rules" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="80" y="2210" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-51" value="config_compare_service.&lt;br&gt;resolve_vendor_rules()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="460" y="2220" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-52" value="&lt;b&gt;SEE ON THIS PAGE!&lt;/b&gt;&lt;div&gt;&lt;b&gt;config_compare_service.py&lt;/b&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="525" y="2172" width="170" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-53" value="return CompareSide and&lt;br&gt;ConfigCompareSide" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="80" y="2360" width="320" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-54" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-41" target="kiwi-compare-42" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-55" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-42" target="kiwi-compare-44" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-55-label" value="None" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="kiwi-compare-55" connectable="0" vertex="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-compare-56" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-42" target="kiwi-compare-45" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-56-label" value="commit given" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="kiwi-compare-56" connectable="0" vertex="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-55" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-compare-57" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-42" target="kiwi-compare-46" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="240" y="1885" />
+              <mxPoint x="720" y="1885" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-compare-57-label" value="latest backup" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="kiwi-compare-57" connectable="0" vertex="1">
+          <mxGeometry x="0.2" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-compare-58" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-46" target="kiwi-compare-47" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-58-label" value="empty" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="kiwi-compare-58" connectable="0" vertex="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-compare-59" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-45" target="kiwi-compare-48" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-60" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-46" target="kiwi-compare-48" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="720" y="2035" />
+              <mxPoint x="240" y="2035" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-compare-61" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-48" target="kiwi-compare-50" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-62" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-50" target="kiwi-compare-51" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-63" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-50" target="kiwi-compare-53" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-64" value="config_compare_service.py" style="rounded=1;whiteSpace=wrap;html=1;labelPosition=left;verticalLabelPosition=top;align=right;verticalAlign=bottom;fontStyle=1;fontSize=30;strokeWidth=5;dashed=1;perimeterSpacing=0;arcSize=3;fillColor=#E6E6E6;fontColor=#333333;strokeColor=#666666;" parent="1" vertex="1">
+          <mxGeometry x="1800" y="300" width="5760" height="2770" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-65" value="PUBLIC FUNCTIONS" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;fillColor=none;strokeColor=#007FFF;fontSize=20;fontStyle=1;fontColor=#007FFF;labelPosition=center;verticalLabelPosition=top;align=left;verticalAlign=bottom;spacing=2;spacingLeft=0;" parent="1" vertex="1">
+          <mxGeometry x="1840" y="380" width="5680" height="800" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-66" value="PRIVATE FUNCTIONS" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;fillColor=none;strokeColor=#B5739D;fontSize=20;fontStyle=1;fontColor=#B5739D;labelPosition=center;verticalLabelPosition=top;align=left;verticalAlign=bottom;" parent="1" vertex="1">
+          <mxGeometry x="1840" y="1260" width="5680" height="1770" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-67" value="BLOCKING FUNCTIONS (run in a worker thread through asyncio.to_thread())" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#82b366;strokeWidth=4;fontSize=15;fontStyle=1;fontColor=#97D077;labelPosition=center;verticalLabelPosition=top;align=center;verticalAlign=bottom;" parent="1" vertex="1">
+          <mxGeometry x="1860" y="1320" width="5640" height="1090" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-68" value="HELPERS (called inside the worker thread)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#82b366;strokeWidth=4;fontSize=15;fontStyle=1;fontColor=#97D077;labelPosition=center;verticalLabelPosition=top;align=center;verticalAlign=bottom;" parent="1" vertex="1">
+          <mxGeometry x="1860" y="2500" width="4040" height="490" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-69" value="compare()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="1930" y="420" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-70" value="compile_ignore_patterns()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="2730" y="420" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-71" value="Drop blank patterns" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="2720" y="570" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-72" value="Check the limits:&lt;br&gt;at most 50 patterns,&lt;br&gt;500 characters each" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="2720" y="720" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-73" value="re.compile()&lt;br&gt;every pattern" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="2720" y="870" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-74" value="return compiled&lt;br&gt;patterns" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="2730" y="1020" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-75" value="raises&lt;br&gt;InvalidIgnorePatternError" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="3150" y="710" width="320" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-76" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-70" target="kiwi-compare-71" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-77" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-71" target="kiwi-compare-72" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-78" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-72" target="kiwi-compare-73" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-79" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-73" target="kiwi-compare-74" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-80" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-72" target="kiwi-compare-75" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-80-label" value="limit exceeded" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="kiwi-compare-80" connectable="0" vertex="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-compare-81" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-73" target="kiwi-compare-75" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="3310" y="920" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-compare-81-label" value="re.error" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="kiwi-compare-81" connectable="0" vertex="1">
+          <mxGeometry x="-0.3" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-compare-82" value="resolve_vendor_rules()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="3530" y="420" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-83" value="get_settings()&lt;br&gt;.get_vendor_config(vendor_id)&lt;br&gt;→ processing" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="3520" y="570" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-84" value="&lt;b&gt;SWITCH TO PAGE!&lt;/b&gt;&lt;div&gt;&lt;b&gt;config.py&lt;/b&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="3870" y="600" width="170" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-85" value="strip_patterns,&lt;br&gt;if apply_strip_patterns" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="3520" y="720" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-86" value="redaction.patterns with a&lt;br&gt;search, if apply_redaction&lt;br&gt;(even if it&#39;s disabled)" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="3520" y="870" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-87" value="return&lt;br&gt;VendorRules" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="3530" y="1020" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-88" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-82" target="kiwi-compare-83" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-89" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-83" target="kiwi-compare-85" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-90" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-85" target="kiwi-compare-86" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-91" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-86" target="kiwi-compare-87" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-92" value="&lt;b&gt;&lt;font style=&quot;font-size: 20px;&quot;&gt;Data classes&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;CompareSide&lt;/b&gt;: device_name, config, vendor_rules&lt;br&gt;&lt;b&gt;VendorRules&lt;/b&gt;: strip_patterns, redaction_patterns&lt;br&gt;&lt;b&gt;CompareOptions&lt;/b&gt;: builtin_rules, ignore_patterns, ignore_whitespace&lt;br&gt;&lt;b&gt;ConfigComparison&lt;/b&gt;: diff, identical, lines_only_left, lines_only_right&lt;br&gt;&lt;br&gt;&lt;i&gt;identical&lt;/i&gt;: the raw configs are equal, before anything is ignored&lt;br&gt;&lt;i&gt;has_differences&lt;/i&gt;: the diff isn&#39;t empty after the ignore options" style="text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="4330" y="420" width="1300" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-93" value="&lt;b&gt;&lt;font style=&quot;font-size: 20px;&quot;&gt;Placeholders&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&lt;br&gt;&amp;lt;hostname&amp;gt;, &amp;lt;ipv4&amp;gt;, &amp;lt;ipv6&amp;gt;, &amp;lt;mac&amp;gt;: built-in ignore rules&lt;br&gt;&amp;lt;ignored&amp;gt;: custom ignore patterns&lt;br&gt;&lt;br&gt;Ignored text is replaced instead of dropping the line, so the diff keeps&lt;br&gt;its line numbers and still shows lines that only one config contains" style="text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="5930" y="420" width="1300" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="oyXXA5ZBOU9-jCCpKHu_-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="kiwi-compare-94" target="kiwi-compare-96">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-94" value="_compare_sync()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="1930" y="1350" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-95" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-69" target="kiwi-compare-94" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-95-label" value="asyncio.to_thread()" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="kiwi-compare-95" connectable="0" vertex="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-compare-96" value="Normalize both raw configs&lt;br&gt;(_normalize())" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="1920" y="1500" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-97" value="return ConfigComparison&lt;br&gt;identical=True" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="2360" y="1485" width="300" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-98" value="Prepare both configs" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="1920" y="1650" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-99" value="_prepare()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="2310" y="1660" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-100" value="Diff the prepared configs" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="1920" y="1800" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-101" value="_diff_sync()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="2310" y="1810" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-102" value="Count the - lines (only left)&lt;br&gt;and + lines (only right)" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="1920" y="1950" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-103" value="return&lt;br&gt;ConfigComparison" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="1930" y="2100" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-104" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-96" target="kiwi-compare-97" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-104-label" value="equal" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="kiwi-compare-104" connectable="0" vertex="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-compare-105" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-96" target="kiwi-compare-98" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-105-label" value="differ" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="kiwi-compare-105" connectable="0" vertex="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-30" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-compare-106" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-98" target="kiwi-compare-100" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-107" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-100" target="kiwi-compare-102" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-108" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-102" target="kiwi-compare-103" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-109" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-98" target="kiwi-compare-99" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-110" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-100" target="kiwi-compare-101" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-111" value="_prepare()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="2730" y="1350" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-112" value="Runs for the left and&lt;br&gt;the right config" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="3080" y="1370" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-113" value="Step 1:&lt;br&gt;Apply the vendor rules" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="2720" y="1500" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-114" value="_apply_vendor_rules()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="3110" y="1510" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-115" value="Step 2:&lt;br&gt;Normalize the config&lt;br&gt;(_normalize())" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="2720" y="1650" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-116" value="Step 3:&lt;br&gt;Mask hostname, IP&lt;br&gt;and MAC addresses" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="2720" y="1800" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-117" value="_mask_builtin()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="3110" y="1810" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-118" value="Step 4:&lt;br&gt;Mask the custom patterns" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="2720" y="1950" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-119" value="_mask_ignored_text()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="3110" y="1960" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-120" value="return&lt;br&gt;prepared config" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="2730" y="2100" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-121" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-111" target="kiwi-compare-113" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-122" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-113" target="kiwi-compare-115" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-123" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-115" target="kiwi-compare-116" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-124" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-116" target="kiwi-compare-118" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-125" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-118" target="kiwi-compare-120" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-126" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-113" target="kiwi-compare-114" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-127" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-116" target="kiwi-compare-117" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-128" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-118" target="kiwi-compare-119" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-129" value="_apply_vendor_rules()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="3530" y="1350" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-130" value="Step 1:&lt;br&gt;Remove lines matching&lt;br&gt;strip_patterns" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="3520" y="1500" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-131" value="protocol_common.&lt;br&gt;apply_processing_rules()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="3910" y="1510" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-132" value="&lt;b&gt;SWITCH TO PAGE!&lt;/b&gt;&lt;div&gt;&lt;b&gt;SSH/Telnet Service&lt;/b&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="3975" y="1462" width="170" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-133" value="Step 2:&lt;br&gt;Redact secrets" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="3520" y="1650" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-134" value="_redact()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="3910" y="1660" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-135" value="return&lt;br&gt;processed config" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="3530" y="1800" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-136" value="A step only runs if its toggle&lt;br&gt;is on and the vendor&lt;br&gt;defines patterns" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="3880" y="1820" width="300" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-137" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-129" target="kiwi-compare-130" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-138" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-130" target="kiwi-compare-133" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-139" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-133" target="kiwi-compare-135" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-140" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-130" target="kiwi-compare-131" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-141" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-133" target="kiwi-compare-134" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-142" value="_redact()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="4330" y="1350" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-143" value="Compile the rules, invalid&lt;br&gt;ones are logged and skipped" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="4320" y="1500" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-144" value="Collect the placeholders:&lt;br&gt;replacement without backrefs,&lt;br&gt;e.g. &amp;lt;secret hidden&amp;gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="4320" y="1650" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-145" value="Skip lines that already&lt;br&gt;contain a placeholder" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="4320" y="1800" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-146" value="Apply every rule&lt;br&gt;to the other lines" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="4320" y="1950" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-147" value="return&lt;br&gt;redacted config" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="4330" y="2100" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-148" value="Redacting such a line again&lt;br&gt;would mangle it, e.g.&lt;br&gt;password &amp;lt;secret hidden&amp;gt; hidden&amp;gt;&lt;br&gt;Also covers backups made before&lt;br&gt;redaction was enabled" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="4680" y="1780" width="320" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-149" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-142" target="kiwi-compare-143" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-150" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-143" target="kiwi-compare-144" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-151" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-144" target="kiwi-compare-145" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-152" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-145" target="kiwi-compare-146" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-153" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-146" target="kiwi-compare-147" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-154" value="_mask_builtin()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="5130" y="1350" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-155" value="Only the enabled rules run,&lt;br&gt;in this order" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="5470" y="1370" width="300" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-156" value="Hostname statements&lt;br&gt;→ &amp;lt;hostname&amp;gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="5120" y="1500" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-157" value="hostname, set hostname, host-name,&lt;br&gt;sysname, switchname,&lt;br&gt;configure snmp sysName" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="5470" y="1520" width="330" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-158" value="Device name and short name&lt;br&gt;→ &amp;lt;hostname&amp;gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="5120" y="1650" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-159" value="_device_name_pattern()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="5510" y="1660" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-160" value="IPv6 addresses&lt;br&gt;→ &amp;lt;ipv6&amp;gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="5120" y="1800" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-161" value="_mask_ipv6()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="5510" y="1810" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-162" value="MAC addresses&lt;br&gt;→ &amp;lt;mac&amp;gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="5120" y="1950" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-163" value="IPv6 runs before IPv4, so&lt;br&gt;::ffff:10.0.0.1 is masked&lt;br&gt;as one address" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="5470" y="1970" width="330" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-164" value="IPv4 addresses&lt;br&gt;→ &amp;lt;ipv4&amp;gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="5120" y="2100" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-165" value="_mask_ipv4()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="5510" y="2110" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-166" value="return&lt;br&gt;masked config" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="5130" y="2250" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-167" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-154" target="kiwi-compare-156" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-168" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-156" target="kiwi-compare-158" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-169" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-158" target="kiwi-compare-160" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-170" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-160" target="kiwi-compare-162" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-171" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-162" target="kiwi-compare-164" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-172" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-164" target="kiwi-compare-166" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-173" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-158" target="kiwi-compare-159" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-174" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-160" target="kiwi-compare-161" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-175" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-164" target="kiwi-compare-165" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-176" value="_mask_ignored_text()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="5930" y="1350" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-177" value="Apply every custom&lt;br&gt;pattern to each line" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="5920" y="1500" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-178" value="Line by line, so ^ and $&lt;br&gt;match at every line" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="6280" y="1530" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-179" value="Replace matches with&lt;br&gt;&amp;lt;ignored&amp;gt;, empty matches&lt;br&gt;insert nothing" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="5920" y="1650" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-180" value="return&lt;br&gt;masked config" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="5930" y="1800" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-181" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-176" target="kiwi-compare-177" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-182" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-177" target="kiwi-compare-179" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-183" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-179" target="kiwi-compare-180" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-184" value="_diff_sync()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="6730" y="1350" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-185" value="Write left.conf and right.conf&lt;br&gt;to a temporary directory&lt;br&gt;(LF line endings)" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="6720" y="1500" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-186" value="git diff --no-index --histogram&lt;br&gt;--unified=3 (+ --ignore-space-&lt;br&gt;change --ignore-blank-lines)" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="6710" y="1650" width="340" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-187" value="raises RuntimeError&lt;br&gt;exit code not 0 or 1" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="7130" y="1650" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-188" value="Strip the header lines&lt;br&gt;before the first @@" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="6720" y="1820" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-189" value="_strip_diff_header()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="7110" y="1830" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-190" value="return&lt;br&gt;unified diff" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="6730" y="1970" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-191" value="git diff instead of difflib:&lt;br&gt;faster on large configs, and&lt;br&gt;--histogram aligns repeated&lt;br&gt;lines (!, exit, end) better" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="7090" y="1970" width="330" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-192" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-184" target="kiwi-compare-185" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-193" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-185" target="kiwi-compare-186" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-194" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-186" target="kiwi-compare-187" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-195" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-186" target="kiwi-compare-188" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-195-label" value="exit code 0 or 1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="kiwi-compare-195" connectable="0" vertex="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-70" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-compare-196" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-188" target="kiwi-compare-190" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-197" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-188" target="kiwi-compare-189" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-198" value="_normalize()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="1930" y="2530" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-199" value="LF line endings,&lt;br&gt;exactly one&lt;br&gt;trailing newline" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="1920" y="2680" width="320" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-200" value="Used by _compare_sync()&lt;br&gt;and _prepare()" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="2270" y="2550" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-201" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-198" target="kiwi-compare-199" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-202" value="_strip_diff_header()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="2730" y="2530" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-203" value="Text from the first @@,&lt;br&gt;empty if all differences&lt;br&gt;were ignored" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="2720" y="2680" width="320" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-204" value="Used by _diff_sync()" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="3070" y="2550" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-205" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-202" target="kiwi-compare-203" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-206" value="_device_name_pattern()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="3530" y="2530" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-207" value="Collect the name and its short&lt;br&gt;name (first FQDN label)&lt;br&gt;with 3+ characters" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="3520" y="2680" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-208" value="Whole-word pattern,&lt;br&gt;longest name first,&lt;br&gt;None for IP names" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="3520" y="2830" width="320" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-209" value="Used by _mask_builtin()" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="3870" y="2550" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-210" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-206" target="kiwi-compare-207" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-211" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-207" target="kiwi-compare-208" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-212" value="_mask_ipv4()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="4330" y="2530" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-213" value="&amp;lt;ipv4&amp;gt;, or the text&lt;br&gt;if it&#39;s a netmask or&lt;br&gt;wildcard mask" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="4320" y="2680" width="320" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-214" value="Module function, re.sub()&lt;br&gt;callback of _mask_builtin()" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="4670" y="2545" width="260" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-215" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-212" target="kiwi-compare-213" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-216" value="_mask_ipv6()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="5130" y="2530" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-217" value="&amp;lt;ipv6&amp;gt; if ipaddress&lt;br&gt;accepts it, else the&lt;br&gt;text (e.g. a time)" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+          <mxGeometry x="5120" y="2680" width="320" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-218" value="Module function, re.sub()&lt;br&gt;callback of _mask_builtin()" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="5470" y="2545" width="260" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-compare-219" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="kiwi-compare-216" target="kiwi-compare-217" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="oyXXA5ZBOU9-jCCpKHu_-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="oyXXA5ZBOU9-jCCpKHu_-1" target="kiwi-compare-69">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="oyXXA5ZBOU9-jCCpKHu_-3" value="GET /backups/compare" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="oyXXA5ZBOU9-jCCpKHu_-2">
+          <mxGeometry x="-0.3405" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oyXXA5ZBOU9-jCCpKHu_-1" value="backups/ API" style="rounded=0;whiteSpace=wrap;html=1;fontSize=30;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="1940" y="-30" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="oyXXA5ZBOU9-jCCpKHu_-4" value="GET /backups/compare" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="1">
+          <mxGeometry x="2880" y="172" as="geometry" />
+        </mxCell>
+        <mxCell id="oyXXA5ZBOU9-jCCpKHu_-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="oyXXA5ZBOU9-jCCpKHu_-5" target="kiwi-compare-70">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="oyXXA5ZBOU9-jCCpKHu_-5" value="backups/ API" style="rounded=0;whiteSpace=wrap;html=1;fontSize=30;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="2740" y="-30" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="oyXXA5ZBOU9-jCCpKHu_-7" value="GET /backups/compare" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="1">
+          <mxGeometry x="3670" y="172" as="geometry" />
+        </mxCell>
+        <mxCell id="oyXXA5ZBOU9-jCCpKHu_-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="oyXXA5ZBOU9-jCCpKHu_-8" target="kiwi-compare-82">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="oyXXA5ZBOU9-jCCpKHu_-8" value="backups/ API" style="rounded=0;whiteSpace=wrap;html=1;fontSize=30;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="3540" y="-30" width="280" height="80" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
