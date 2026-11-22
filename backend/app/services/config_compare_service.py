@@ -181,9 +181,8 @@ class ConfigCompareService:
         for rule in redaction_patterns:
             ### Same defaults as apply_processing_rules()
             replacement = str(rule.get("replacement", "<secret hidden>"))
-            flags = re.MULTILINE | (re.IGNORECASE if rule.get("ignore_case", False) else 0)
             try:
-                rules.append((re.compile(str(rule["search"]), flags), replacement))
+                rules.append((re.compile(str(rule["search"]), re.MULTILINE), replacement))
             except re.error as ex:
                 logger.warning("Invalid redaction search '%s': %s", rule["search"], ex)
                 continue
