@@ -523,8 +523,11 @@ function formatFileSize(bytes: number): string {
     </div>
 
     <div v-else-if="devicesStore.selectedDevice">
-      <!-- Device header -->
-      <div class="card mb-6">
+      <!-- Device header, raised above the cards below so the actions menu can drop over them (each card's backdrop-filter is its own layer) -->
+      <div class="card mb-6 relative z-10">
+        <!-- Dialog of the "Test Device" action, it's teleported to the body -->
+        <DeviceDryRun ref="dryRun" :device-name="deviceName" />
+
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div class="flex items-center space-x-3">
