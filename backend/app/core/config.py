@@ -592,6 +592,7 @@ class AppConfig(ConfigModel):
     timeout: int = Field(default=30, ge=1)
     retry: int = Field(default=3, ge=0)
     protocol: str = "ssh"
+    metrics: bool = False # Prometheus metrics
     api: ApiConfig = Field(default_factory=ApiConfig)
     schedule: ScheduleConfig = Field(default_factory=ScheduleConfig)
     retention: RetentionConfig = Field(default_factory=RetentionConfig)
