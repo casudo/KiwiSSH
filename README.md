@@ -22,6 +22,7 @@ The frontend offers:
 
 - Dashboard (statistics, favorite devices, overview of KiwiSSH)
 - Information-rich device list with filtering, search and favorite option, backup contribution calender, group and vendor belonging, status badge, config diff view, in-browser config file browser and more
+- Config comparison between different devices (also across groups) to find missing config snippets, with ignore rules for the obvious differences like hostnames or IP addresses
 - Overview of configured SSH profiles, vendors and groups for easy management and device tracking
 - Detailed backup job logs with timestamps, status and error messages for each backup attempt
 - Swagger API documentation
@@ -633,10 +634,10 @@ http:
 | `processing.config_start` | A regex pattern that marks the start of the actual configuration in the CLI output. Lines before the matched line will be removed. | No | - |
 | `processing.config_end` | A regex pattern that marks the end of the actual configuration in the CLI output. Lines after the matched line will be removed. | No | - |
 | `processing.redaction.enabled` | If set to true, the patterns defined in `processing.redaction.patterns` will be applied to the captured config to redact sensitive information. Can be overridden per group/node with `groups.<group>.redaction` / `nodes.<device_name>.redaction`. | No | `false` |
-| `processing.redaction.patterns` | A list of redaction rules. Each rule should contain a `search` regex pattern, a `replacement` string, and an optional `ignore_case` boolean. | No | - |
+| `processing.redaction.patterns` | A list of redaction rules. Each rule should contain a `search` regex pattern and a `replacement` string. | No | - |
 
 > [!IMPORTANT]
-> If `ignore_case` is set to true for a redaction rule (default is false), the search pattern will be applied in a case-insensitive manner. Make sure to set this according to the expected CLI output of your devices to ensure effective redaction.
+> Redaction patterns are case-sensitive. To match regardless of case, start the `search` pattern with the `(?i)` inline flag, e.g. `(?i)^(set password) .+`.
 
 **Processing behavior:**
 
@@ -644,7 +645,7 @@ http:
 - `strip_patterns`: remove matching lines
 - `config_start` / `config_end`: crop output to boundaries; if one side is missing, file edge is used
 - `redaction.enabled` + `redaction.patterns`: apply replacements; `groups.<group>.redaction` / `nodes.<device_name>.redaction` override `redaction.enabled` without editing the vendor YAML file
-- Each redaction rule uses `search`, `replacement`, and optional `ignore_case`
+- Each redaction rule uses `search` and `replacement`
 
 ## SSH Profiles YAML file
 

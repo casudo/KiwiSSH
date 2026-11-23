@@ -17,6 +17,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { name: "Dashboard", path: "/" },
   { name: "Devices", path: "/devices" },
+  { name: "Compare", path: "/compare" },
   { name: "Vendors", path: "/vendors" },
   { name: "Groups", path: "/groups" },
   { name: "SSH Profiles", path: "/ssh-profiles" },

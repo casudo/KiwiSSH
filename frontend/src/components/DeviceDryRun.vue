@@ -41,6 +41,9 @@ onBeforeUnmount(() => {
   unmounted = true
 })
 
+// The dialog has no button of its own, the page starts the test (e.g. from its actions menu)
+defineExpose({ runTest, running })
+
 async function runTest() {
   showDialog.value = true
   // A test is already running, so only bring its dialog back
@@ -95,51 +98,7 @@ function formatFileSize(bytes?: number | null): string {
 </script>
 
 <template>
-  <button
-    @click="runTest"
-    class="btn btn-secondary"
-    title="Test the connectivity and backup commands without saving a backup"
-  >
-    <svg
-      v-if="running"
-      xmlns="http://www.w3.org/2000/svg"
-      class="h-4 w-4 inline mr-1 animate-spin"
-      fill="none"
-      viewBox="0 0 24 24"
-    >
-      <circle
-        class="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        stroke-width="4"
-      />
-      <path
-        class="opacity-75"
-        fill="currentColor"
-        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-      />
-    </svg>
-    <svg
-      v-else
-      xmlns="http://www.w3.org/2000/svg"
-      class="h-4 w-4 inline mr-1"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-    >
-      <path
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        d="M5.636 18.364a9 9 0 010-12.728m12.728 0a9 9 0 010 12.728m-9.9-2.829a5 5 0 010-7.07m7.072 0a5 5 0 010 7.07M13 12a1 1 0 11-2 0 1 1 0 012 0z"
-      />
-    </svg>
-    {{ running ? "Testing..." : "Test Device" }}
-  </button>
-
-  <!-- Teleported because the card around the button would otherwise confine the fixed overlay (backdrop-filter) -->
+  <!-- Teleported because the card around it would otherwise confine the fixed overlay (backdrop-filter) -->
   <Teleport to="body">
     <div
       v-if="showDialog"

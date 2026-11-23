@@ -22,9 +22,18 @@ interface Props {
   diffContent: string
   linesAdded: number
   linesRemoved: number
+  leftLabel?: string
+  rightLabel?: string
+  addedLabel?: string
+  removedLabel?: string
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  leftLabel: "Original (Removed lines in red)",
+  rightLabel: "Modified (Added lines in green)",
+  addedLabel: "added",
+  removedLabel: "removed",
+})
 
 const MAX_DIFF_LINES = 100
 const showFullDiff = ref(false)
@@ -277,11 +286,11 @@ function getLineClass(type: string): string {
     <div class="flex items-center space-x-6 text-sm">
       <span class="flex items-center space-x-2">
         <span class="text-green-600 dark:text-green-400 font-medium">+{{ linesAdded }}</span>
-        <span class="text-gray-600 dark:text-gray-400">added</span>
+        <span class="text-gray-600 dark:text-gray-400">{{ addedLabel }}</span>
       </span>
       <span class="flex items-center space-x-2">
         <span class="text-red-600 dark:text-red-400 font-medium">-{{ linesRemoved }}</span>
-        <span class="text-gray-600 dark:text-gray-400">removed</span>
+        <span class="text-gray-600 dark:text-gray-400">{{ removedLabel }}</span>
       </span>
     </div>
 
@@ -301,8 +310,8 @@ function getLineClass(type: string): string {
     <!-- Side-by-side diff viewer -->
     <div class="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
       <div class="grid grid-cols-2 divide-x divide-slate-200 dark:divide-slate-700 bg-slate-100/90 dark:bg-slate-800/95 border-b border-slate-200 dark:border-slate-700">
-        <div class="px-4 py-2 font-medium text-slate-700 dark:text-slate-100 text-xs">Original (Removed lines in red)</div>
-        <div class="px-4 py-2 font-medium text-slate-700 dark:text-slate-100 text-xs">Modified (Added lines in green)</div>
+        <div class="px-4 py-2 font-medium text-slate-700 dark:text-slate-100 text-xs">{{ leftLabel }}</div>
+        <div class="px-4 py-2 font-medium text-slate-700 dark:text-slate-100 text-xs">{{ rightLabel }}</div>
       </div>
 
       <div class="font-mono text-sm bg-slate-50/50 dark:bg-slate-900 overflow-x-auto">
