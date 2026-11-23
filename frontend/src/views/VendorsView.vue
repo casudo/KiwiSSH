@@ -2,6 +2,7 @@
 import { onMounted, computed, ref, watch } from "vue"
 import { useDevicesStore } from "@/stores/devices"
 import { vendorApi } from "@/api/vendors"
+import type { VendorDetails } from "@/api/vendors"
 import LoadingSpinner from "@/components/LoadingSpinner.vue"
 
 type LayoutType = "card" | "list" | "table"
@@ -79,9 +80,46 @@ const vendorList = computed((): VendorInfo[] => {
   return filteredVendors.value.slice(start, end)
 })
 
-const selectedVendorInfo = computed(() => 
+const selectedVendorInfo = computed(() =>
   allVendors.value.find(v => v.id === selectedVendor.value) || null
 )
+
+// Processing rules of the selected vendor, loaded when its detail panel opens.
+// Cached per visit of the page, vendor YAMLs change rarely but a settings reload can change them.
+const DEFAULT_REDACTION_REPLACEMENT = "<secret hidden>"
+const vendorDetailsCache = new Map<string, VendorDetails>()
+const vendorDetails = ref<VendorDetails | null>(null)
+const vendorDetailsLoading = ref(false)
+const vendorDetailsError = ref<string | null>(null)
+let vendorDetailsRequestId = 0
+
+const stripPatterns = computed(() => vendorDetails.value?.processing?.strip_patterns ?? [])
+const redactionPatterns = computed(() => vendorDetails.value?.processing?.redaction?.patterns ?? [])
+const redactionEnabled = computed(() => vendorDetails.value?.processing?.redaction?.enabled === true)
+
+async function loadVendorDetails(vendorId: string | null) {
+  const requestId = ++vendorDetailsRequestId
+  vendorDetailsError.value = null
+  vendorDetailsLoading.value = false
+  vendorDetails.value = vendorId ? vendorDetailsCache.get(vendorId) ?? null : null
+  if (!vendorId || vendorDetails.value) return
+
+  vendorDetailsLoading.value = true
+  try {
+    const details = await vendorApi.getDetails(vendorId)
+    vendorDetailsCache.set(vendorId, details)
+    // Drop the response if another vendor was opened meanwhile
+    if (requestId === vendorDetailsRequestId) vendorDetails.value = details
+  } catch (e) {
+    if (requestId === vendorDetailsRequestId) {
+      vendorDetailsError.value = e instanceof Error ? e.message : "Failed to load vendor details"
+    }
+  } finally {
+    if (requestId === vendorDetailsRequestId) vendorDetailsLoading.value = false
+  }
+}
+
+watch(selectedVendor, (vendorId) => void loadVendorDetails(vendorId))
 
 function setLayout(layout: LayoutType) {
   currentLayout.value = layout
@@ -428,6 +466,106 @@ onMounted(async () => {
               <div v-if="(devicesStore.devicesByVendor[selectedVendor] || []).length > 20" class="text-xs text-gray-500 dark:text-gray-400 px-2 py-2 mt-2">
                 +{{ (devicesStore.devicesByVendor[selectedVendor] || []).length - 20 }} more devices
               </div>
+            </div>
+
+            <!-- Load info directly from vendor YAML -->
+            <div class="mt-6">
+              <LoadingSpinner v-if="vendorDetailsLoading" size="md" class="py-4" />
+
+              <div
+                v-else-if="vendorDetailsError"
+                class="p-3 rounded bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm flex items-center justify-between gap-4"
+              >
+                <span class="min-w-0 wrap-break-word">Failed to load the processing rules: {{ vendorDetailsError }}</span>
+                <button @click="loadVendorDetails(selectedVendor)" class="btn btn-secondary py-1 px-3 text-sm shrink-0">
+                  Retry
+                </button>
+              </div>
+
+              <template v-else-if="vendorDetails">
+                <!-- Strip patterns -->
+                <section class="mb-6">
+                  <div class="flex items-center justify-between gap-3 mb-1">
+                    <h3 class="text-sm font-medium text-gray-900 dark:text-white">Strip Patterns</h3>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">
+                      {{ stripPatterns.length }} {{ stripPatterns.length === 1 ? "pattern" : "patterns" }}
+                    </span>
+                  </div>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                    Lines matching any of these patterns are removed from every backup.
+                  </p>
+                  <p v-if="stripPatterns.length === 0" class="text-sm text-gray-500 dark:text-gray-400 italic">
+                    No strip patterns configured
+                  </p>
+                  <!-- List of configured strip patterns -->
+                  <ol
+                    v-else
+                    class="border border-gray-200 dark:border-gray-700 rounded divide-y divide-gray-200 dark:divide-gray-700 max-h-72 overflow-y-auto"
+                  >
+                    <li
+                      v-for="(pattern, index) in stripPatterns"
+                      :key="index"
+                      class="flex gap-3 px-3 py-2 text-xs"
+                    >
+                      <span class="w-6 shrink-0 text-right tabular-nums text-gray-400 dark:text-gray-500">{{ index + 1 }}</span>
+                      <code class="min-w-0 font-mono whitespace-pre-wrap break-all text-gray-800 dark:text-gray-200">{{ pattern }}</code>
+                    </li>
+                  </ol>
+                </section>
+
+                <!-- Redaction patterns -->
+                <section>
+                  <div class="flex items-center justify-between gap-3 mb-1">
+                    <h3 class="text-sm font-medium text-gray-900 dark:text-white">Redaction Patterns</h3>
+                    <div class="flex items-center gap-3">
+                      <span class="text-xs text-gray-500 dark:text-gray-400">
+                        {{ redactionPatterns.length }} {{ redactionPatterns.length === 1 ? "pattern" : "patterns" }}
+                      </span>
+                      <!-- `processing.redaction.enabled` indicator -->
+                      <span
+                        class="text-xs font-medium px-2 py-0.5 rounded-full"
+                        :class="redactionEnabled
+                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                          : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'"
+                      >
+                        {{ redactionEnabled ? "Enabled" : "Disabled" }} by default
+                      </span>
+                    </div>
+                  </div>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                    Matches are replaced before a backup is saved.
+                  </p>
+                  <p v-if="redactionPatterns.length === 0" class="text-sm text-gray-500 dark:text-gray-400 italic">
+                    No redaction patterns configured
+                  </p>
+                  <ol
+                    v-else
+                    class="border border-gray-200 dark:border-gray-700 rounded divide-y divide-gray-200 dark:divide-gray-700 max-h-96 overflow-y-auto"
+                  >
+                    <li
+                      v-for="(rule, index) in redactionPatterns"
+                      :key="index"
+                      class="flex gap-3 px-3 py-2 text-xs"
+                    >
+                      <span class="w-6 shrink-0 text-right tabular-nums text-gray-400 dark:text-gray-500">{{ index + 1 }}</span>
+                      <dl class="min-w-0 flex-1 grid grid-cols-[4.5rem_1fr] gap-x-2 gap-y-1">
+                        <dt class="text-gray-500 dark:text-gray-400">Search</dt>
+                        <dd class="min-w-0">
+                          <code class="font-mono whitespace-pre-wrap break-all text-gray-800 dark:text-gray-200">{{ rule.search }}</code>
+                        </dd>
+                        <dt class="text-gray-500 dark:text-gray-400">Replace</dt>
+                        <dd class="min-w-0">
+                          <code
+                            v-if="rule.replacement !== ''"
+                            class="font-mono whitespace-pre-wrap break-all text-kiwissh-700 dark:text-kiwissh-300"
+                          >{{ rule.replacement ?? DEFAULT_REDACTION_REPLACEMENT }}</code>
+                          <span v-else class="italic text-gray-500 dark:text-gray-400">Match is removed</span>
+                        </dd>
+                      </dl>
+                    </li>
+                  </ol>
+                </section>
+              </template>
             </div>
           </div>
         </div>

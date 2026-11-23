@@ -118,12 +118,11 @@ def apply_processing_rules(config: str, rules: dict[str, Any], *, redaction: boo
                     continue
 
                 replacement = str(redaction_rule.get("replacement", "<secret hidden>"))
-                ignore_case = bool(redaction_rule.get("ignore_case", False))
-                flags = re.MULTILINE | (re.IGNORECASE if ignore_case else 0)
 
                 ### Apply redaction pattern to the whole config text, replacing all matches with the replacement string
+                ## Case-insensitive matching is done in the pattern itself with the (?i) inline flag
                 try:
-                    processed = re.sub(str(search), replacement, processed, flags=flags)
+                    processed = re.sub(str(search), replacement, processed, flags=re.MULTILINE)
                 except re.error as ex:
                     logger.warning("Invalid redaction search '%s': %s", search, ex)
 
