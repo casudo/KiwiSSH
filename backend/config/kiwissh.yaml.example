@@ -20,6 +20,7 @@ app:
   # timeout: 30
   # retry: 3
   # protocol: "ssh"
+  # metrics: false
   api:
     host: "0.0.0.0" # Default: "127.0.0.1"
     # port: 8000
