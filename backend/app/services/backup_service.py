@@ -85,6 +85,7 @@ class BackupService:
         self._queue_setup_lock: asyncio.Lock | None = None
         ### Dedupe set for device names that are either waiting in queue or currently running
         self._queued_or_running: set[str] = set()
+        self._running_backups: int = 0
         ### One queue of job events per connected live update client
         self._event_queues: set[asyncio.Queue[dict]] = set()
         ### Batched git pushes: at most one flush task runs at a time
@@ -181,6 +182,7 @@ class BackupService:
             except asyncio.CancelledError:
                 return
 
+            self._running_backups += 1
             try:
                 ### Queue wait is how long the item sat in FIFO queue before a worker picked it up
                 queue_wait_seconds = max(0.0, time.perf_counter() - queued_item.enqueued_at)
@@ -205,6 +207,7 @@ class BackupService:
                     ex,
                 )
             finally:
+                self._running_backups -= 1
                 ### Always release dedupe state and notify queue completion, even on failure.
                 state_lock = self._get_queue_state_lock()
                 async with state_lock:
@@ -322,6 +325,14 @@ class BackupService:
         if self._backup_queue is None:
             return 0
         return self._backup_queue.qsize()
+
+    def get_running_backup_count(self) -> int:
+        """Return number of backups that queue workers are running right now."""
+        return self._running_backups
+
+    def get_queue_worker_count(self) -> int:
+        """Return number of queue workers that are alive (app.threads, unless workers died)."""
+        return sum(1 for worker in self._queue_workers if not worker.done())
 
     async def _queue_device_backups(self, devices: list[DeviceBase], *, source: str) -> tuple[dict[str, str], list[str]]:
         """Queue backups for the given devices, assuming queue workers are already initialized.
