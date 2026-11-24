@@ -127,6 +127,48 @@ export interface BackupConfigResponse {
   version_number?: number | null
 }
 
+/** Obvious differences between devices that the comparison can ignore */
+export type BuiltinIgnoreRule = "hostname" | "ipv4" | "ipv6" | "mac"
+
+export interface ConfigCompareRequest {
+  leftDevice: string
+  rightDevice: string
+  leftCommit?: string // Latest backup if omitted
+  rightCommit?: string
+  ignore?: BuiltinIgnoreRule[]
+  ignoreWhitespace?: boolean
+  ignorePatterns?: string[] // Regular expressions, matching text is ignored on both sides
+  applyStripPatterns?: boolean // Vendor processing.strip_patterns
+  applyRedaction?: boolean // Vendor processing.redaction.patterns
+}
+
+export interface ConfigCompareSide {
+  device_name: string
+  group: string
+  vendor: string
+  commit: string
+  timestamp: string | null
+  version_number: number | null
+  line_count: number
+  strip_pattern_count: number // Vendor strip patterns applied for the comparison
+  redaction_pattern_count: number // Vendor redaction patterns applied for the comparison
+}
+
+export interface ConfigCompareResponse {
+  left: ConfigCompareSide
+  right: ConfigCompareSide
+  identical: boolean // Exactly the same, before the ignore options are applied
+  has_differences: boolean // Differences remain after the ignore options are applied
+  lines_only_left: number
+  lines_only_right: number
+  ignore: BuiltinIgnoreRule[]
+  ignore_whitespace: boolean
+  ignore_patterns: string[]
+  apply_strip_patterns: boolean
+  apply_redaction: boolean
+  diff: string // Unified diff from left to right, without the file header
+}
+
 export interface BackupGraphDay {
   date: string
   count: number

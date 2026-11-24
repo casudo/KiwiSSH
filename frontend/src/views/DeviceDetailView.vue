@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, computed, nextTick, ref } from "vue"
+import { onMounted, onBeforeUnmount, computed, nextTick, ref, useTemplateRef } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useDevicesStore } from "@/stores/devices"
 import { useFavoritesStore } from "@/stores/favorites"
@@ -11,6 +11,8 @@ import DiffViewer from "@/components/DiffViewer.vue"
 import ConfigBrowser from "@/components/ConfigBrowser.vue"
 import BackupContributionGraph from "@/components/BackupContributionGraph.vue"
 import DeviceDryRun from "@/components/DeviceDryRun.vue"
+import ActionMenu from "@/components/ActionMenu.vue"
+import type { ActionMenuItem } from "@/components/ActionMenu.vue"
 import LoadingSpinner from "@/components/LoadingSpinner.vue"
 
 interface BackupEntry {
@@ -320,6 +322,31 @@ function goBack() {
   router.push("/devices")
 }
 
+function compareWithOtherDevice() {
+  router.push({ name: "compare", query: { left: deviceName.value } })
+}
+
+const dryRun = useTemplateRef<InstanceType<typeof DeviceDryRun>>("dryRun")
+
+// Hamburger Menu
+const moreActions = computed((): ActionMenuItem[] => [
+  {
+    id: "compare",
+    label: "Compare with Device",
+    title: "Compare the config with another device",
+    icon: "M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4",
+    onSelect: compareWithOtherDevice,
+  },
+  {
+    id: "test",
+    label: dryRun.value?.running ? "Testing Device..." : "Test Device",
+    title: "Test the connectivity and backup commands without saving a backup",
+    icon: "M5.636 18.364a9 9 0 010-12.728m12.728 0a9 9 0 010 12.728m-9.9-2.829a5 5 0 010-7.07m7.072 0a5 5 0 010 7.07M13 12a1 1 0 11-2 0 1 1 0 012 0z",
+    busy: dryRun.value?.running,
+    onSelect: () => void dryRun.value?.runTest(),
+  },
+])
+
 async function toggleFavorite() {
   try {
     await favoritesStore.toggleFavorite(deviceName.value)
@@ -519,8 +546,11 @@ function formatFileSize(bytes: number): string {
     </div>
 
     <div v-else-if="devicesStore.selectedDevice">
-      <!-- Device header -->
-      <div class="card mb-6">
+      <!-- Device header, raised above the cards below so the actions menu can drop over them (each card's backdrop-filter is its own layer) -->
+      <div class="card mb-6 relative z-10">
+        <!-- Dialog of the "Test Device" action, it's teleported to the body -->
+        <DeviceDryRun ref="dryRun" :device-name="deviceName" />
+
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div class="flex items-center space-x-3">
@@ -587,8 +617,8 @@ function formatFileSize(bytes: number): string {
               </svg>
               {{ downloadingLatest ? "Downloading..." : "Download Latest" }}
             </button>
-            <!-- Device Dry Run Button + Component Window -->
-            <DeviceDryRun :device-name="deviceName" />
+            <!-- Additional actions -->
+            <ActionMenu :items="moreActions" label="More device actions" />
             <!-- Trigger Backup Button -->
             <button
               @click="triggerBackup"
