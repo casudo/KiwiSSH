@@ -14,7 +14,7 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import Any
 
-from app.core import get_settings
+from app.core import get_settings, metrics
 from app.db import database
 from app.db.models import BackupJob
 from app.models.backup import BackupRecord, BackupStatus, DryRunResult, DryRunStatus
@@ -186,6 +186,7 @@ class BackupService:
             try:
                 ### Queue wait is how long the item sat in FIFO queue before a worker picked it up
                 queue_wait_seconds = max(0.0, time.perf_counter() - queued_item.enqueued_at)
+                metrics.record_job_started(queue_wait_seconds)
                 result = await self.backup_device(
                     queued_item.device,
                     job_id=queued_item.job_id,
@@ -393,6 +394,7 @@ class BackupService:
             self._backup_queue.put_nowait(
                 QueuedBackupItem(device=device, source=source, enqueued_at=enqueued_at, job_id=job_ids[device.device_name])
             )
+        metrics.record_jobs_queued(source, len(reserved))
 
         logger.debug(
             "Queued %d backup(s) from %s (queue depth: %d)",
@@ -523,6 +525,7 @@ class BackupService:
             result: BackupRecord with final backup result
         """
         job_status = self._map_status_to_job_status(result.status)
+        metrics.record_job_finished(device.group, job_status, result.duration_seconds)
 
         def store() -> None:
             """Runs in a thread, SQLAlchemy is synchronous"""
