@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import __version__
 from app.api.routes import api_router_v1
 from app.api.routes.metrics import router as metrics_router
+from app.core import get_settings, metrics
 from app.core.logging import configure_logging
 from app.services import source_service
 from app.services.backup_service import backup_service
@@ -56,6 +57,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info(f"Loaded {len(settings.groups)} groups")
     logger.info(f"Max concurrent SSH sessions: {settings.app.threads}")
     logger.info(f"Global backup schedule: {settings.app.schedule.cron} ({settings.app.schedule.timezone})")
+
+    if settings.app.metrics:
+        metrics.preset_groups(settings.groups)
+        logger.info("Prometheus metrics are served at /metrics")
 
     ### Load and log device count
     devices = await source_service.get_all_devices()
