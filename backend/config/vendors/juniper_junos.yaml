@@ -73,5 +73,5 @@ processing:
         replacement: '<secret removed>'
       - search: ' "\$\d\$\S+; ## SECRET-DATA'
         replacement: ' <secret removed>'
-      - search: '((?:ftp|pasvftp|sftp|scp|https?):\/\/[^\/@"]+):[^@"]+@'
+      - search: '((?:ftp|pasvftp|sftp|scp|https?):\/\/[^\/@":]+):[^@"]+@'
         replacement: '\1:<secret removed>@'
