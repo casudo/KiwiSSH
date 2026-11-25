@@ -75,6 +75,7 @@ The backend provides:
   - [How do I setup a remote git location?](#how-do-i-setup-a-remote-git-location)
   - [When do I choose the global `git.remote` vs per-group overrides (`groups.<group>.git.remote`)?](#when-do-i-choose-the-global-gitremote-vs-per-group-overrides-groupsgroupgitremote)
   - [fatal: Could not read from remote repository](#fatal-could-not-read-from-remote-repository)
+  - [How do I rename a device?](#how-do-i-rename-a-device)
   - [Third Party Monitoring](#third-party-monitoring)
     - [Health endpoint](#health-endpoint)
     - [Backup job status](#backup-job-status)
@@ -734,6 +735,34 @@ ERROR: Remote push failed for group <your-group>: Cmd('git') failed due to: exit
 
 > [!TIP]
 > In order to persistently keep the `known_hosts` file in Docker, make sure to mount a volume to `/home/kiwissh/.ssh` and ensure the permissions are correct to ensure successful SSH authentication when pushing even after restarting the container.
+
+## How do I rename a device?
+
+KiwiSSH identifies a device by its `device_name` and stores its config in `<git.local_path>/<group>/<device_name>.conf`. If you only rename the device in your source, KiwiSSH treats it as a new device: it creates a new file, the history starts again at version 1 and the old file stays in the git repository. Changing only the `ip_address` doesn't affect the stored config or its history.
+
+To rename a device properly, rename its file in the git repository of the group as well:
+
+1. Pick a time when no backup of the group is queued, running or about to start until step 4 is done. Otherwise, the file with the old name might be created again.
+2. Rename the file in the git repository of the group. Run the commands as the user KiwiSSH runs as, so the files keep the correct owner. In Docker, open a shell in the backend container first (`docker exec -it kiwissh_backend sh`).
+   ```bash
+   cd <git.local_path>/<group> # Default: /config/backups/<group>
+   git mv "<old-name>.conf" "<new-name>.conf" && git commit -m "Rename <old-name> to <new-name>"
+   ```
+3. Change the `device_name` in your source. If your `kiwissh.yaml` contains a [`nodes.<old-name>`](#nodes) entry, rename it as well. Otherwise, its overrides no longer apply to the device.
+4. Click **Reload Devices from Source** on the Devices page. If you changed the `kiwissh.yaml`, restart the backend instead.
+5. Trigger a backup of the device. It finishes with "No Changes", or with "Success" if the config itself has changed too (e.g. its hostname).
+6. Update everything outside of KiwiSSH that uses the old name (e.g. [Third Party Monitoring](#third-party-monitoring)).
+
+If a remote git location is configured, the rename is pushed together with the next backup commit of the group.
+
+> [!NOTE]
+> In KiwiSSH, the history of the device starts with the rename. All older versions are kept in git, use `git log -p --follow -- "<new-name>.conf"` to view them. Existing job logs stay under the old name and Prometheus metrics continue as a new series.
+
+> [!IMPORTANT]
+> Avoid giving the old name to another device of the same group. KiwiSSH would show the versions of the renamed device in its history.
+
+> [!TIP]
+> If the device was already backed up under its new name, `git mv` fails with `destination exists`. In this case, remove the old file instead: `git rm "<old-name>.conf" && git commit -m "Remove <old-name>"`. Its versions are kept in git, use `git log -p -- "<old-name>.conf"` to view them.
 
 ## Third Party Monitoring
 
