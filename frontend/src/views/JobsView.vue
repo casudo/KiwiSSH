@@ -202,10 +202,6 @@ function goToNextPageNoScroll() {
   void loadJobsPage()
 }
 
-async function handleRefresh() {
-  await loadJobsPage()
-}
-
 function clearFilters() {
   filterStatus.value = ""
   filterDevice.value = ""
@@ -424,7 +420,7 @@ async function handleFlushDatabase() {
           </button>
         </div>
 
-        <!-- Always visible: Device Name filter, Auto-refresh, and buttons -->
+        <!-- Always visible: Device Name and IP filters, live update status, entries per page, and clear button -->
         <div class="flex flex-col md:flex-row gap-4 items-end">
           <div class="flex-1">
             <label class="label">Filter by Device Name</label>
@@ -466,21 +462,12 @@ async function handleFlushDatabase() {
             </select>
           </div>
 
-          <div class="flex gap-2">
-            <button
-              @click="handleRefresh"
-              :disabled="jobsStore.loading"
-              class="btn btn-primary"
-            >
-              {{ jobsStore.loading ? "Refreshing..." : "Refresh" }}
-            </button>
-            <button
-              @click="clearFilters"
-              class="btn btn-secondary"
-            >
-              Clear
-            </button>
-          </div>
+          <button
+            @click="clearFilters"
+            class="btn btn-secondary"
+          >
+            Clear
+          </button>
         </div>
 
         <!-- Collapsible: Additional filters -->

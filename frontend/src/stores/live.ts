@@ -25,7 +25,6 @@ export const useLiveStore = defineStore("live", () => {
   let socket: WebSocket | null = null
   let reconnectAttempt = 0
   let reconnectTimer: ReturnType<typeof setTimeout> | undefined
-  let hasConnectedBefore = false
 
   function connect() {
     if (socket) return
@@ -35,10 +34,9 @@ export const useLiveStore = defineStore("live", () => {
 
     socket.onopen = () => {
       connected.value = true
+      // Changes made while disconnected were missed.
+      if (reconnectAttempt > 0) resync()
       reconnectAttempt = 0
-      // Changes made while disconnected were missed
-      if (hasConnectedBefore) resync()
-      hasConnectedBefore = true
     }
 
     socket.onmessage = (event: MessageEvent<string>) => {
