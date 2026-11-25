@@ -66,6 +66,10 @@ processing:
         replacement: "\\1<secret redacted>"
       - search: '^(snmp-server user \S+ \S+ auth \S+) \S+ (priv (?:aes-128|aes-256|3des|des)) \S+(.*)$'
         replacement: '\1<secret redacted> \2 <secret redacted>\3'
+      - search: '^(snmp-server user \S+ \S+ auth \S+) \S+ (priv) \S+(.*)$'
+        replacement: '\1<secret redacted> \2 <secret redacted>\3'
+      - search: '^(snmp-server user \S+ \S+ auth \S+) (?!<secret hidden>)\S+(.*)$'
+        replacement: '\1<secret redacted>\2'
       - search: "^(snmp-server host.*? )\\S+( udp-port \\d+)?$"
         replacement: "\\1<secret redacted>"
       - search: "^(snmp-server mib community-map) \\S+ ?(.*)$"
