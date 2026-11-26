@@ -971,6 +971,180 @@
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
+        <mxCell id="kiwi-met-10" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelPosition=left;verticalLabelPosition=top;align=right;verticalAlign=bottom;fontStyle=1;fontSize=30;strokeWidth=5;dashed=1;perimeterSpacing=0;arcSize=3;fillColor=#E6E6E6;fontColor=#333333;strokeColor=#666666;" value="backup_service.py (metrics)" vertex="1">
+          <mxGeometry height="960" width="1660" x="-360" y="5230" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-11" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;fillColor=none;strokeColor=#007FFF;fontSize=20;fontStyle=1;fontColor=#007FFF;labelPosition=center;verticalLabelPosition=top;align=left;verticalAlign=bottom;spacing=2;spacingLeft=0;" value="PUBLIC FUNCTIONS" vertex="1">
+          <mxGeometry height="150" width="1580" x="-320" y="5300" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-12" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;fillColor=none;strokeColor=#B5739D;fontSize=20;fontStyle=1;fontColor=#B5739D;labelPosition=center;verticalLabelPosition=top;align=left;verticalAlign=bottom;" value="PRIVATE FUNCTIONS" vertex="1">
+          <mxGeometry height="620" width="1580" x="-320" y="5530" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-13" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="get_backup_queue_depth()" vertex="1">
+          <mxGeometry height="80" width="300" x="-290" y="5335" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-14" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="get_queue_worker_count()" vertex="1">
+          <mxGeometry height="80" width="300" x="90" y="5335" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-15" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="get_running_backup_count()" vertex="1">
+          <mxGeometry height="80" width="300" x="470" y="5335" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-16" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontStyle=1;fontSize=15;" value="_backup_queue" vertex="1">
+          <mxGeometry height="40" width="240" x="-260" y="5820" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-17" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontStyle=1;fontSize=15;" value="_queue_workers" vertex="1">
+          <mxGeometry height="40" width="240" x="120" y="5820" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-18" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontStyle=1;fontSize=15;" value="_running_backups" vertex="1">
+          <mxGeometry height="40" width="240" x="500" y="5820" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-19" edge="1" parent="1" source="kiwi-met-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-met-16">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-19-label" connectable="0" parent="kiwi-met-19" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="qsize()" vertex="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-met-20" edge="1" parent="1" source="kiwi-met-14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-met-17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-20-label" connectable="0" parent="kiwi-met-20" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="workers that&lt;br&gt;aren&amp;#39;t done" vertex="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-met-21" edge="1" parent="1" source="kiwi-met-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-met-18">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-22" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="_queue_device_backups()" vertex="1">
+          <mxGeometry height="70" width="300" x="910" y="5605" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-23" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="_backup_queue_worker()" vertex="1">
+          <mxGeometry height="70" width="300" x="910" y="5805" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-24" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="_update_job_final_status()" vertex="1">
+          <mxGeometry height="70" width="300" x="910" y="6005" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-25" edge="1" parent="1" source="kiwi-met-23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="kiwi-met-18">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-25-label" connectable="0" parent="kiwi-met-25" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="+1 while it&lt;br&gt;runs a backup" vertex="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-met-30" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=30;fontStyle=1" value="metrics_service.py" vertex="1">
+          <mxGeometry height="80" width="480" x="0" y="5010" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-31" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="&lt;b&gt;SWITCH TO PAGE!&lt;/b&gt;&lt;div&gt;&lt;b&gt;metrics_service.py&lt;/b&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="180" x="500" y="5030" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-32" edge="1" parent="1" source="kiwi-met-30" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;" target="kiwi-met-13">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="120" y="5170" />
+              <mxPoint x="-140" y="5170" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-met-33" edge="1" parent="1" source="kiwi-met-30" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;" target="kiwi-met-14">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-33-label" connectable="0" parent="kiwi-met-33" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="_queue_gauges()" vertex="1">
+          <mxGeometry relative="1" x="-0.5" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-met-34" edge="1" parent="1" source="kiwi-met-30" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;" target="kiwi-met-15">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="360" y="5170" />
+              <mxPoint x="620" y="5170" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-met-40" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelPosition=left;verticalLabelPosition=top;align=right;verticalAlign=bottom;fontStyle=1;fontSize=30;strokeWidth=5;dashed=1;perimeterSpacing=0;arcSize=3;fillColor=#E6E6E6;fontColor=#333333;strokeColor=#666666;" value="core/metrics.py" vertex="1">
+          <mxGeometry height="960" width="1180" x="1560" y="5230" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-41" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;fillColor=none;strokeColor=#007FFF;fontSize=20;fontStyle=1;fontColor=#007FFF;labelPosition=center;verticalLabelPosition=top;align=left;verticalAlign=bottom;spacing=2;spacingLeft=0;" value="PUBLIC FUNCTIONS" vertex="1">
+          <mxGeometry height="850" width="1100" x="1600" y="5300" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-42" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="preset_groups()" vertex="1">
+          <mxGeometry height="70" width="300" x="1680" y="5385" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-43" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="record_jobs_queued()" vertex="1">
+          <mxGeometry height="70" width="300" x="1680" y="5605" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-44" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="record_job_started()" vertex="1">
+          <mxGeometry height="70" width="300" x="1680" y="5805" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-45" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="record_job_finished()" vertex="1">
+          <mxGeometry height="70" width="300" x="1680" y="6005" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-46" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" value="Start the job counters of&lt;br&gt;all groups at 0" vertex="1">
+          <mxGeometry height="100" width="400" x="2170" y="5370" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-47" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" value="Count the queued jobs&lt;br&gt;by trigger (scheduler, api)" vertex="1">
+          <mxGeometry height="100" width="400" x="2170" y="5590" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-48" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" value="Observe the time the job&lt;br&gt;waited in the queue" vertex="1">
+          <mxGeometry height="100" width="400" x="2170" y="5790" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-49" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" value="Count the job by group and status,&lt;br&gt;observe its duration" vertex="1">
+          <mxGeometry height="100" width="400" x="2170" y="5990" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-50" edge="1" parent="1" source="kiwi-met-42" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="kiwi-met-46">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-51" edge="1" parent="1" source="kiwi-met-43" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="kiwi-met-47">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-52" edge="1" parent="1" source="kiwi-met-44" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="kiwi-met-48">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-53" edge="1" parent="1" source="kiwi-met-45" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="kiwi-met-49">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-54" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="kiwissh_backup_jobs_queued_total" vertex="1">
+          <mxGeometry height="30" width="400" x="2170" y="5695" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-55" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="kiwissh_backup_queue_wait_seconds" vertex="1">
+          <mxGeometry height="30" width="400" x="2170" y="5895" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-56" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="kiwissh_backup_jobs_total&lt;br&gt;kiwissh_backup_job_duration_seconds" vertex="1">
+          <mxGeometry height="40" width="400" x="2170" y="6095" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-57" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="FastAPI Server (Startup) calls it&lt;br&gt;if app.metrics is true" vertex="1">
+          <mxGeometry height="40" width="260" x="1700" y="5340" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-58" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="&lt;b&gt;SWITCH TO PAGE!&lt;/b&gt;&lt;div&gt;&lt;b&gt;metrics_service.py&lt;/b&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="180" x="2060" y="5180" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-60" edge="1" parent="1" source="kiwi-met-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="kiwi-met-43">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-60-label" connectable="0" parent="kiwi-met-60" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="queue source,&lt;br&gt;number of jobs" vertex="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-met-61" edge="1" parent="1" source="kiwi-met-23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="kiwi-met-44">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-61-label" connectable="0" parent="kiwi-met-61" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="queue wait" vertex="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-met-62" edge="1" parent="1" source="kiwi-met-24" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="kiwi-met-45">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-met-62-label" connectable="0" parent="kiwi-met-62" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="group, status,&lt;br&gt;duration" vertex="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
@@ -980,10 +1154,10 @@
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         <mxCell id="rmfFexarqkWoB4NCqTo8-79" connectable="0" parent="1" style="group" value="" vertex="1">
-          <mxGeometry height="410" width="1720" x="1120" y="340" as="geometry" />
+          <mxGeometry height="410" width="2300" x="1120" y="340" as="geometry" />
         </mxCell>
         <mxCell id="rmfFexarqkWoB4NCqTo8-80" parent="rmfFexarqkWoB4NCqTo8-79" style="rounded=1;whiteSpace=wrap;html=1;labelPosition=left;verticalLabelPosition=top;align=right;verticalAlign=bottom;fontStyle=1;fontSize=30;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;strokeWidth=5;dashed=1;perimeterSpacing=0;arcSize=9;fillColor=#E6E6E6;fontColor=#333333;strokeColor=#666666;" value="backup_job_service.py" vertex="1">
-          <mxGeometry height="410" width="1720" as="geometry" />
+          <mxGeometry height="410" width="2300" as="geometry" />
         </mxCell>
         <mxCell id="rmfFexarqkWoB4NCqTo8-81" edge="1" parent="rmfFexarqkWoB4NCqTo8-79" source="rmfFexarqkWoB4NCqTo8-82" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="rmfFexarqkWoB4NCqTo8-95">
           <mxGeometry relative="1" as="geometry" />
@@ -1033,7 +1207,7 @@
           <mxGeometry height="70" width="240" x="640" y="300" as="geometry" />
         </mxCell>
         <mxCell id="rmfFexarqkWoB4NCqTo8-98" parent="rmfFexarqkWoB4NCqTo8-79" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;fillColor=none;strokeColor=#007FFF;fontSize=20;fontStyle=1;fontColor=#007FFF;labelPosition=center;verticalLabelPosition=top;align=left;verticalAlign=bottom;spacing=2;spacingLeft=0;" value="PUBLIC FUNCTIONS" vertex="1">
-          <mxGeometry height="170" width="1640" x="40" y="50" as="geometry" />
+          <mxGeometry height="170" width="2220" x="40" y="50" as="geometry" />
         </mxCell>
         <mxCell id="kiwi-bjs-1" parent="rmfFexarqkWoB4NCqTo8-79" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="create_jobs()" vertex="1">
           <mxGeometry height="110" width="120" x="480" y="80.5" as="geometry" />
@@ -1144,6 +1318,46 @@
         </mxCell>
         <mxCell id="kiwi-bjs-23-label" connectable="0" parent="kiwi-bjs-23" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="_get_latest_completed_&lt;br&gt;config_size()" vertex="1">
           <mxGeometry relative="1" x="-0.2" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-bjs-30" parent="rmfFexarqkWoB4NCqTo8-79" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="get_status_counts()" vertex="1">
+          <mxGeometry height="110" width="200" x="1680" y="80.5" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-bjs-31" parent="rmfFexarqkWoB4NCqTo8-79" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="Count the jobs in database per status" vertex="1">
+          <mxGeometry height="70" width="200" x="1680" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-bjs-32" edge="1" parent="rmfFexarqkWoB4NCqTo8-79" source="kiwi-bjs-30" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-bjs-31">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-bjs-33" parent="rmfFexarqkWoB4NCqTo8-79" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="get_device_backup_summaries()" vertex="1">
+          <mxGeometry height="110" width="280" x="1920" y="80.5" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-bjs-34" parent="rmfFexarqkWoB4NCqTo8-79" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="Last finished, last successful and last changing job per device, in one query" vertex="1">
+          <mxGeometry height="70" width="280" x="1920" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-bjs-35" edge="1" parent="rmfFexarqkWoB4NCqTo8-79" source="kiwi-bjs-33" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-bjs-34">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-bjs-40" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=30;fontStyle=1" value="metrics_service.py" vertex="1">
+          <mxGeometry height="80" width="460" x="2800" y="-80" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-bjs-41" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="&lt;b&gt;SWITCH TO PAGE!&lt;/b&gt;&lt;div&gt;&lt;b&gt;metrics_service.py&lt;/b&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="180" x="2940" y="-130" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-bjs-42" edge="1" parent="1" source="kiwi-bjs-40" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.2174;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;" target="kiwi-bjs-30">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-bjs-42-label" connectable="0" parent="kiwi-bjs-42" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="_read_job_records()" vertex="1">
+          <mxGeometry relative="1" x="-0.4" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-bjs-43" edge="1" parent="1" source="kiwi-bjs-40" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.8261;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;" target="kiwi-bjs-33">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-bjs-43-label" connectable="0" parent="kiwi-bjs-43" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="_read_job_records()" vertex="1">
+          <mxGeometry relative="1" x="-0.4" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
@@ -5224,6 +5438,410 @@
         </mxCell>
         <mxCell id="V0s_fPKiSsaKAZNvByxj-2" parent="1" style="shape=stencil(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);lineShape=1;strokeColor=default;" value="" vertex="1">
           <mxGeometry height="265.9399567961021" width="102.87584137510983" x="786.4151827474361" y="695.1312264564153" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="metrics_service.py" id="kiwi-metrics-page">
+    <mxGraphModel dx="3796" dy="1752" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="kiwi-metrics-1" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=3;fontSize=25;fontColor=#B20000;" value="Legend:" vertex="1">
+          <mxGeometry height="40" width="110" x="-480" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Function" vertex="1">
+          <mxGeometry height="60" width="120" x="-480" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-3" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Task" vertex="1">
+          <mxGeometry height="50" width="110" x="-340" y="75" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-4" parent="1" style="rhombus;whiteSpace=wrap;html=1;" value="Result" vertex="1">
+          <mxGeometry height="60" width="110" x="-210" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-5" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-480" y="160" as="sourcePoint" />
+            <mxPoint x="-360" y="160" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-metrics-6" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="Runs later, not right away" vertex="1">
+          <mxGeometry height="30" width="190" x="-350" y="145" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-10" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=30;fontStyle=1" value="Prometheus" vertex="1">
+          <mxGeometry height="160" width="520" x="740" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-20" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelPosition=left;verticalLabelPosition=top;align=right;verticalAlign=bottom;fontStyle=1;fontSize=30;strokeWidth=5;dashed=1;perimeterSpacing=0;arcSize=3;fillColor=#E6E6E6;fontColor=#333333;strokeColor=#666666;" value="api/routes/metrics.py" vertex="1">
+          <mxGeometry height="430" width="1000" x="560" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-21" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;fillColor=none;strokeColor=#007FFF;fontSize=20;fontStyle=1;fontColor=#007FFF;labelPosition=center;verticalLabelPosition=top;align=left;verticalAlign=bottom;spacing=2;spacingLeft=0;" value="PUBLIC FUNCTIONS" vertex="1">
+          <mxGeometry height="330" width="960" x="580" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-22" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="get_metrics()" vertex="1">
+          <mxGeometry height="80" width="300" x="850" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-23" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" value="metrics_service.render()" vertex="1">
+          <mxGeometry height="100" width="320" x="840" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-24" parent="1" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" value="HTTP 200&lt;br&gt;text/plain" vertex="1">
+          <mxGeometry height="120" width="300" x="1210" y="540" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-25" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="Only served if &lt;b&gt;app.metrics&lt;/b&gt; is true&lt;br&gt;(create_app() in fastapi_server.py),&lt;br&gt;otherwise HTTP 404" vertex="1">
+          <mxGeometry height="80" width="250" x="590" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-26" edge="1" parent="1" source="kiwi-metrics-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;" target="kiwi-metrics-22">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-26-label" connectable="0" parent="kiwi-metrics-26" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="GET /metrics&lt;br&gt;on every scrape" vertex="1">
+          <mxGeometry relative="1" x="-0.4" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-metrics-27" edge="1" parent="1" source="kiwi-metrics-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-23">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-28" edge="1" parent="1" source="kiwi-metrics-23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="kiwi-metrics-24">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-30" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelPosition=left;verticalLabelPosition=top;align=right;verticalAlign=bottom;fontStyle=1;fontSize=30;strokeWidth=5;dashed=1;perimeterSpacing=0;arcSize=3;fillColor=#E6E6E6;fontColor=#333333;strokeColor=#666666;" value="metrics_service.py" vertex="1">
+          <mxGeometry height="2590" width="2420" x="560" y="930" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-31" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;fillColor=none;strokeColor=#007FFF;fontSize=20;fontStyle=1;fontColor=#007FFF;labelPosition=center;verticalLabelPosition=top;align=left;verticalAlign=bottom;spacing=2;spacingLeft=0;" value="PUBLIC FUNCTIONS" vertex="1">
+          <mxGeometry height="820" width="2380" x="580" y="1000" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-32" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;fillColor=none;strokeColor=#B5739D;fontSize=20;fontStyle=1;fontColor=#B5739D;labelPosition=center;verticalLabelPosition=top;align=left;verticalAlign=bottom;" value="PRIVATE FUNCTIONS" vertex="1">
+          <mxGeometry height="1580" width="2380" x="580" y="1900" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-40" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="render()" vertex="1">
+          <mxGeometry height="80" width="300" x="850" y="1040" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-41" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" value="source_service.&lt;br&gt;get_all_devices()" vertex="1">
+          <mxGeometry height="100" width="320" x="840" y="1180" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-42" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" value="Read devices, scheduler&lt;br&gt;and queue" vertex="1">
+          <mxGeometry height="100" width="320" x="840" y="1330" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-43" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" value="Read job records&lt;br&gt;and render" vertex="1">
+          <mxGeometry height="100" width="320" x="840" y="1480" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-44" parent="1" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" value="Metrics in the Prometheus&lt;br&gt;text format" vertex="1">
+          <mxGeometry height="120" width="340" x="830" y="1650" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-45" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="&lt;b&gt;SWITCH TO PAGE!&lt;/b&gt;&lt;div&gt;&lt;b&gt;Source Service&lt;/b&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="170" x="1170" y="1210" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-46" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="On the event loop: queue,&lt;br&gt;scheduler and device source&lt;br&gt;belong to it" vertex="1">
+          <mxGeometry height="50" width="230" x="600" y="1355" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-47" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="In a thread: database queries&lt;br&gt;and rendering are blocking" vertex="1">
+          <mxGeometry height="40" width="230" x="600" y="1510" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-48" edge="1" parent="1" source="kiwi-metrics-23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-40">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-48-label" connectable="0" parent="kiwi-metrics-48" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="await" vertex="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-metrics-49" edge="1" parent="1" source="kiwi-metrics-40" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-41">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-50" edge="1" parent="1" source="kiwi-metrics-41" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-42">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-51" edge="1" parent="1" source="kiwi-metrics-42" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-43">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-52" edge="1" parent="1" source="kiwi-metrics-43" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-44">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-60" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="_render_sync()" vertex="1">
+          <mxGeometry height="80" width="300" x="1270" y="1940" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-61" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="_inventory_gauges()" vertex="1">
+          <mxGeometry height="80" width="300" x="2110" y="1940" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-62" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="_queue_gauges()" vertex="1">
+          <mxGeometry height="80" width="300" x="2550" y="1940" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-63" edge="1" parent="1" source="kiwi-metrics-43" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-60">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1420" y="1530" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-metrics-63-label" connectable="0" parent="kiwi-metrics-63" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="asyncio.to_thread" vertex="1">
+          <mxGeometry relative="1" x="-0.6" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-metrics-64" edge="1" parent="1" source="kiwi-metrics-42" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-61">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2260" y="1380" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-metrics-65" edge="1" parent="1" source="kiwi-metrics-42" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-62">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2700" y="1380" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-metrics-70" parent="1" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" value="Gauges of the&lt;br&gt;inventory" vertex="1">
+          <mxGeometry height="120" width="300" x="2110" y="2080" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-71" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="kiwissh_device_info&lt;br&gt;kiwissh_scheduled_devices&lt;br&gt;kiwissh_source_skipped_rows" vertex="1">
+          <mxGeometry height="60" width="300" x="2110" y="2215" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-72" edge="1" parent="1" source="kiwi-metrics-61" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-70">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-75" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" value="backup_service.&lt;br&gt;get_backup_queue_depth()&lt;br&gt;get_queue_worker_count()&lt;br&gt;get_running_backup_count()" vertex="1">
+          <mxGeometry height="140" width="380" x="2510" y="2080" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-76" parent="1" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" value="Gauges of the&lt;br&gt;backup queue" vertex="1">
+          <mxGeometry height="120" width="300" x="2550" y="2270" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-77" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="kiwissh_backup_queue_depth&lt;br&gt;kiwissh_backup_queue_workers&lt;br&gt;kiwissh_backup_queue_workers_busy" vertex="1">
+          <mxGeometry height="60" width="300" x="2550" y="2405" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-78" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="&lt;b&gt;SWITCH TO PAGE!&lt;/b&gt;&lt;div&gt;&lt;b&gt;backup_service.py&lt;/b&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="170" x="2615" y="2475" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-79" edge="1" parent="1" source="kiwi-metrics-62" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-75">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-80" edge="1" parent="1" source="kiwi-metrics-75" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-76">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-90" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" value="_read_job_records()" vertex="1">
+          <mxGeometry height="100" width="320" x="1260" y="2080" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-91" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" value="Add the gauges of the job&lt;br&gt;records, if they were read" vertex="1">
+          <mxGeometry height="100" width="320" x="1260" y="2230" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-92" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" value="Add kiwissh_database_up&lt;br&gt;(1, or 0 if not read)" vertex="1">
+          <mxGeometry height="100" width="320" x="1260" y="2380" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-93" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" value="generate_latest()&lt;br&gt;registry + gauges" vertex="1">
+          <mxGeometry height="100" width="320" x="1260" y="2530" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-94" parent="1" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" value="Metrics as text" vertex="1">
+          <mxGeometry height="110" width="300" x="1270" y="2695" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-95" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="&lt;b&gt;Registry:&lt;/b&gt; counters and histograms of&lt;br&gt;core/metrics.py, plus process_* and&lt;br&gt;python_* of prometheus_client" vertex="1">
+          <mxGeometry height="60" width="280" x="960" y="2550" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-96" edge="1" parent="1" source="kiwi-metrics-60" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-90">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-97" edge="1" parent="1" source="kiwi-metrics-90" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-91">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-98" edge="1" parent="1" source="kiwi-metrics-91" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-92">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-99" edge="1" parent="1" source="kiwi-metrics-92" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-93">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-100" edge="1" parent="1" source="kiwi-metrics-93" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-94">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-110" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="_read_job_records()" vertex="1">
+          <mxGeometry height="80" width="300" x="750" y="2940" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-111" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="_job_record_gauge()" vertex="1">
+          <mxGeometry height="80" width="300" x="1590" y="2940" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-112" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="_device_backup_gauges()" vertex="1">
+          <mxGeometry height="80" width="300" x="2090" y="2940" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-113" edge="1" parent="1" source="kiwi-metrics-90" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-110">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="900" y="2130" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-metrics-114" edge="1" parent="1" source="kiwi-metrics-91" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-111">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1740" y="2280" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-metrics-115" edge="1" parent="1" source="kiwi-metrics-91" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-112">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2240" y="2280" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-metrics-120" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" value="backup_job_service.&lt;br&gt;get_status_counts()&lt;br&gt;get_device_backup_summaries()" vertex="1">
+          <mxGeometry height="120" width="400" x="700" y="3080" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-121" parent="1" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" value="Status counts,&lt;br&gt;summary per device" vertex="1">
+          <mxGeometry height="120" width="290" x="600" y="3290" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-122" parent="1" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" value="None" vertex="1">
+          <mxGeometry height="120" width="290" x="910" y="3290" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-123" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="&lt;b&gt;SWITCH TO PAGE!&lt;/b&gt;&lt;div&gt;&lt;b&gt;backup_job_service.py&lt;/b&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="170" x="1110" y="3120" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-124" edge="1" parent="1" source="kiwi-metrics-110" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-120">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-125" edge="1" parent="1" source="kiwi-metrics-120" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-121">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="900" y="3250" />
+              <mxPoint x="745" y="3250" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-metrics-126" edge="1" parent="1" source="kiwi-metrics-120" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-122">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="900" y="3250" />
+              <mxPoint x="1055" y="3250" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-metrics-126-label" connectable="0" parent="kiwi-metrics-126" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="database&lt;br&gt;doesn&amp;#39;t answer" vertex="1">
+          <mxGeometry relative="1" x="0.3" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-metrics-130" parent="1" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" value="Jobs in database&lt;br&gt;per status" vertex="1">
+          <mxGeometry height="120" width="300" x="1590" y="3080" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-131" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="kiwissh_backup_job_records" vertex="1">
+          <mxGeometry height="30" width="300" x="1590" y="3215" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-132" edge="1" parent="1" source="kiwi-metrics-111" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-130">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-135" parent="1" style="rhombus;whiteSpace=wrap;html=1;fontSize=15;" value="Devices per status,&lt;br&gt;last backup per device" vertex="1">
+          <mxGeometry height="120" width="340" x="2070" y="3080" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-136" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="kiwissh_devices&lt;br&gt;kiwissh_device_last_backup_successful&lt;br&gt;kiwissh_device_last_backup_timestamp_seconds&lt;br&gt;kiwissh_device_last_backup_success_timestamp_seconds&lt;br&gt;kiwissh_device_last_config_change_timestamp_seconds&lt;br&gt;kiwissh_device_last_backup_duration_seconds&lt;br&gt;kiwissh_device_config_size_bytes" vertex="1">
+          <mxGeometry height="120" width="380" x="2050" y="3215" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-137" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="Per device only for enabled devices&lt;br&gt;with a finished job" vertex="1">
+          <mxGeometry height="40" width="220" x="2420" y="3120" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-138" edge="1" parent="1" source="kiwi-metrics-112" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-135">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-150" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=30;fontStyle=1" value="FastAPI Server (Startup)&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;fastapi_server.py&lt;/div&gt;" vertex="1">
+          <mxGeometry height="160" width="520" x="1860" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-151" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=30;fontStyle=1" value="backup_service.py" vertex="1">
+          <mxGeometry height="80" width="460" x="2570" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-152" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="&lt;b&gt;SWITCH TO PAGE!&lt;/b&gt;&lt;div&gt;&lt;b&gt;backup_service.py&lt;/b&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="170" x="2715" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-160" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelPosition=left;verticalLabelPosition=top;align=right;verticalAlign=bottom;fontStyle=1;fontSize=30;strokeWidth=5;dashed=1;perimeterSpacing=0;arcSize=3;fillColor=#E6E6E6;fontColor=#333333;strokeColor=#666666;" value="core/metrics.py" vertex="1">
+          <mxGeometry height="560" width="1460" x="1900" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-161" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;fillColor=none;strokeColor=#007FFF;fontSize=20;fontStyle=1;fontColor=#007FFF;labelPosition=center;verticalLabelPosition=top;align=left;verticalAlign=bottom;spacing=2;spacingLeft=0;" value="PUBLIC FUNCTIONS" vertex="1">
+          <mxGeometry height="460" width="1420" x="1920" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-162" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="preset_groups()" vertex="1">
+          <mxGeometry height="80" width="300" x="1970" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-163" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="record_jobs_queued()" vertex="1">
+          <mxGeometry height="80" width="300" x="2310" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-164" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="record_job_started()" vertex="1">
+          <mxGeometry height="80" width="300" x="2650" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-165" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=15;" value="record_job_finished()" vertex="1">
+          <mxGeometry height="80" width="300" x="2990" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-166" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" value="Start the job counters&lt;br&gt;of all groups at 0" vertex="1">
+          <mxGeometry height="100" width="320" x="1960" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-167" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" value="Count the queued jobs&lt;br&gt;by trigger" vertex="1">
+          <mxGeometry height="100" width="320" x="2300" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-168" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" value="Observe the time the job&lt;br&gt;waited in the queue" vertex="1">
+          <mxGeometry height="100" width="320" x="2640" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-169" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;" value="Count the job, observe&lt;br&gt;its duration" vertex="1">
+          <mxGeometry height="100" width="320" x="2980" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-170" edge="1" parent="1" source="kiwi-metrics-162" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-166">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-171" edge="1" parent="1" source="kiwi-metrics-163" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-167">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-172" edge="1" parent="1" source="kiwi-metrics-164" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-168">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-173" edge="1" parent="1" source="kiwi-metrics-165" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="kiwi-metrics-169">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-174" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="kiwissh_backup_jobs_queued_total" vertex="1">
+          <mxGeometry height="30" width="320" x="2300" y="670" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-175" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="kiwissh_backup_queue_wait_seconds" vertex="1">
+          <mxGeometry height="30" width="320" x="2640" y="670" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-176" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="kiwissh_backup_jobs_total&lt;br&gt;kiwissh_backup_job_duration_seconds" vertex="1">
+          <mxGeometry height="40" width="320" x="2980" y="670" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-177" parent="1" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" value="Counters and histograms live in the default registry of prometheus_client. They are always recorded, &lt;b&gt;_render_sync()&lt;/b&gt; adds them to every scrape." vertex="1">
+          <mxGeometry height="40" width="780" x="2240" y="770" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-180" edge="1" parent="1" source="kiwi-metrics-150" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;" target="kiwi-metrics-162">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-180-label" connectable="0" parent="kiwi-metrics-180" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="lifespan(), if&lt;br&gt;app.metrics is true" vertex="1">
+          <mxGeometry relative="1" x="-0.45" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-metrics-181" edge="1" parent="1" source="kiwi-metrics-151" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.15;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;" target="kiwi-metrics-163">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2639" y="240" />
+              <mxPoint x="2460" y="240" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-metrics-181-label" connectable="0" parent="kiwi-metrics-181" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="_queue_device_backups()" vertex="1">
+          <mxGeometry relative="1" x="0.28" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-metrics-182" edge="1" parent="1" source="kiwi-metrics-151" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;" target="kiwi-metrics-164">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kiwi-metrics-182-label" connectable="0" parent="kiwi-metrics-182" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="_backup_queue_worker()" vertex="1">
+          <mxGeometry relative="1" x="-0.33" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-metrics-183" edge="1" parent="1" source="kiwi-metrics-151" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.85;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;" target="kiwi-metrics-165">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2961" y="240" />
+              <mxPoint x="3140" y="240" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="kiwi-metrics-183-label" connectable="0" parent="kiwi-metrics-183" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="_update_job_final_status()" vertex="1">
+          <mxGeometry relative="1" x="0.28" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
         </mxCell>
       </root>
     </mxGraphModel>

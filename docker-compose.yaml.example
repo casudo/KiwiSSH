@@ -28,7 +28,7 @@ services:
     container_name: kiwissh_backend
     image: ghcr.io/casudo/kiwissh-backend:latest
     restart: unless-stopped
-    ### Uncomment ports if you want to access the API docs via http://<IP>:8000/docs
+    ### Uncomment ports if you want to access the API docs (/docs) or Prometheus metrics (/metrics) from outside the container
     # ports:
     #   - 8000:8000
     volumes:

@@ -1,20 +1,25 @@
 """Service for managing backup job records in the database."""
 
-from datetime import UTC
+from dataclasses import dataclass
+from datetime import UTC, datetime
 
-from sqlalchemy import desc, func, update
-from sqlalchemy.orm import Session
+from sqlalchemy import and_, case, desc, func, update
+from sqlalchemy.orm import Session, aliased
 
 from app.db.models import BackupJob
 from app.utils.timezone import get_utc_now
 
 
+def _as_utc(timestamp: datetime | None) -> datetime | None:
+    """Mark a timestamp read from the database as UTC. SQLite returns naive datetimes, the stored values are UTC."""
+    if timestamp is not None and timestamp.tzinfo is None:
+        return timestamp.replace(tzinfo=UTC)
+    return timestamp
+
+
 def job_to_dict(job: BackupJob) -> dict:
     """Transform the database model BackupJob into a dictionary suitable for API responses."""
-    ### SQLite returns naive datetimes, the stored values are UTC
-    timestamp = job.timestamp
-    if timestamp is not None and timestamp.tzinfo is None:
-        timestamp = timestamp.replace(tzinfo=UTC)
+    timestamp = _as_utc(job.timestamp)
 
     return {
         "job_id": job.id,
@@ -26,6 +31,23 @@ def job_to_dict(job: BackupJob) -> dict:
         "config_size_bytes": job.config_size_bytes,
         "duration_seconds": job.duration_seconds,
     }
+
+
+@dataclass(slots=True)
+class DeviceBackupSummary:
+    """What the finished jobs (success, no_changes, failed) of a device say about its backups."""
+    last_backup: datetime # Time of the last finished job
+    last_success: datetime | None # Time of the last job that fetched the config (success or no_changes)
+    last_change: datetime | None # Time of the last job that stored a new config version (success)
+    duration_seconds: float | None # Of the last finished job
+    config_size_bytes: int | None # Of the last successful job
+
+    @property
+    def status(self) -> str:
+        """Status of the last finished job."""
+        if self.last_success != self.last_backup:
+            return "failed"
+        return "success" if self.last_change == self.last_backup else "no_changes"
 
 
 class BackupJobService:
@@ -197,6 +219,73 @@ class BackupJobService:
         )
 
         return {job.device_name: job for job in jobs}
+
+    ### Helper methods for the Prometheus metrics
+    @staticmethod
+    def get_status_counts(db: Session) -> dict[str, int]:
+        """Count the stored job records per status."""
+        rows = db.query(BackupJob.status, func.count(BackupJob.id)).group_by(BackupJob.status).all()
+        return {str(status): int(count) for status, count in rows}
+
+    @staticmethod
+    def get_device_backup_summaries(db: Session) -> dict[str, DeviceBackupSummary]:
+        """Summarize the finished jobs of every device that has some, in a single query.
+
+        Devices that left the inventory but still have job records are part of the result.
+
+        Returns:
+            Dictionary mapping device_name to its DeviceBackupSummary
+        """
+        finished = ["success", "no_changes", "failed"]
+        successful = ["success", "no_changes"]
+
+        ### Subquery: one row per device with the times of its last finished, last successful and last changing job
+        times = (
+            db.query(
+                BackupJob.device_name.label("device_name"),
+                func.max(BackupJob.timestamp).label("last_backup"),
+                func.max(case((BackupJob.status.in_(successful), BackupJob.timestamp))).label("last_success"),
+                func.max(case((BackupJob.status == "success", BackupJob.timestamp))).label("last_change"),
+            )
+            .filter(BackupJob.status.in_(finished))
+            .group_by(BackupJob.device_name)
+            .subquery()
+        )
+
+        ### Join the records of the last finished and the last successful job to read their duration and config size
+        last_job = aliased(BackupJob)
+        last_successful_job = aliased(BackupJob)
+        rows = (
+            db.query(times, last_job.duration_seconds, last_successful_job.config_size_bytes)
+            .outerjoin(
+                last_job,
+                and_(
+                    last_job.device_name == times.c.device_name,
+                    last_job.timestamp == times.c.last_backup,
+                    last_job.status.in_(finished),
+                ),
+            )
+            .outerjoin(
+                last_successful_job,
+                and_(
+                    last_successful_job.device_name == times.c.device_name,
+                    last_successful_job.timestamp == times.c.last_success,
+                    last_successful_job.status.in_(successful),
+                ),
+            )
+            .all()
+        )
+
+        return {
+            row.device_name: DeviceBackupSummary(
+                last_backup=_as_utc(row.last_backup),
+                last_success=_as_utc(row.last_success),
+                last_change=_as_utc(row.last_change),
+                duration_seconds=row.duration_seconds,
+                config_size_bytes=row.config_size_bytes,
+            )
+            for row in rows
+        }
 
 
 ### Singleton instance

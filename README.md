@@ -38,6 +38,7 @@ The backend provides:
 - Configurable processing rules for captured configurations, including line stripping, cropping and regex-based redaction of sensitive information
 - The ability to easily add support for new vendors by creating YAML configuration files that define how to interact with the device CLI and process the output
 - RESTful API endpoints for device management, backup job logs, dry-run tests and configuration retrieval to enable integration with other tools and automation
+- Optional Prometheus metrics with device, backup job and queue statistics, e.g. for Grafana dashboards and alerts
 
 # Table of Contents <!-- omit from toc -->
 
@@ -79,6 +80,7 @@ The backend provides:
   - [Third Party Monitoring](#third-party-monitoring)
     - [Health endpoint](#health-endpoint)
     - [Backup job status](#backup-job-status)
+    - [Prometheus metrics](#prometheus-metrics)
 - [Future Goals](#future-goals)
 - [Technical Documentation](#technical-documentation)
 - [Contributing to KiwiSSH](#contributing-to-kiwissh)
@@ -196,6 +198,7 @@ Full available options:
 | `app.timeout` | The global connection timeout in seconds. This can be overridden for specific groups or nodes. | No | `30` |
 | `app.retry` | The global retry count, which defines how many additional attempts should be made after the first failed attempt. This can also be overridden for specific groups or nodes. | No | `3` |
 | `app.protocol` | Default protocol for device connections (`ssh`, `telnet`, `http` or `https`). | No | `ssh` |
+| `app.metrics` | If set to true, the backend serves [Prometheus metrics](#prometheus-metrics) about devices, backup jobs and the backup queue at `/metrics`. | No | `false` |
 | `app.api.host` | The host on which the API server will run. Should be set to 0.0.0.0 when running in Docker. | No | `127.0.0.1` |
 | `app.api.port` | The port on which the API server will run. | No | `8000` |
 | `app.api.cors_origins` | A list of allowed CORS origins for the API server. | No | `["http://localhost:5173", "http://127.0.0.1:5173"]` |
@@ -845,6 +848,76 @@ Triggering a backup via `POST /api/v1/backups/trigger/{device_name}` (or `POST /
 `status` goes from `pending` (queued) over `in_progress` to `success`, `no_changes` or `failed`.
 
 The frontend receives these changes live over the **WebSocket** `/api/v1/backups/events`. If you put your own reverse proxy in front of KiwiSSH, make sure it forwards WebSocket connections (Traefik does by default). Otherwise, statuses only update when you reload the page.
+
+### Prometheus metrics
+
+KiwiSSH can serve statistics about its devices, backup jobs and backup queue as [Prometheus](https://prometheus.io/) metrics. Use them to build a Grafana dashboard and alerts that show anomalies like failing or outdated backups, shrinking configs or a growing queue. The endpoint is disabled by default. Enable it in `kiwissh.yaml` and restart the backend:
+
+```yaml
+app:
+  metrics: true
+```
+
+The backend then serves the metrics at `http://<IP>:8000/metrics`. Like the API docs, they are **not** available through the frontend, so Prometheus has to reach the backend itself: run it in the same Docker network, or publish port `8000` of the backend container. Example scrape config:
+
+```yaml
+scrape_configs:
+  - job_name: "kiwissh"
+    scrape_interval: 30s
+    static_configs:
+      - targets: ["kiwissh_backend:8000"]
+```
+
+> [!WARNING]
+> Like the rest of the API, the endpoint has no authentication. It contains the name, group and vendor of every device, so only make it reachable for your Prometheus server.
+
+| Metric | Type | Labels | Description |
+| --- | --- | --- | --- |
+| `kiwissh_devices` | Gauge | `group`, `status` | Number of devices by the status of their last finished backup: `success` (a new config version was stored), `no_changes`, `failed`, `unknown` (never backed up) or `disabled` (disabled devices, whatever their last backup was). |
+| `kiwissh_device_info` | Gauge | `device_name`, `group`, `vendor`, `protocol`, `enabled` | Always `1`, one series per device. Use it to count devices by vendor or to add its labels to other metrics. |
+| `kiwissh_scheduled_devices` | Gauge | - | Number of devices with a scheduled backup. |
+| `kiwissh_source_skipped_rows` | Gauge | - | Number of rows of the device source that were skipped as invalid during the last load. |
+| `kiwissh_device_last_backup_successful` | Gauge | `device_name`, `group` | `1` if the last finished backup of the device was successful, `0` if it failed. |
+| `kiwissh_device_last_backup_timestamp_seconds` | Gauge | `device_name`, `group` | Unix time the last backup of the device finished, successful or not. |
+| `kiwissh_device_last_backup_success_timestamp_seconds` | Gauge | `device_name`, `group` | Unix time of the last successful backup of the device. |
+| `kiwissh_device_last_config_change_timestamp_seconds` | Gauge | `device_name`, `group` | Unix time of the last backup that stored a new config version of the device. |
+| `kiwissh_device_last_backup_duration_seconds` | Gauge | `device_name`, `group` | Duration of the last finished backup of the device. |
+| `kiwissh_device_config_size_bytes` | Gauge | `device_name`, `group` | Config size of the device, as of its last successful backup. |
+| `kiwissh_backup_jobs_total` | Counter | `group`, `status` | Finished backup jobs (`success`, `no_changes`, `failed`). |
+| `kiwissh_backup_job_duration_seconds` | Histogram | `status` | Duration of the finished backup jobs. |
+| `kiwissh_backup_job_records` | Gauge | `status` | Number of backup job logs in the application database (`pending`, `in_progress`, `success`, `no_changes`, `failed`). |
+| `kiwissh_backup_jobs_queued_total` | Counter | `trigger` | Backup jobs added to the queue, by the `scheduler` or the `api` (manually triggered backups). |
+| `kiwissh_backup_queue_wait_seconds` | Histogram | - | Time the backup jobs waited in the queue for a free worker. |
+| `kiwissh_backup_queue_depth` | Gauge | - | Number of backup jobs waiting in the queue. |
+| `kiwissh_backup_queue_workers` | Gauge | - | Number of running queue workers. Equals `app.threads`, unless workers died. |
+| `kiwissh_backup_queue_workers_busy` | Gauge | - | Number of queue workers that are backing up a device right now. |
+| `kiwissh_database_up` | Gauge | - | `1` if the application database answered, `0` if not. Without it, the metrics read from the database are missing: `kiwissh_devices`, `kiwissh_backup_job_records` and the last backup of the devices. |
+| `kiwissh_build_info` | Gauge | `version` | Always `1`, the label holds the version of the backend. |
+| `process_*`, `python_*` | - | - | CPU time, memory and open file descriptors of the backend process (Linux only) and details about its Python runtime. |
+
+Good to know:
+
+- Counters and histograms start at `0` whenever the backend starts, so query them with `rate()` or `increase()`.
+- The `kiwissh_device_last_*` and `kiwissh_device_config_size_bytes` metrics are read from the backup job logs. They only exist for enabled devices, and only as long as there is a matching job log. A device that never had a successful backup has no `kiwissh_device_last_backup_success_timestamp_seconds`, and a config change that is older than the [log retention](#app) isn't known anymore.
+- Every device adds up to 7 series. A scrape of 5,000 devices with a million backup job logs takes about half a second, so there is no need to scrape more often than every 30 seconds.
+- Successful scrapes are left out of the access log.
+
+Example queries for dashboards and alerts:
+
+| Question | Query |
+| --- | --- |
+| How many devices are in which status? | `sum by (status) (kiwissh_devices)` |
+| Which devices failed their last backup? | `kiwissh_device_last_backup_successful == 0` |
+| Which devices have no successful backup for two days? | `time() - kiwissh_device_last_backup_success_timestamp_seconds > 2 * 86400` |
+| How many enabled devices were never backed up? | `sum(kiwissh_devices{status="unknown"})` |
+| Which configs changed within the last 24 hours? | `time() - kiwissh_device_last_config_change_timestamp_seconds < 86400` |
+| Which configs lost more than half of their size within a day? | `kiwissh_device_config_size_bytes / (kiwissh_device_config_size_bytes offset 1d) < 0.5` |
+| How many backups failed per group in the last hour? | `sum by (group) (increase(kiwissh_backup_jobs_total{status="failed"}[1h]))` |
+| How long do successful backups take (95th percentile)? | `histogram_quantile(0.95, sum by (le) (rate(kiwissh_backup_job_duration_seconds_bucket{status!="failed"}[1h])))` |
+| Which devices take the longest? | `topk(10, kiwissh_device_last_backup_duration_seconds)` |
+| How long do backups wait for a free worker (95th percentile)? | `histogram_quantile(0.95, rate(kiwissh_backup_queue_wait_seconds_bucket[1h]))` |
+| How busy are the queue workers? | `kiwissh_backup_queue_workers_busy / kiwissh_backup_queue_workers` |
+| Which failed devices belong to which vendor? | `(kiwissh_device_last_backup_successful == 0) * on (device_name) group_left (vendor) kiwissh_device_info` |
 
 ---
 

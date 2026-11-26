@@ -6,14 +6,16 @@ from pathlib import Path
 
 import websockets
 
-HEALTH_PATH = "/api/v1/health"
+### Endpoints that monitoring calls all the time
+MONITORING_PATHS = {"/api/v1/health", "/metrics"}
 WEBSOCKETS_DIR = str(Path(websockets.__file__).parent) # Installed websockets package
 
 
-class PassingHealthCheckFilter(logging.Filter):
-    """Drop access log lines of **passing** health checks, the Docker healthcheck sends one every 30 seconds.
+class PassingMonitoringRequestFilter(logging.Filter):
+    """Drop access log lines of **passing** health checks and metrics scrapes.
 
-    **Failing** checks (HTTP 503) are still logged.
+    The Docker healthcheck sends a request every 30 seconds, Prometheus scrapes the metrics even more often.
+    **Failing** requests (e.g. HTTP 503 of the health check) are still logged.
     """
 
     def filter(self, record: logging.LogRecord) -> bool:
@@ -21,7 +23,7 @@ class PassingHealthCheckFilter(logging.Filter):
         args = record.args
         if isinstance(args, tuple) and len(args) == 5:
             path, status_code = args[2], args[4]
-            return not (path == HEALTH_PATH and status_code == 200)
+            return not (path in MONITORING_PATHS and status_code == 200)
         return True
 
 
@@ -108,7 +110,7 @@ def configure_logging(debug: bool = False) -> None:
 
     logging.config.dictConfig(config)
 
-    ### Apply custom filter for logger "uvicorn.access" to drop passing health check logs
-    logging.getLogger("uvicorn.access").addFilter(PassingHealthCheckFilter())
+    ### Apply custom filter for logger "uvicorn.access" to drop passing health check and metrics scrape logs
+    logging.getLogger("uvicorn.access").addFilter(PassingMonitoringRequestFilter())
     ### Live updates (WebSocket) would otherwise log every message and ping in debug mode
     logging.getLogger("uvicorn.error").addFilter(WebSocketFrameFilter())
